@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="900"
+        Width="1200"
+        Height="900"
+        Background="DarkBlue"
+        Foreground="Yellow"
+   
+        x:Class="ProxyStudio.MainView"
+        xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+        x:DataType="vm:MainViewModel"
+        Title="ProxyStudio">
+    <Grid >
+       <TabControl>
+           <TabItem Header="Cards" >
+               <!-- Card Management Page -->
+               <Grid ShowGridLines="False" >
+                   <Grid.ColumnDefinitions>250,*,400</Grid.ColumnDefinitions>
+                   <!-- Card Management Actions -->
+                   <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
+                       <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
+                       <Button Content="Add Cards from MPC XML" HorizontalAlignment="Stretch" />
+                       <Button Content="Load Test Cards" HorizontalAlignment="Stretch" Command="{Binding AddTestCardsRelayCommand}"/>
+                       
+                       
+                   </StackPanel>
+
+                   <!-- Main Card Grid View -->
+                   <ScrollViewer  Grid.Column="1" Margin="0,0,0,0" >
+                       <ItemsControl ItemsSource="{Binding Cards}">
+                           <ItemsControl.ItemsPanel>
+                               <ItemsPanelTemplate>
+                                   <UniformGrid Columns="3" />
+                               </ItemsPanelTemplate>
+                           </ItemsControl.ItemsPanel>
+
+                           <ItemsControl.ItemTemplate>
+                               <DataTemplate>
+                                   <Border Margin="5" BorderBrush="Gray" BorderThickness="1" Padding="4">
+                                       <Image Source="{Binding ImageSource}"
+                                               />
+                                   </Border>
+                               </DataTemplate>
+                           </ItemsControl.ItemTemplate>
+                       </ItemsControl>
+                   </ScrollViewer>
+                   
+                   <!-- Card Editor Panel -->
+                   <StackPanel Grid.Column="2" Margin="20,0, 0, 0" VerticalAlignment="Top">
+
+                       <Image x:Name="EditorCardViewImage" Source="/Resources/vampire.jpg" />
+                       <StackPanel Margin="5,20,5,5">
+                            <!-- Card Options -->
+                           <Label Content="Card Options" Margin="0,0,0,8" />
+                           <StackPanel Orientation="Horizontal">
+                               <CheckBox Content="Enable Bleed" Margin="15" />
+                               <CheckBox Content="Some Other Text"></CheckBox>
+                           </StackPanel>
+                            <StackPanel  >
+                                <Label Content="Bleed Edge In Pixels" Padding="0,10,10,10" ></Label>
+                                <ButtonSpinner Content="10" ></ButtonSpinner>
+                            </StackPanel>
+
+                       </StackPanel>
+                   </StackPanel>
+                   
+               </Grid>
+           </TabItem>
+           
+           <!-- Printing Tab -->
+           <TabItem Header="Printing">
+               <Grid ShowGridLines="True">
+                   <Grid.ColumnDefinitions>250,*</Grid.ColumnDefinitions>
+                   <!-- Card Management Actions -->
+                   <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
+                       <Button Content="Generate PDF" HorizontalAlignment="Stretch" />
+                   </StackPanel>
+                   <ScrollViewer Grid.Column="1">
+                       <!-- Print Canvas Placeholder -->
+                       <Canvas Width="800" Height="1024" Background="White">
+                       
+                   </Canvas>
+                   </ScrollViewer>
+               </Grid>
+           </TabItem>
+           
+           <!-- Settings Tab -->
+           <TabItem Header="Settings">
+               
+           </TabItem>
+       </TabControl>
+    </Grid>
+</Window>
