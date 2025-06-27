@@ -1,4 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using Avalonia.Dialogs;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ProxyStudio.Models;
 using SixLabors.ImageSharp.PixelFormats;
@@ -9,35 +14,69 @@ namespace ProxyStudio.ViewModels;
 public partial class MainViewModel : ViewModelBase
 {
 
-    public CardCollection Cards { get; } = new();
+    public CardCollection Cards { get; private set; } = new();
   
-    [ObservableProperty]
+  [ObservableProperty]
    private Card? selectedCard;
+
+   
+  
+   private bool CanAddTestCards() => !IsBusy;
+   
+[ObservableProperty]
+private bool isBusy;
+
 
 
 
 
 [RelayCommand(CanExecute = nameof(CanAddTestCards))]
-private void AddTestCardsRelay()
+private async Task AddTestCardsRelayAsync()
 {
-    AddTestCards();
-    OnPropertyChanged(nameof(Cards));
+    IsBusy = true;
+    
+    // do the heavy lifting off the UI thread
+    var newCards = await Task.Run( () =>
+    {
+        return AddTestCards();
+    });
+    
+    // marshall back to the UI thread for changing the collection
+
+    // await Dispatcher.UIThread.InvokeAsync(() =>
+    // {
+    //     foreach (var card in newCards)
+    //         Cards.AddCard(card);
+    //
+    // });
+    
+    Cards.AddRange(newCards);
+    
+    
+
+    
+    IsBusy = false;
+
 }
 
 [RelayCommand]
 public void EditCard(Card card)
 {
+    
     // open an edit dialog, navigate, etc.
     // e.g. DialogService.ShowEditCard(card);
+    SelectedCard = card;
 }
 
-private bool CanAddTestCards() => true;
 
-private void AddTestCards()
+
+private List<Card> AddTestCards()
     {
+        List<Card> cards = new();
+        
         #region Add some default cards to the collection
         //reset the cards
-        Cards.RemoveAllCards(); // Clear the existing cards in the collection
+        
 
 
 
@@ -70,24 +109,26 @@ private void AddTestCards()
 
         byte[]? buffer2 = Helpers.ImageSharpToWPFConverter.ImageToByteArray(image2);
 
+        //really stress the program
+        for (int i = 0; i < 100; i++)
+        {
+            cards.Add(new Card("Preacher of the Schism", "12345", buffer));
+            cards.Add(new Card("Vampire Token", "563726", buffer2));
+            cards.Add(new Card("Preacher of the Schism", "12345", buffer));
+            cards.Add(new Card("Vampire Token", "563726", buffer2));
+        }
 
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
-        Cards.AddCard(new Card("Preacher of the Schism", "12345", buffer));
-        Cards.AddCard(new Card("Vampire Token", "563726", buffer2));
+
+        //set the command of each card directlu
+        foreach (var card in cards)
+        {
+            card.EditMeCommand = EditCardCommand;
+        }
+        
         #endregion
+        return cards;
     }
-    
+
+
+
 }

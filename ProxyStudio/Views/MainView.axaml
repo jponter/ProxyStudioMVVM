@@ -2,8 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="900"
-        Width="1200"
+        xmlns:li="using:LoadingIndicators.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        Width="1400"
         Height="900"
         Background="DarkBlue"
         Foreground="Yellow"
@@ -17,53 +18,93 @@
            <TabItem Header="Cards" >
                <!-- Card Management Page -->
                <Grid ShowGridLines="False" >
-                   <Grid.ColumnDefinitions>250,*,400</Grid.ColumnDefinitions>
+                   <Grid.ColumnDefinitions>250,*,550</Grid.ColumnDefinitions>
                    <!-- Card Management Actions -->
                    <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
                        <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
                        <Button Content="Add Cards from MPC XML" HorizontalAlignment="Stretch" />
                        <Button Content="Load Test Cards" HorizontalAlignment="Stretch" Command="{Binding AddTestCardsRelayCommand}"/>
-                       
+                       <li:LoadingIndicator Foreground="AliceBlue" IsActive="{Binding IsBusy}" Mode="ThreeDots" SpeedRatio="1.2" ></li:LoadingIndicator>
+                       <!-- <TextBlock Foreground="AliceBlue" Text="{Binding IsBusy}"></TextBlock> -->
+                                              
                        
                    </StackPanel>
 
                    <!-- Main Card Grid View -->
                    <ScrollViewer  Grid.Column="1" Margin="0,0,0,0" >
-                       <ItemsControl ItemsSource="{Binding Cards}">
-                           <ItemsControl.ItemsPanel>
-                               <ItemsPanelTemplate>
-                                   <UniformGrid Columns="3" />
-                               </ItemsPanelTemplate>
-                           </ItemsControl.ItemsPanel>
+                       <!-- <ItemsControl ItemsSource="{Binding Cards}"> -->
+                       <!--     <ItemsControl.ItemsPanel> -->
+                       <!--         <ItemsPanelTemplate> -->
+                       <!--             <UniformGrid Columns="3" /> -->
+                       <!--         </ItemsPanelTemplate> -->
+                       <!--     </ItemsControl.ItemsPanel> -->
+                       <!-- -->
+                       <!--     <ItemsControl.ItemTemplate> -->
+                       <!--         <DataTemplate> -->
+                       <!--             <Border Margin="5" BorderBrush="Gray" BorderThickness="1" Padding="4"> -->
+                       <!--                 <Image Source="{Binding ImageSource}" -->
+                       <!--                         /> -->
+                       <!--             </Border> -->
+                       <!--         </DataTemplate> -->
+                       <!--     </ItemsControl.ItemTemplate> -->
+                       <!-- </ItemsControl> -->
+                       
+                       <!-- use a List box -->
+                       <ListBox x:Name="CardGrid"
+                                ItemsSource="{Binding Cards}"
+                                SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
+                                >
 
-                           <ItemsControl.ItemTemplate>
+                           <ListBox.ItemsPanel>
+                               <ItemsPanelTemplate>
+                                   <UniformGrid Columns="3"/>
+                               </ItemsPanelTemplate>
+                           </ListBox.ItemsPanel>
+
+                           <ListBox.ItemTemplate>
                                <DataTemplate>
-                                   <Border Margin="5" BorderBrush="Gray" BorderThickness="1" Padding="4">
+                                   <Button Width="" Height=""
+                                           Command="{Binding   EditMeCommand   }"
+                                           CommandParameter="{Binding}">
                                        <Image Source="{Binding ImageSource}"
-                                               />
-                                   </Border>
+                                              Stretch="UniformToFill"/>
+                                   </Button>
                                </DataTemplate>
-                           </ItemsControl.ItemTemplate>
-                       </ItemsControl>
+                           </ListBox.ItemTemplate>
+                       </ListBox>
                    </ScrollViewer>
                    
                    <!-- Card Editor Panel -->
                    <StackPanel Grid.Column="2" Margin="20,0, 0, 0" VerticalAlignment="Top">
-
-                       <Image x:Name="EditorCardViewImage" Source="/Resources/vampire.jpg" />
-                       <StackPanel Margin="5,20,5,5">
-                            <!-- Card Options -->
-                           <Label Content="Card Options" Margin="0,0,0,8" />
-                           <StackPanel Orientation="Horizontal">
-                               <CheckBox Content="Enable Bleed" Margin="15" />
-                               <CheckBox Content="Some Other Text"></CheckBox>
-                           </StackPanel>
-                            <StackPanel  >
-                                <Label Content="Bleed Edge In Pixels" Padding="0,10,10,10" ></Label>
-                                <ButtonSpinner Content="10" ></ButtonSpinner>
-                            </StackPanel>
-
-                       </StackPanel>
+                     
+                       <!-- <Image x:Name="EditorCardViewImage" Source="/Resources/vampire.jpg" /> -->
+                       <!-- <StackPanel Margin="5,20,5,5"> -->
+                       <!--      ~1~ Card Options @1@ -->
+                       <!--     <Label Content="Card Options" Margin="0,0,0,8" /> -->
+                       <!--     <StackPanel Orientation="Horizontal"> -->
+                       <!--         <CheckBox Content="Enable Bleed" Margin="15" /> -->
+                       <!--         <CheckBox Content="Some Other Text"></CheckBox> -->
+                       <!--     </StackPanel> -->
+                       <!--      <StackPanel  > -->
+                       <!--          <Label Content="Bleed Edge In Pixels" Padding="0,10,10,10" ></Label> -->
+                       <!--          <ButtonSpinner Content="10" ></ButtonSpinner> -->
+                       <!--      </StackPanel> -->
+                       <!-- </StackPanel> -->
+                       
+                       <ListBox ItemsSource="{Binding Cards}"
+                                SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
+                                >
+                           
+                           <Image Source="{Binding SelectedCard.ImageSource}" ></Image>
+                           <CheckBox Content="Enable Bleed"
+                                     IsChecked="{Binding SelectedCard.EnableBleed}"
+                                     Margin="15"
+                                     />
+                           
+                           
+                       </ListBox>
+                       
+                       
                    </StackPanel>
                    
                </Grid>

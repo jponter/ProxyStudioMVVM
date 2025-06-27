@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,6 +55,14 @@ namespace ProxyStudio.Models
             return this[index];
         }
 
+        public void AddRange(IEnumerable<Card> newCards)
+        {
+            foreach (var card in newCards)
+                Items.Add(card);
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(
+                NotifyCollectionChangedAction.Reset));
+        }
 
 
         public int NumberOfCards
