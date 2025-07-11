@@ -7,6 +7,8 @@ using ProxyStudio.Helpers;
 using ProxyStudio.ViewModels;
 using Avalonia.Styling;
 using System.Reactive.Linq;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 
 namespace ProxyStudio;
 
@@ -34,6 +36,8 @@ public partial class MainView : Window
         PositionChanged += CacheGeometry;
         this.GetObservable<Rect>(BoundsProperty)
             .Subscribe(rect => CacheGeometry(null, null));
+        
+        
 
     }
     /// <summary>Keep the config object up-to-date while the app is running.</summary>

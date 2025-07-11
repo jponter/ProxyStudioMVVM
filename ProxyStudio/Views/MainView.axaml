@@ -11,6 +11,7 @@
    
         x:Class="ProxyStudio.MainView"
         xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+        xmlns:behaviors="clr-namespace:ProxyStudio.Behaviors"
         x:DataType="vm:MainViewModel"
         Title="ProxyStudio">
     <Grid >
@@ -51,27 +52,51 @@
                        
                        <!-- use a List box -->
                        <ListBox x:Name="CardGrid"
+                       
                                 ItemsSource="{Binding Cards}"
                                 SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
+                                behaviors:ReorderableListBoxBehavior.IsReorderEnabled="True"
+                                DragDrop.AllowDrop="True"
+                                BorderBrush="Gray" BorderThickness="1"
+                                Background="red"
+                       
                                 >
-
+                       
+                      
+                       
                            <ListBox.ItemsPanel>
                                <ItemsPanelTemplate>
                                    <UniformGrid Columns="3"/>
                                </ItemsPanelTemplate>
                            </ListBox.ItemsPanel>
-
+                       
                            <ListBox.ItemTemplate>
                                <DataTemplate>
-                                   <Button Width="" Height=""
-                                           Command="{Binding   EditMeCommand   }"
-                                           CommandParameter="{Binding}">
+                                   <StackPanel Margin="4" Background="#222" >
+                                       <Label Content="{Binding Name}" FontSize="10"></Label>
+                       
+                                       <!-- <Button Width="" Height="" -->
+                                       <!--         Command="{Binding   EditMeCommand   }" -->
+                                       <!--         CommandParameter="{Binding}"> -->
                                        <Image Source="{Binding ImageSource}"
                                               Stretch="UniformToFill"/>
-                                   </Button>
+                                   <!-- </Button> -->
+                                       <StackPanel Orientation="Horizontal">
+                                           <Button Content="&lt;"></Button>
+                                           <Button Content="&gt;"/>
+                       
+                                       </StackPanel>
+                                   </StackPanel>
                                </DataTemplate>
+                       
+                       
                            </ListBox.ItemTemplate>
+                       
                        </ListBox>
+                       
+                      
+                       
+                       
                    </ScrollViewer>
                    
                    <!-- Card Editor Panel -->

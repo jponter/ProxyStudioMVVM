@@ -15,6 +15,8 @@ public partial class MainViewModel : ViewModelBase
 {
 
     public CardCollection Cards { get; private set; } = new();
+    
+  
   
   [ObservableProperty]
    private Card? selectedCard;
@@ -27,7 +29,26 @@ public partial class MainViewModel : ViewModelBase
 private bool isBusy;
 
 
-
+//design time constructor
+    public MainViewModel()
+    {
+        
+        Cards.AddRange(AddTestCards());
+        
+       
+    }
+    
+    
+    [RelayCommand]
+    private void MoveCardRight(object sender)
+    {
+        // open an add card dialog, navigate, etc.
+        // e.g. DialogService.ShowAddCard();
+        if (sender is Card card)
+        {
+            //Cards.RemoveCard(card);
+        }
+    }
 
 
 [RelayCommand(CanExecute = nameof(CanAddTestCards))]
@@ -110,7 +131,7 @@ private List<Card> AddTestCards()
         byte[]? buffer2 = Helpers.ImageSharpToWPFConverter.ImageToByteArray(image2);
 
         //really stress the program
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 2; i++)
         {
             cards.Add(new Card("Preacher of the Schism", "12345", buffer));
             cards.Add(new Card("Vampire Token", "563726", buffer2));
