@@ -9,22 +9,36 @@ using Avalonia.Styling;
 using System.Reactive.Linq;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ProxyStudio;
 
 public partial class MainView : Window
 {
-    //todo move this to dependancy injection
-    private AppConfig config; // Configuration settings
+    //di configmanager interface
+    private readonly IConfigManager _configManager; // Configuration settings
    
     public MainView()
     {
         InitializeComponent();
-        DataContext = new MainViewModel();
+        //DataContext = new MainViewModel();
         
+        
+        
+        _configManager = App.Services?.GetRequiredService<IConfigManager>() ?? throw new ArgumentNullException(nameof(IConfigManager));
+       //
+       //_configManager.LoadConfigAsync();
+       
+       
+        
+        
+        // Load configuration at startup
+        
+         
+        var config = _configManager.LoadConfig(); //synchronous loading
         
         //load configuration settings
-        config = ConfigManager.LoadConfig(); // Load the configuration settings
+        //config = ConfigManager.LoadConfig(); // Load the configuration settings
         if (config.WindowWidth > 0) Width = config.WindowWidth; // Set the window width from the configuration
         if (config.WindowHeight > 0)this.Height = config.WindowHeight; // Set the window height from the configuration
         // this.Top = config.WindowTop; // Set the window top position from the configuration
@@ -43,6 +57,7 @@ public partial class MainView : Window
     /// <summary>Keep the config object up-to-date while the app is running.</summary>
     private void CacheGeometry(object? s, EventArgs? _)
     {
+        var config = _configManager.Config;
         // Only store real coordinates when we’re not maximised/minimised
         if (WindowState == WindowState.Normal)
         {
@@ -57,10 +72,13 @@ public partial class MainView : Window
     
     protected override void OnClosed(EventArgs e)
     {
+     
         base.OnClosed(e);
         
         DebugHelper.WriteDebug("Saving configuration settings on window close.");
-        ConfigManager.SaveConfig(config); // Save the configuration settings to file
+        
+        //todo fix the config saving
+       _configManager.SaveConfig();
     }
 
     

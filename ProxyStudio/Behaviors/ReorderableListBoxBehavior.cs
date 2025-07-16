@@ -98,8 +98,11 @@ namespace ProxyStudio.Behaviors
 
             if (Math.Abs(diff.X) > 5 || Math.Abs(diff.Y) > 5)
             {
-                // Create drag adorner
-                if (_draggedItemContainer != null && _dragAdorner == null)
+                // Always remove any existing adorner first
+                RemoveDragAdorner();
+                
+                // Create a fresh drag adorner with current element size
+                if (_draggedItemContainer != null)
                 {
                     CreateDragAdorner(listBox, _draggedItemContainer, e);
                 }
@@ -140,11 +143,15 @@ namespace ProxyStudio.Behaviors
         {
             Helpers.DebugHelper.WriteDebug("Drag over.");
 
-            // Update adorner position
+            // Update adorner position using the same coordinate system as creation
             if (_dragAdorner != null && sender is ListBox listBox)
             {
-                var position = e.GetPosition(listBox);
-                _dragAdorner.UpdatePosition(position);
+                var adornerLayer = AdornerLayer.GetAdornerLayer(listBox);
+                if (adornerLayer != null)
+                {
+                    var position = e.GetPosition(adornerLayer);
+                    _dragAdorner.UpdatePosition(position);
+                }
             }
 
             if (e.Data.Contains(CardDataFormat))
@@ -267,6 +274,7 @@ namespace ProxyStudio.Behaviors
                 var adornerLayer = AdornerLayer.GetAdornerLayer(listBox);
                 if (adornerLayer == null) return;
 
+                // Create a fresh adorner with current container size
                 _dragAdorner = new DragAdorner(container, adornerLayer);
                 adornerLayer.Children.Add(_dragAdorner);
 
@@ -302,5 +310,4 @@ namespace ProxyStudio.Behaviors
             return null;
         }
     }
-
 }

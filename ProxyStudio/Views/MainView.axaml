@@ -14,6 +14,11 @@
         xmlns:behaviors="clr-namespace:ProxyStudio.Behaviors"
         x:DataType="vm:MainViewModel"
         Title="ProxyStudio">
+    
+    <!-- Add design-time DataContext -->
+    <Design.DataContext>
+        <vm:DesignTimeMainViewModel />
+    </Design.DataContext>
     <Grid >
        <TabControl>
            <TabItem Header="Cards" >
@@ -116,18 +121,27 @@
                        <!--      </StackPanel> -->
                        <!-- </StackPanel> -->
                        
-                       <ListBox ItemsSource="{Binding Cards}"
-                                SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
-                                >
+                       <!-- <ListBox ItemsSource="{Binding Cards}" -->
+                       <!--          SelectedItem="{Binding SelectedCard, Mode=TwoWay}" -->
+                       <!--          > -->
+                       <!--      -->
+                       <!-- Remove the ListBox wrapper and put controls directly -->
+                       <Image Source="{Binding SelectedCard.ImageSource}" 
+                              Width="200" Height="280" 
+                              Stretch="UniformToFill"/>
+    
+                       <CheckBox Content="Enable Bleed"
+                                 IsChecked="{Binding SelectedCard.EnableBleed}"
+                                 Margin="15"/>
+    
+                       <!-- Add other card editing controls here -->
+                       <TextBox Text="{Binding SelectedCard.Name}" 
+                                Watermark="Card Name"
+                                Margin="15"/>
+
                            
-                           <Image Source="{Binding SelectedCard.ImageSource}" ></Image>
-                           <CheckBox Content="Enable Bleed"
-                                     IsChecked="{Binding SelectedCard.EnableBleed}"
-                                     Margin="15"
-                                     />
                            
-                           
-                       </ListBox>
+                       <!-- </ListBox> -->
                        
                        
                    </StackPanel>

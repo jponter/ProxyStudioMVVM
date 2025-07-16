@@ -21,6 +21,7 @@
         </PackageReference>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
         <PackageReference Include="LoadingIndicators.Avalonia" Version="11.0.11.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
         <PackageReference Include="System.Reactive.Linq" Version="6.0.1" />
     </ItemGroup>
@@ -45,5 +46,10 @@
       <AvaloniaResource Include="Resources\vampire.jpg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </AvaloniaResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Data\" />
+      <Folder Include="Services\" />
     </ItemGroup>
 </Project>

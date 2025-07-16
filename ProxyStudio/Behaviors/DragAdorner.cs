@@ -10,7 +10,7 @@ namespace ProxyStudio.Behaviors
     /// <summary>
     /// Custom drag adorner that displays a scaled-down visual representation of the dragged item
     /// </summary>
-    public partial class DragAdorner : ContentControl
+    public class DragAdorner : ContentControl
     {
         private readonly Visual _originalElement;
         private Point _offset;
@@ -68,10 +68,13 @@ namespace ProxyStudio.Behaviors
         /// <param name="position">The current mouse position</param>
         public void UpdatePosition(Point position)
         {
-            // Position the adorner closer to the mouse pointer
-            // Offset it slightly down and to the right so it doesn't obscure the cursor
-            Canvas.SetLeft(this, position.X + 10);
-            Canvas.SetTop(this, position.Y + 10);
+            // Don't update the adorner size during drag - keep the size that was set at creation
+            // Use fixed pixel offset for consistent visual positioning
+            const double fixedOffsetX = 15;
+            const double fixedOffsetY = 15;
+            
+            Canvas.SetLeft(this, position.X + fixedOffsetX);
+            Canvas.SetTop(this, position.Y + fixedOffsetY);
         }
 
         /// <summary>

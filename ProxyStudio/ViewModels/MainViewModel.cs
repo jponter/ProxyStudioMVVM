@@ -5,6 +5,7 @@ using Avalonia.Dialogs;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -13,6 +14,7 @@ namespace ProxyStudio.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
+    private readonly IConfigManager _configManager;
 
     public CardCollection Cards { get; private set; } = new();
     
@@ -30,8 +32,9 @@ private bool isBusy;
 
 
 //design time constructor
-    public MainViewModel()
+    public MainViewModel(IConfigManager configManager)
     {
+        _configManager = configManager;
         
         Cards.AddRange(AddTestCards());
         
