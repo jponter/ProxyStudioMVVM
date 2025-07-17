@@ -31,12 +31,15 @@ public partial class App : Application
         
         Services = services.BuildServiceProvider();
         
+        var configManager = Services.GetRequiredService<IConfigManager>();
         
-        
+        configManager.LoadConfig();
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var mainWindow = new MainView();
+            
+            
+            var mainWindow = new MainView(configManager);
             
             // Set the DataContext AFTER the window is created
             mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();

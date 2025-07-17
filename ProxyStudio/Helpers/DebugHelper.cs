@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace ProxyStudio.Helpers;
 
@@ -8,6 +9,6 @@ public class DebugHelper
     {
         // This method is a placeholder for debugging purposes.
         // You can implement logging or debugging logic here.
-        Debug.WriteLine(message);
+        Console.WriteLine(message);
     }
 }

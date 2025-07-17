@@ -25,18 +25,33 @@ namespace ProxyStudio.Helpers
         private static readonly string appName = "ProxyStudio"; // Replace with your actual application name
         private static readonly string ConfigFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName, ConfigFileName);
 
-        
-        private AppConfig _config;
 
-        public AppConfig Config => _config;
 
+
+        private AppConfig? _config;
+        public AppConfig Config 
+        { 
+            get 
+            {
+                DebugHelper.WriteDebug($"Config getter called. _config is null: {_config == null}");
+                if (_config == null)
+                {
+                    DebugHelper.WriteDebug("Loading config because _config is null");
+                    _config = LoadConfig() ?? new AppConfig();
+                }
+                return _config;
+            }
+        }
         public ConfigManager()
         {
-            _config = new AppConfig();
+            DebugHelper.WriteDebug("Creating new config manager.");
+            DebugHelper.WriteDebug("Creating new config manager.");
+            DebugHelper.WriteDebug($"_config is null: {_config == null}");
         }
 
         public async Task SaveConfigAsync()
         {
+            DebugHelper.WriteDebug("Saving config to file.");
             await Task.Run(() =>
             {
                 var directoryPath = Path.GetDirectoryName(ConfigFilePath);
@@ -112,6 +127,7 @@ namespace ProxyStudio.Helpers
         // Synchronous methods
         public void SaveConfig()
         {
+            DebugHelper.WriteDebug("Saving config to file Sync.");
             var directoryPath = Path.GetDirectoryName(ConfigFilePath);
             if (directoryPath != null)
             {
@@ -128,26 +144,36 @@ namespace ProxyStudio.Helpers
             }
         }
 
-        public  AppConfig LoadConfig()
+        public AppConfig LoadConfig()
         {
+            DebugHelper.WriteDebug("Loading config from file.");
+    
+            if (_config != null)
+            {
+                DebugHelper.WriteDebug("Config already loaded, returning cached instance.");
+                return _config;
+            }
+    
             if (File.Exists(ConfigFilePath))
             {
                 using (var reader = new StreamReader(ConfigFilePath))
                 {
                     var serializer = new System.Xml.Serialization.XmlSerializer(typeof(AppConfig));
-                    var deserializedConfig = serializer.Deserialize(reader) as AppConfig;
+                    _config = serializer.Deserialize(reader) as AppConfig;
 
-                    if (deserializedConfig == null)
+                    if (_config == null)
                     {
                         throw new InvalidOperationException("Failed to deserialize the configuration file.");
                     }
 
-                    return deserializedConfig;
+                    return _config;
                 }
             }
             else
             {
-                return new AppConfig();
+                DebugHelper.WriteDebug("Config file not found. Returning default config.");
+                _config = new AppConfig();
+                return _config;
             }
         }
         

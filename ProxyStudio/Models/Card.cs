@@ -4,11 +4,15 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
+using ProxyStudio.Helpers;
 
 namespace ProxyStudio.Models;
 
 public partial class Card : ObservableObject
 {
+    
+    private readonly IConfigManager _configManager;
+    
     // ── Plain auto-properties ───────────────────────────────────────────────────
     public string Name        { get; set; } = "Default Name";
     public string Id          { get; set; } = "Default ID";
@@ -19,6 +23,7 @@ public partial class Card : ObservableObject
     public int Height { get; set; } = 118;
 
     public bool ImageDownloaded { get; set; } = true;
+    
 
     public IRelayCommand? EditMeCommand { get; set; }
 
@@ -53,11 +58,13 @@ public partial class Card : ObservableObject
     }
 
     // ── Constructors ───────────────────────────────────────────────────────────
-    public Card(string name, string id, byte[] image)
+    public Card(string name, string id, byte[] image, IConfigManager configManager)
     {
+        var config = configManager.Config;
         Name      = name;
         Id        = id;
         ImageData = image; // fires OnImageDataChanged
+        enableBleed = config.GlobalBleedEnabled;
     }
 
     public Card(string name, string id, string query)

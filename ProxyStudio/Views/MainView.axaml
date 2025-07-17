@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
         Width="1400"
         Height="900"
-        Background="DarkBlue"
+        Background="#303030"
         Foreground="Yellow"
    
         x:Class="ProxyStudio.MainView"
@@ -63,7 +63,7 @@
                                 behaviors:ReorderableListBoxBehavior.IsReorderEnabled="True"
                                 DragDrop.AllowDrop="True"
                                 BorderBrush="Gray" BorderThickness="1"
-                                Background="red"
+                                Background="Transparent"
                        
                                 >
                        
@@ -77,7 +77,7 @@
                        
                            <ListBox.ItemTemplate>
                                <DataTemplate>
-                                   <StackPanel Margin="4" Background="#222" >
+                                   <StackPanel Margin="4" Background="Transparent" >
                                        <Label Content="{Binding Name}" FontSize="10"></Label>
                        
                                        <!-- <Button Width="" Height="" -->
@@ -127,15 +127,16 @@
                        <!--      -->
                        <!-- Remove the ListBox wrapper and put controls directly -->
                        <Image Source="{Binding SelectedCard.ImageSource}" 
-                              Width="200" Height="280" 
-                              Stretch="UniformToFill"/>
+                               Height="480" 
+                              Stretch="Uniform"/>
     
                        <CheckBox Content="Enable Bleed"
                                  IsChecked="{Binding SelectedCard.EnableBleed}"
                                  Margin="15"/>
     
                        <!-- Add other card editing controls here -->
-                       <TextBox Text="{Binding SelectedCard.Name}" 
+                       <TextBox Text="{Binding SelectedCard.Name}"
+                                IsEnabled="False"
                                 Watermark="Card Name"
                                 Margin="15"/>
 
@@ -168,6 +169,12 @@
            
            <!-- Settings Tab -->
            <TabItem Header="Settings">
+               <StackPanel>
+                   <StackPanel Orientation="Horizontal">
+                       <Label Content="Global Bleed Enable"></Label>
+                       <CheckBox IsChecked="{Binding GlobalBleedEnabled}"></CheckBox>
+                   </StackPanel>
+               </StackPanel>
                
            </TabItem>
        </TabControl>

@@ -17,28 +17,29 @@ public partial class MainView : Window
 {
     //di configmanager interface
     private readonly IConfigManager _configManager; // Configuration settings
+    public bool GlobalBleedEnabled { get; set; }
    
-    public MainView()
+    public MainView(IConfigManager configManager)
     {
         InitializeComponent();
         //DataContext = new MainViewModel();
         
+        _configManager = configManager;
         
-        
-        _configManager = App.Services?.GetRequiredService<IConfigManager>() ?? throw new ArgumentNullException(nameof(IConfigManager));
+        //_configManager = App.Services?.GetRequiredService<IConfigManager>() ?? throw new ArgumentNullException(nameof(IConfigManager));
        //
        //_configManager.LoadConfigAsync();
        
-       
-        
+       //var config = ConfigManager.LoadConfig()
+        var config = _configManager.Config;
         
         // Load configuration at startup
         
-         
-        var config = _configManager.LoadConfig(); //synchronous loading
+        
+        DebugHelper.WriteDebug($"MainView() GlobalBleedEnabled = {config.GlobalBleedEnabled}");
         
         //load configuration settings
-        //config = ConfigManager.LoadConfig(); // Load the configuration settings
+        //; // Load the configuration settings
         if (config.WindowWidth > 0) Width = config.WindowWidth; // Set the window width from the configuration
         if (config.WindowHeight > 0)this.Height = config.WindowHeight; // Set the window height from the configuration
         // this.Top = config.WindowTop; // Set the window top position from the configuration
@@ -46,6 +47,7 @@ public partial class MainView : Window
         
         //need to use mainwindow.poisition for Avalonia
         this.Position = new PixelPoint(config.WindowLeft, config.WindowTop);
+       
 
         PositionChanged += CacheGeometry;
         this.GetObservable<Rect>(BoundsProperty)

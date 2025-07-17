@@ -23,13 +23,29 @@ namespace ProxyStudio.Helpers;
         public int WindowHeight { get; set; } = 600;
         public int WindowLeft { get; set; } = 100;
         public int WindowTop { get; set; } = 100;
-
-
+        
+        
+        private bool _globalBleedEnabled;
+        public bool GlobalBleedEnabled 
+        { 
+            get => _globalBleedEnabled;
+            set 
+            {
+                DebugHelper.WriteDebug($"GlobalBleedEnabled being set to: {value}");
+                DebugHelper.WriteDebug($"Stack trace: {Environment.StackTrace}");
+                _globalBleedEnabled = value;
+            }
+        }
+        
+        
         public AppConfig()
         {
             // Default constructor
+            
+            DebugHelper.WriteDebug("Creating new config. AppConfigConstructor");
+            DebugHelper.WriteDebug($"Stack trace: {Environment.StackTrace}");
 
-         
+
         }
 
 }
