@@ -33,7 +33,7 @@ namespace ProxyStudio.Helpers
         { 
             get 
             {
-                DebugHelper.WriteDebug($"Config getter called. _config is null: {_config == null}");
+                //DebugHelper.WriteDebug($"Config getter called. _config is null: {_config == null}");
                 if (_config == null)
                 {
                     DebugHelper.WriteDebug("Loading config because _config is null");

@@ -5,7 +5,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using ProxyStudio.Helpers;
 using ProxyStudio.ViewModels;
-
+using ProxyStudio.Services;
+using QuestPDF.Infrastructure;
 
 namespace ProxyStudio;
 
@@ -15,16 +16,21 @@ public partial class App : Application
     
     public override void Initialize()
     {
+        // Set QuestPDF license FIRST
+        QuestPDF.Settings.License = LicenseType.Community;
+        
         AvaloniaXamlLoader.Load(this);
     }
 
     public override async void OnFrameworkInitializationCompleted()
     {
-        
         var services = new ServiceCollection();
 
         // Register your configuration manager as singleton
         services.AddSingleton<IConfigManager, ConfigManager>();
+
+        // Register PDF generation service
+        services.AddSingleton<IPdfGenerationService, PdfGenerationService>();
 
         // Register your ViewModels
         services.AddTransient<MainViewModel>();
@@ -32,17 +38,16 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
         
         var configManager = Services.GetRequiredService<IConfigManager>();
+        var pdfService = Services.GetRequiredService<IPdfGenerationService>();
         
         configManager.LoadConfig();
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            
-            
             var mainWindow = new MainView(configManager);
             
             // Set the DataContext AFTER the window is created
-            mainWindow.DataContext = Services.GetRequiredService<MainViewModel>();
+            mainWindow.DataContext = new MainViewModel(configManager, pdfService);
             
             desktop.MainWindow = mainWindow;
         }
