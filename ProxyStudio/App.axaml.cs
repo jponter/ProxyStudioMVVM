@@ -16,7 +16,7 @@ public partial class App : Application
     
     public override void Initialize()
     {
-        
+        //edit for sync
         
         AvaloniaXamlLoader.Load(this);
     }
