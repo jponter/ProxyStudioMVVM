@@ -1,4 +1,4 @@
-# ProxyStudio
+# ProxyStudio Alpha
 
 A powerful desktop application for creating and managing proxy cards for tabletop games, built with Avalonia UI and C#.
 
@@ -109,7 +109,7 @@ This project uses modern C# development practices:
 
 ## 📄 License
 
-[Add your license here]
+not decided yet
 
 ## 🔮 Future Features
 
