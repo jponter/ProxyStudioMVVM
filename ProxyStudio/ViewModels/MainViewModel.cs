@@ -83,6 +83,8 @@ public partial class MainViewModel : ViewModelBase
         PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards);
         
         DebugHelper.WriteDebug($"PrintViewModel initialized with {Cards.Count} cards");
+        DebugHelper.WriteDebug($"PrintViewModel.CardsPerRow = {PrintViewModel.CardsPerRow}");
+        DebugHelper.WriteDebug($"PrintViewModel.ShowCuttingLines = {PrintViewModel.ShowCuttingLines}");
     }
 
     // Constructor for design-time support

@@ -1,0 +1,307 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:li="using:LoadingIndicators.Avalonia"
+             xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ProxyStudio.Views.PrintingView"
+             x:DataType="vm:PrintViewModel">
+    
+    <Grid ShowGridLines="False">
+        <Grid.ColumnDefinitions>350,*</Grid.ColumnDefinitions>
+        
+        <!-- PDF Generation Settings -->
+        <ScrollViewer Grid.Column="0">
+            <StackPanel Spacing="10" Margin="10">
+                <TextBlock Text="PDF Generation Settings" FontSize="16" FontWeight="Bold" />
+                
+                <!-- Page Settings -->
+                <Expander Header="Page Settings" IsExpanded="True">
+                    <StackPanel Spacing="8" Margin="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Page Size:" Width="80"/>
+                            <ComboBox ItemsSource="{Binding PageSizes}" 
+                                      SelectedItem="{Binding SelectedPageSize}" 
+                                      Width="120"/>
+                        </StackPanel>
+                        
+                        <CheckBox Content="Portrait Orientation" 
+                                  IsChecked="{Binding IsPortrait}"/>
+                    </StackPanel>
+                </Expander>
+                
+                <!-- Layout Settings -->
+                <Expander Header="Layout Settings" IsExpanded="True">
+                    <StackPanel Spacing="8" Margin="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Cards per Row:" Width="100"/>
+                            <TextBox Text="{Binding CardsPerRow, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="1-10"/>
+                            <TextBlock Text="{Binding CardsPerRow}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Cards per Column:" Width="100"/>
+                            <TextBox Text="{Binding CardsPerColumn, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="1-10"/>
+                            <TextBlock Text="{Binding CardsPerColumn}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Card Spacing:" Width="100"/>
+                            <TextBox Text="{Binding CardSpacing, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="0-50"/>
+                            <TextBlock Text="{Binding CardSpacing}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+                
+                <!-- Cutting Lines Settings -->
+                <Expander Header="Cutting Lines" IsExpanded="True">
+                    <StackPanel Spacing="8" Margin="10">
+                        <CheckBox Content="Show Cutting Lines" 
+                                  IsChecked="{Binding ShowCuttingLines}"/>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Color:" Width="60"/>
+                            <ComboBox ItemsSource="{Binding PredefinedColors}" 
+                                      SelectedItem="{Binding CuttingLineColor}" 
+                                      Width="100"/>
+                            <TextBox Text="{Binding CuttingLineColor}" 
+                                     Width="80" Watermark="#000000"/>
+                        </StackPanel>
+                        
+                        <CheckBox Content="Dashed Lines" 
+                                  IsChecked="{Binding IsCuttingLineDashed}"/>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Extension:" Width="80"/>
+                            <TextBox Text="{Binding CuttingLineExtension, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="0-50"/>
+                            <TextBlock Text="{Binding CuttingLineExtension}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Thickness:" Width="80"/>
+                            <TextBox Text="{Binding CuttingLineThickness, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="0.1-5"/>
+                            <TextBlock Text="{Binding CuttingLineThickness}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+                
+                <!-- Preview Settings -->
+                <Expander Header="Preview Settings" IsExpanded="True">
+                    <StackPanel Spacing="8" Margin="10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Preview DPI:" Width="80"/>
+                            <TextBox Text="{Binding PreviewDpi, Mode=TwoWay}" 
+                                     Width="80" 
+                                     Watermark="72-300"/>
+                            <TextBlock Text="{Binding PreviewDpi}" Foreground="Yellow" Width="30"/>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Quality:" Width="80"/>
+                            <Slider Value="{Binding PreviewQuality, Mode=TwoWay}" 
+                                    Minimum="1" Maximum="100" Width="120"/>
+                            <TextBlock Text="{Binding PreviewQuality}" Width="30"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+                
+                <!-- Action Buttons -->
+                <StackPanel Spacing="10" Margin="0,20,0,0">
+                    <Button Content="Generate Preview" 
+                            Command="{Binding GeneratePreviewCommand}"
+                            IsEnabled="{Binding !IsGeneratingPreview}"
+                            HorizontalAlignment="Stretch"/>
+                    
+                    <Button Content="Generate PDF" 
+                            Command="{Binding GeneratePdfCommand}"
+                            IsEnabled="{Binding !IsGeneratingPdf}"
+                            HorizontalAlignment="Stretch"/>
+                    
+                    <Button Content="Save PDF As..." 
+                            Command="{Binding SavePdfAsCommand}"
+                            IsEnabled="{Binding !IsGeneratingPdf}"
+                            HorizontalAlignment="Stretch"/>
+                    
+                    <li:LoadingIndicator Foreground="AliceBlue" 
+                                        IsActive="{Binding IsGeneratingPreview}" 
+                                        Mode="ThreeDots" SpeedRatio="1.2" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- PDF Preview -->
+        <DockPanel Grid.Column="1" Background="LightGray">
+            <!-- Preview Controls at Top -->
+            <Border DockPanel.Dock="Top" Background="White" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>Auto,*,Auto</Grid.ColumnDefinitions>
+                    
+                    <!-- Page Navigation (Left) -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Button Command="{Binding PreviousPageCommand}" 
+                                Width="70" Height="30" Margin="0,0,10,0">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="LightBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="SkyBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="DeepSkyBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                            </Button.Styles>
+                            <TextBlock Text="◀ Prev" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="Black" FontWeight="SemiBold">
+                            <Run Text="Page "/>
+                            <Run Text="{Binding CurrentPreviewPage}"/>
+                            <Run Text=" of "/>
+                            <Run Text="{Binding TotalPreviewPages}"/>
+                        </TextBlock>
+                        
+                        <Button Command="{Binding NextPageCommand}"
+                                Width="70" Height="30" Margin="10,0,0,0">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="LightBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="SkyBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="DeepSkyBlue"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                            </Button.Styles>
+                            <TextBlock Text="Next ▶" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
+                    
+                    <!-- Title (Center) -->
+                    <TextBlock Grid.Column="1" Text="PDF Preview" 
+                              FontSize="16" FontWeight="Bold" Foreground="Black"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    
+                    <!-- Zoom Controls (Right) -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Command="{Binding ZoomOutCommand}" 
+                                Width="35" Height="30" Margin="0,0,5,0">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="LightGreen"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="LimeGreen"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="Green"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Style>
+                            </Button.Styles>
+                            <TextBlock Text="−" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" FontWeight="Bold"/>
+                        </Button>
+                        
+                        <TextBlock VerticalAlignment="Center" MinWidth="50" TextAlignment="Center" 
+                                   Foreground="Black" FontWeight="SemiBold">
+                            <Run Text="{Binding PreviewZoom}"/>
+                            <Run Text="%"/>
+                        </TextBlock>
+                        
+                        <Button Command="{Binding ZoomInCommand}" 
+                                Width="35" Height="30" Margin="5,0,5,0">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="LightGreen"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="LimeGreen"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="Green"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Style>
+                            </Button.Styles>
+                            <TextBlock Text="+" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" FontWeight="Bold"/>
+                        </Button>
+                        
+                        <Button Command="{Binding ResetZoomCommand}" 
+                                Width="50" Height="30" Margin="5,0,0,0">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="Orange"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="BorderBrush" Value="DarkOrange"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="Gold"/>
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="DarkOrange"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Style>
+                            </Button.Styles>
+                            <TextBlock Text="100%" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" FontWeight="Bold"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Preview Area -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          Background="LightGray" Padding="20">
+                <Border Background="White" 
+                        BorderBrush="Gray" BorderThickness="1"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid>
+                        <!-- Preview Image -->
+                        <Image Source="{Binding PreviewImage}" 
+                               Stretch="Uniform"
+                               Margin="10">
+                            <Image.RenderTransform>
+                                <ScaleTransform ScaleX="{Binding PreviewScale}" ScaleY="{Binding PreviewScale}"/>
+                            </Image.RenderTransform>
+                        </Image>
+                        
+                        <!-- No Preview Message -->
+                        <TextBlock Text="No preview available. Click 'Generate Preview' to create one." 
+                                  IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Margin="20" FontSize="14" Foreground="Gray"/>
+                    </Grid>
+                </Border>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</UserControl>

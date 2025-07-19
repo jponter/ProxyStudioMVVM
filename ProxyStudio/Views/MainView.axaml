@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:li="using:LoadingIndicators.Avalonia"
+        xmlns:views="clr-namespace:ProxyStudio.Views"
         mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
         Width="1400"
         Height="900"
@@ -15,10 +16,11 @@
         x:DataType="vm:MainViewModel"
         Title="ProxyStudio">
     
-    <!-- Add design-time DataContext -->
+    <!-- Revert to original design-time DataContext -->
     <Design.DataContext>
         <vm:DesignTimeMainViewModel />
     </Design.DataContext>
+    
     <Grid >
        <TabControl>
            <TabItem Header="Cards" >
@@ -31,9 +33,6 @@
                        <Button Content="Add Cards from MPC XML" HorizontalAlignment="Stretch" />
                        <Button Content="Load Test Cards" HorizontalAlignment="Stretch" Command="{Binding AddTestCardsRelayCommand}"/>
                        <li:LoadingIndicator Foreground="AliceBlue" IsActive="{Binding IsBusy}" Mode="ThreeDots" SpeedRatio="1.2" ></li:LoadingIndicator>
-                       <!-- <TextBlock Foreground="AliceBlue" Text="{Binding IsBusy}"></TextBlock> -->
-                                              
-                       
                    </StackPanel>
 
                    <!-- Main Card Grid View -->
@@ -43,7 +42,6 @@
                        
                                 ItemsSource="{Binding Cards}"
                                 SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
-                                behaviors:ReorderableListBoxBehavior.IsReorderEnabled="True"
                                 DragDrop.AllowDrop="True"
                                 BorderBrush="Gray" BorderThickness="1"
                                 Background="Transparent"
@@ -94,148 +92,7 @@
            
            <!-- Printing Tab -->
            <TabItem Header="Printing">
-               <Grid ShowGridLines="False">
-                   <Grid.ColumnDefinitions>350,*</Grid.ColumnDefinitions>
-                   
-                   <!-- PDF Generation Settings -->
-                   <ScrollViewer Grid.Column="0">
-                       <StackPanel Spacing="10" Margin="10">
-                           <TextBlock Text="PDF Generation Settings" FontSize="16" FontWeight="Bold" />
-                           
-                           <!-- Page Settings -->
-                           <Expander Header="Page Settings" IsExpanded="True">
-                               <StackPanel Spacing="8" Margin="10">
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Page Size:" Width="80"/>
-                                       <ComboBox ItemsSource="{Binding PrintViewModel.PageSizes}" 
-                                                 SelectedItem="{Binding PrintViewModel.SelectedPageSize}" 
-                                                 Width="120"/>
-                                   </StackPanel>
-                                   
-                                   <CheckBox Content="Portrait Orientation" 
-                                             IsChecked="{Binding PrintViewModel.IsPortrait}"/>
-                               </StackPanel>
-                           </Expander>
-                           
-                           <!-- Layout Settings -->
-                           <Expander Header="Layout Settings" IsExpanded="True">
-                               <StackPanel Spacing="8" Margin="10">
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Cards per Row:" Width="100"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.CardsPerRow}" 
-                                                     Minimum="1" Maximum="10" Width="80"/>
-                                   </StackPanel>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Cards per Column:" Width="100"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.CardsPerColumn}" 
-                                                     Minimum="1" Maximum="10" Width="80"/>
-                                   </StackPanel>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Card Spacing:" Width="100"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.CardSpacing}" 
-                                                     Minimum="0" Maximum="50" Width="80"/>
-                                   </StackPanel>
-                               </StackPanel>
-                           </Expander>
-                           
-                           <!-- Cutting Lines Settings -->
-                           <Expander Header="Cutting Lines" IsExpanded="True">
-                               <StackPanel Spacing="8" Margin="10">
-                                   <CheckBox Content="Show Cutting Lines" 
-                                             IsChecked="{Binding PrintViewModel.ShowCuttingLines}"/>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Color:" Width="60"/>
-                                       <ComboBox ItemsSource="{Binding PrintViewModel.PredefinedColors}" 
-                                                 SelectedItem="{Binding PrintViewModel.CuttingLineColor}" 
-                                                 Width="100"/>
-                                       <TextBox Text="{Binding PrintViewModel.CuttingLineColor}" 
-                                                Width="80" Watermark="#000000"/>
-                                   </StackPanel>
-                                   
-                                   <CheckBox Content="Dashed Lines" 
-                                             IsChecked="{Binding PrintViewModel.IsCuttingLineDashed}"/>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Extension:" Width="80"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.CuttingLineExtension}" 
-                                                     Minimum="0" Maximum="50" Width="80"/>
-                                   </StackPanel>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Thickness:" Width="80"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.CuttingLineThickness}" 
-                                                     Minimum="0.1" Maximum="5" Increment="0.1" Width="80"/>
-                                   </StackPanel>
-                               </StackPanel>
-                           </Expander>
-                           
-                           <!-- Preview Settings -->
-                           <Expander Header="Preview Settings" IsExpanded="True">
-                               <StackPanel Spacing="8" Margin="10">
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Preview DPI:" Width="80"/>
-                                       <NumericUpDown Value="{Binding PrintViewModel.PreviewDpi}" 
-                                                     Minimum="72" Maximum="300" Width="80"/>
-                                   </StackPanel>
-                                   
-                                   <StackPanel Orientation="Horizontal" Spacing="10">
-                                       <Label Content="Quality:" Width="80"/>
-                                       <Slider Value="{Binding PrintViewModel.PreviewQuality}" 
-                                               Minimum="1" Maximum="100" Width="120"/>
-                                       <TextBlock Text="{Binding PrintViewModel.PreviewQuality}" Width="30"/>
-                                   </StackPanel>
-                               </StackPanel>
-                           </Expander>
-                           
-                           <!-- Action Buttons -->
-                           <StackPanel Spacing="10" Margin="0,20,0,0">
-                               <Button Content="Generate Preview" 
-                                       Command="{Binding PrintViewModel.GeneratePreviewCommand}"
-                                       IsEnabled="{Binding !PrintViewModel.IsGeneratingPreview}"
-                                       HorizontalAlignment="Stretch"/>
-                               
-                               <Button Content="Generate PDF" 
-                                       Command="{Binding PrintViewModel.GeneratePdfCommand}"
-                                       IsEnabled="{Binding !PrintViewModel.IsGeneratingPdf}"
-                                       HorizontalAlignment="Stretch"/>
-                               
-                               <Button Content="Save PDF As..." 
-                                       Command="{Binding PrintViewModel.SavePdfAsCommand}"
-                                       IsEnabled="{Binding !PrintViewModel.IsGeneratingPdf}"
-                                       HorizontalAlignment="Stretch"/>
-                               
-                               <li:LoadingIndicator Foreground="AliceBlue" 
-                                                   IsActive="{Binding PrintViewModel.IsGeneratingPreview}" 
-                                                   Mode="ThreeDots" SpeedRatio="1.2" />
-                           </StackPanel>
-                       </StackPanel>
-                   </ScrollViewer>
-                   
-                   <!-- PDF Preview -->
-                   <ScrollViewer Grid.Column="1" Background="LightGray">
-                       <Border Background="White" Margin="20" 
-                               BorderBrush="Gray" BorderThickness="1"
-                               HorizontalAlignment="Center" VerticalAlignment="Top">
-                           <StackPanel>
-                               <TextBlock Text="PDF Preview" 
-                                         FontSize="14" FontWeight="Bold" 
-                                         Margin="10" HorizontalAlignment="Center"/>
-                               
-                               <Image Source="{Binding PrintViewModel.PreviewImage}" 
-                                      MaxWidth="600" MaxHeight="800"
-                                      Stretch="Uniform"
-                                      Margin="10"/>
-                               
-                               <TextBlock Text="No preview available. Click 'Generate Preview' to create one." 
-                                         IsVisible="{Binding PrintViewModel.PreviewImage, Converter={x:Static ObjectConverters.IsNull}}"
-                                         Margin="20" HorizontalAlignment="Center"/>
-                           </StackPanel>
-                       </Border>
-                   </ScrollViewer>
-               </Grid>
+               <views:PrintingView DataContext="{Binding PrintViewModel}"/>
            </TabItem>
            
            <!-- Settings Tab -->

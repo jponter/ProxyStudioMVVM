@@ -11,7 +11,6 @@ using CommunityToolkit.Mvvm.Input;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
-using QuestPDF.Infrastructure;
 
 namespace ProxyStudio.ViewModels
 {
@@ -25,18 +24,23 @@ namespace ProxyStudio.ViewModels
         [ObservableProperty] private Bitmap? _previewImage;
         [ObservableProperty] private bool _isGeneratingPreview;
         [ObservableProperty] private bool _isGeneratingPdf;
+        [ObservableProperty] private decimal _previewZoom = 100m; // New zoom property
+        
+        // Multi-page preview support
+        [ObservableProperty] private int _currentPreviewPage = 1;
+        [ObservableProperty] private int _totalPreviewPages = 1;
 
-        // PDF Settings - bound to UI
-        [ObservableProperty] private int _cardsPerRow;
-        [ObservableProperty] private int _cardsPerColumn;
-        [ObservableProperty] private float _cardSpacing;
+        // PDF Settings - bound to UI (using decimal for NumericUpDown compatibility)
+        [ObservableProperty] private decimal _cardsPerRow;
+        [ObservableProperty] private decimal _cardsPerColumn;
+        [ObservableProperty] private decimal _cardSpacing;
         [ObservableProperty] private bool _showCuttingLines;
         [ObservableProperty] private string _cuttingLineColor;
         [ObservableProperty] private bool _isCuttingLineDashed;
-        [ObservableProperty] private float _cuttingLineExtension;
-        [ObservableProperty] private float _cuttingLineThickness;
-        [ObservableProperty] private int _previewDpi;
-        [ObservableProperty] private int _previewQuality;
+        [ObservableProperty] private decimal _cuttingLineExtension;
+        [ObservableProperty] private decimal _cuttingLineThickness;
+        [ObservableProperty] private decimal _previewDpi;
+        [ObservableProperty] private decimal _previewQuality;
         [ObservableProperty] private string _selectedPageSize;
         [ObservableProperty] private bool _isPortrait;
 
@@ -60,12 +64,12 @@ namespace ProxyStudio.ViewModels
             // Set default values first
             CardsPerRow = 3;
             CardsPerColumn = 3;
-            CardSpacing = 10f;
+            CardSpacing = 10m;
             ShowCuttingLines = true;
             CuttingLineColor = "#000000";
             IsCuttingLineDashed = false;
-            CuttingLineExtension = 10f;
-            CuttingLineThickness = 0.5f;
+            CuttingLineExtension = 10m;
+            CuttingLineThickness = 0.5m;
             PreviewDpi = 150;
             PreviewQuality = 85;
             SelectedPageSize = "A4";
@@ -78,21 +82,24 @@ namespace ProxyStudio.ViewModels
         {
             var settings = _configManager.Config.PdfSettings;
             
-            // Load settings but ensure reasonable defaults
+            DebugHelper.WriteDebug($"Loading settings - Raw values: CardsPerRow={settings.CardsPerRow}, CardsPerColumn={settings.CardsPerColumn}");
+            
+            // Load settings but ensure reasonable defaults (convert to decimal)
             CardsPerRow = Math.Max(1, Math.Min(settings.CardsPerRow, 5)); // Clamp between 1-5
             CardsPerColumn = Math.Max(1, Math.Min(settings.CardsPerColumn, 5)); // Clamp between 1-5
-            CardSpacing = Math.Max(0, settings.CardSpacing);
+            CardSpacing = Math.Max(0, (decimal)settings.CardSpacing);
             ShowCuttingLines = settings.ShowCuttingLines;
             CuttingLineColor = string.IsNullOrEmpty(settings.CuttingLineColor) ? "#FF0000" : settings.CuttingLineColor;
             IsCuttingLineDashed = settings.IsCuttingLineDashed;
-            CuttingLineExtension = Math.Max(0, settings.CuttingLineExtension);
-            CuttingLineThickness = Math.Max(0.1f, settings.CuttingLineThickness);
+            CuttingLineExtension = Math.Max(0, (decimal)settings.CuttingLineExtension);
+            CuttingLineThickness = Math.Max(0.1m, (decimal)settings.CuttingLineThickness);
             PreviewDpi = Math.Max(72, Math.Min(settings.PreviewDpi, 300));
             PreviewQuality = Math.Max(1, Math.Min(settings.PreviewQuality, 100));
             SelectedPageSize = string.IsNullOrEmpty(settings.PageSize) ? "A4" : settings.PageSize;
             IsPortrait = settings.IsPortrait;
             
             DebugHelper.WriteDebug($"Loaded settings: CardsPerRow={CardsPerRow}, CardsPerColumn={CardsPerColumn}, ShowCuttingLines={ShowCuttingLines}");
+            DebugHelper.WriteDebug($"CardSpacing={CardSpacing}, CuttingLineExtension={CuttingLineExtension}, CuttingLineThickness={CuttingLineThickness}");
             
             // Auto-generate preview on startup
             _ = GeneratePreviewAsync();
@@ -102,16 +109,17 @@ namespace ProxyStudio.ViewModels
         {
             var settings = _configManager.Config.PdfSettings;
             
-            settings.CardsPerRow = CardsPerRow;
-            settings.CardsPerColumn = CardsPerColumn;
-            settings.CardSpacing = CardSpacing;
+            // Convert decimal back to the original types
+            settings.CardsPerRow = (int)CardsPerRow;
+            settings.CardsPerColumn = (int)CardsPerColumn;
+            settings.CardSpacing = (float)CardSpacing;
             settings.ShowCuttingLines = ShowCuttingLines;
             settings.CuttingLineColor = CuttingLineColor;
             settings.IsCuttingLineDashed = IsCuttingLineDashed;
-            settings.CuttingLineExtension = CuttingLineExtension;
-            settings.CuttingLineThickness = CuttingLineThickness;
-            settings.PreviewDpi = PreviewDpi;
-            settings.PreviewQuality = PreviewQuality;
+            settings.CuttingLineExtension = (float)CuttingLineExtension;
+            settings.CuttingLineThickness = (float)CuttingLineThickness;
+            settings.PreviewDpi = (int)PreviewDpi;
+            settings.PreviewQuality = (int)PreviewQuality;
             settings.PageSize = SelectedPageSize;
             settings.IsPortrait = IsPortrait;
             
@@ -122,34 +130,21 @@ namespace ProxyStudio.ViewModels
         {
             return new PdfGenerationOptions
             {
-                PageSize = GetQuestPdfPageSize(SelectedPageSize),
                 IsPortrait = IsPortrait,
-                CardsPerRow = CardsPerRow,
-                CardsPerColumn = CardsPerColumn,
-                CardSpacing = CardSpacing,
+                CardsPerRow = (int)CardsPerRow,
+                CardsPerColumn = (int)CardsPerColumn,
+                CardSpacing = (float)CardSpacing,
                 ShowCuttingLines = ShowCuttingLines,
                 CuttingLineColor = CuttingLineColor,
                 IsCuttingLineDashed = IsCuttingLineDashed,
-                CuttingLineExtension = CuttingLineExtension,
-                CuttingLineThickness = CuttingLineThickness,
-                PreviewDpi = PreviewDpi,
-                PreviewQuality = PreviewQuality
+                CuttingLineExtension = (float)CuttingLineExtension,
+                CuttingLineThickness = (float)CuttingLineThickness,
+                PreviewDpi = (int)PreviewDpi,
+                PreviewQuality = (int)PreviewQuality
             };
         }
 
-        private Size GetQuestPdfPageSize(string pageSizeName)
-        {
-            return pageSizeName switch
-            {
-                "A4" => new Size(595, 842),        // A4 in points
-                "A3" => new Size(842, 1191),       // A3 in points
-                "A5" => new Size(420, 595),        // A5 in points
-                "Letter" => new Size(612, 792),    // Letter in points
-                "Legal" => new Size(612, 1008),    // Legal in points
-                "Tabloid" => new Size(792, 1224),  // Tabloid in points
-                _ => new Size(595, 842)             // Default to A4
-            };
-        }
+
 
         [RelayCommand]
         private async Task GeneratePreviewAsync()
@@ -163,11 +158,20 @@ namespace ProxyStudio.ViewModels
             IsGeneratingPreview = true;
             try
             {
-                DebugHelper.WriteDebug($"Starting preview generation with {_cards.Count} cards");
-                var options = CreateOptions();
-                DebugHelper.WriteDebug($"Created options - PageSize: {options.PageSize}, CardsPerRow: {options.CardsPerRow}");
+                // Update page information
+                UpdatePageInfo();
                 
-                PreviewImage = await _pdfService.GeneratePreviewImageAsync(_cards, options);
+                DebugHelper.WriteDebug($"Starting preview generation with {_cards.Count} cards (Page {CurrentPreviewPage} of {TotalPreviewPages})");
+                var options = CreateOptions();
+                DebugHelper.WriteDebug($"Created options - CardsPerRow: {options.CardsPerRow}, CardsPerColumn: {options.CardsPerColumn}");
+                
+                // Get cards for current preview page
+                var cardsPerPage = options.CardsPerRow * options.CardsPerColumn;
+                var startIndex = (CurrentPreviewPage - 1) * cardsPerPage;
+                var pageCards = new CardCollection();
+                pageCards.AddRange(_cards.Skip(startIndex).Take(cardsPerPage));
+                
+                PreviewImage = await _pdfService.GeneratePreviewImageAsync(pageCards, options);
                 DebugHelper.WriteDebug($"Preview generation completed. Image is null: {PreviewImage == null}");
                 
                 SaveSettings();
@@ -198,7 +202,7 @@ namespace ProxyStudio.ViewModels
             {
                 DebugHelper.WriteDebug($"Starting PDF generation with {_cards.Count} cards");
                 var options = CreateOptions();
-                DebugHelper.WriteDebug($"Created options - PageSize: {options.PageSize}, CardsPerRow: {options.CardsPerRow}");
+                DebugHelper.WriteDebug($"Created options - CardsPerRow: {options.CardsPerRow}, CardsPerColumn: {options.CardsPerColumn}");
                 
                 var pdfBytes = await _pdfService.GeneratePdfAsync(_cards, options);
                 DebugHelper.WriteDebug($"PDF generation completed. Size: {pdfBytes.Length} bytes");
@@ -225,6 +229,33 @@ namespace ProxyStudio.ViewModels
         }
 
         [RelayCommand]
+        private async Task ZoomInAsync()
+        {
+            if (PreviewZoom < 200m)
+            {
+                PreviewZoom = Math.Min(200m, PreviewZoom + 25m);
+                DebugHelper.WriteDebug($"Zoomed in to {PreviewZoom}%");
+            }
+        }
+
+        [RelayCommand]
+        private async Task ZoomOutAsync()
+        {
+            if (PreviewZoom > 25m)
+            {
+                PreviewZoom = Math.Max(25m, PreviewZoom - 25m);
+                DebugHelper.WriteDebug($"Zoomed out to {PreviewZoom}%");
+            }
+        }
+
+        [RelayCommand]
+        private async Task ResetZoomAsync()
+        {
+            PreviewZoom = 100m;
+            DebugHelper.WriteDebug("Reset zoom to 100%");
+        }
+
+        [RelayCommand]
         private async Task SavePdfAsAsync()
         {
             if (IsGeneratingPdf || _cards.Count == 0) return;
@@ -234,70 +265,130 @@ namespace ProxyStudio.ViewModels
             await GeneratePdfAsync();
         }
 
+        // Computed property for ScaleTransform (converts percentage to scale factor)
+        public double PreviewScale => (double)PreviewZoom / 100.0;
+
+        [RelayCommand]
+        private async Task PreviousPageAsync()
+        {
+            if (CurrentPreviewPage > 1)
+            {
+                CurrentPreviewPage--;
+                await GeneratePreviewAsync();
+            }
+        }
+
+        [RelayCommand]
+        private async Task NextPageAsync()
+        {
+            if (CurrentPreviewPage < TotalPreviewPages)
+            {
+                CurrentPreviewPage++;
+                await GeneratePreviewAsync();
+            }
+        }
+
+        private void UpdatePageInfo()
+        {
+            var cardsPerPage = (int)(CardsPerRow * CardsPerColumn);
+            TotalPreviewPages = cardsPerPage == 0 ? 1 : (int)Math.Ceiling((double)_cards.Count / cardsPerPage);
+            
+            // Ensure current page is valid
+            if (CurrentPreviewPage > TotalPreviewPages)
+                CurrentPreviewPage = Math.Max(1, TotalPreviewPages);
+                
+            DebugHelper.WriteDebug($"Updated page info: Page {CurrentPreviewPage} of {TotalPreviewPages}");
+        }
+
         // Property change handlers to auto-regenerate preview
-        partial void OnCardsPerRowChanged(int value)
+        partial void OnCardsPerRowChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnCardsPerRowChanged: {value}");
             if (value > 0 && value <= 10)
+            {
+                CurrentPreviewPage = 1; // Reset to first page when layout changes
                 _ = GeneratePreviewAsync();
+            }
         }
 
-        partial void OnCardsPerColumnChanged(int value)
+        partial void OnCardsPerColumnChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnCardsPerColumnChanged: {value}");
             if (value > 0 && value <= 10)
+            {
+                CurrentPreviewPage = 1; // Reset to first page when layout changes
                 _ = GeneratePreviewAsync();
+            }
         }
 
-        partial void OnCardSpacingChanged(float value)
+        partial void OnCardSpacingChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnCardSpacingChanged: {value}");
             if (value >= 0)
                 _ = GeneratePreviewAsync();
         }
 
         partial void OnShowCuttingLinesChanged(bool value)
         {
+            DebugHelper.WriteDebug($"OnShowCuttingLinesChanged: {value}");
             _ = GeneratePreviewAsync();
         }
 
         partial void OnCuttingLineColorChanged(string value)
         {
+            DebugHelper.WriteDebug($"OnCuttingLineColorChanged: {value}");
             _ = GeneratePreviewAsync();
         }
 
         partial void OnIsCuttingLineDashedChanged(bool value)
         {
+            DebugHelper.WriteDebug($"OnIsCuttingLineDashedChanged: {value}");
             _ = GeneratePreviewAsync();
         }
 
-        partial void OnCuttingLineExtensionChanged(float value)
+        partial void OnCuttingLineExtensionChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnCuttingLineExtensionChanged: {value}");
             _ = GeneratePreviewAsync();
         }
 
-        partial void OnCuttingLineThicknessChanged(float value)
+        partial void OnCuttingLineThicknessChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnCuttingLineThicknessChanged: {value}");
             _ = GeneratePreviewAsync();
         }
 
-        partial void OnPreviewDpiChanged(int value)
+        partial void OnPreviewDpiChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnPreviewDpiChanged: {value}");
             if (value >= 72 && value <= 300)
                 _ = GeneratePreviewAsync();
         }
 
-        partial void OnPreviewQualityChanged(int value)
+        partial void OnPreviewQualityChanged(decimal value)
         {
+            DebugHelper.WriteDebug($"OnPreviewQualityChanged: {value}");
             if (value >= 1 && value <= 100)
                 _ = GeneratePreviewAsync();
         }
 
         partial void OnSelectedPageSizeChanged(string value)
         {
+            // Note: Page size is handled directly in the PDF service
+            // This is kept for UI consistency but doesn't affect the actual PDF generation
             _ = GeneratePreviewAsync();
         }
 
         partial void OnIsPortraitChanged(bool value)
         {
             _ = GeneratePreviewAsync();
+        }
+
+        partial void OnPreviewZoomChanged(decimal value)
+        {
+            DebugHelper.WriteDebug($"OnPreviewZoomChanged: {value}%");
+            // Notify that PreviewScale has also changed
+            OnPropertyChanged(nameof(PreviewScale));
         }
     }
 }

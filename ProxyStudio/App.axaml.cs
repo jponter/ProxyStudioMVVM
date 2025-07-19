@@ -6,7 +6,7 @@ using Avalonia.Markup.Xaml;
 using ProxyStudio.Helpers;
 using ProxyStudio.ViewModels;
 using ProxyStudio.Services;
-using QuestPDF.Infrastructure;
+
 
 namespace ProxyStudio;
 
@@ -16,8 +16,7 @@ public partial class App : Application
     
     public override void Initialize()
     {
-        // Set QuestPDF license FIRST
-        QuestPDF.Settings.License = LicenseType.Community;
+        
         
         AvaloniaXamlLoader.Load(this);
     }

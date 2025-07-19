@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
+using PdfSharp.Fonts;
+using PdfSharp.Quality;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Size = QuestPDF.Infrastructure.Size;
 
 namespace ProxyStudio.Services
 {
@@ -23,16 +24,15 @@ namespace ProxyStudio.Services
 
     public class PdfGenerationOptions
     {
-        public Size PageSize { get; set; } = new Size(595, 842);
         public bool IsPortrait { get; set; } = true;
         public int CardsPerRow { get; set; } = 3;
         public int CardsPerColumn { get; set; } = 3;
-        public float CardSpacing { get; set; } = 10f;
+        public float CardSpacing { get; set; } = 0f;
         public bool ShowCuttingLines { get; set; } = true;
-        public string CuttingLineColor { get; set; } = "#000000";
+        public string CuttingLineColor { get; set; } = "#FF0000";
         public bool IsCuttingLineDashed { get; set; } = false;
         public float CuttingLineExtension { get; set; } = 10f;
-        public float CuttingLineThickness { get; set; } = 0.5f;
+        public float CuttingLineThickness { get; set; } = 2f;
         public float TopMargin { get; set; } = 20f;
         public float BottomMargin { get; set; } = 20f;
         public float LeftMargin { get; set; } = 20f;
@@ -43,42 +43,69 @@ namespace ProxyStudio.Services
 
     public class PdfGenerationService : IPdfGenerationService
     {
+        static PdfGenerationService()
+        {
+            // Set up PDFsharp with better font handling
+            try
+            {
+                PdfSharp.Fonts.GlobalFontSettings.FontResolver = new SafeFontResolver();
+                DebugHelper.WriteDebug("PDFsharp font resolver set up successfully");
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error setting up font resolver: {ex.Message}");
+            }
+        }
+
         public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options)
         {
             return await Task.Run(() =>
             {
                 try
                 {
-                    DebugHelper.WriteDebug($"Generating PDF for {cards.Count} cards");
-
-                    var document = Document.Create(container =>
+                    DebugHelper.WriteDebug($"Generating PDF for {cards.Count} cards using PDFsharp");
+                    
+                    // Create PDF document
+                    var document = new PdfDocument();
+                    
+                    // Calculate how many cards fit per page
+                    var cardsPerPage = options.CardsPerRow * options.CardsPerColumn;
+                    var totalPages = (int)Math.Ceiling((double)cards.Count / cardsPerPage);
+                    
+                    DebugHelper.WriteDebug($"Creating {totalPages} pages for {cards.Count} cards ({cardsPerPage} cards per page)");
+                    
+                    // Create pages and draw cards
+                    for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
                     {
-                        container.Page(page =>
-                        {
-                            page.Size(595, 842); // A4 fixed size
-                            page.MarginTop(20);
-                            page.MarginBottom(20);
-                            page.MarginLeft(20);
-                            page.MarginRight(20);
-
-                            page.Content().Column(column =>
-                            {
-                                column.Item().Text($"Card Collection - {cards.Count} cards").FontSize(16).Bold();
-                                column.Item().PaddingVertical(10);
-
-                                // Create a proper card grid layout
-                                CreateCardGrid(column.Item(), cards, options);
-                            });
-                        });
-                    });
-
-                    var pdfBytes = document.GeneratePdf();
+                        var page = document.AddPage();
+                        page.Size = PdfSharp.PageSize.A4;
+                        
+                        var gfx = XGraphics.FromPdfPage(page);
+                        
+                        // Get cards for this page
+                        var startCardIndex = pageIndex * cardsPerPage;
+                        var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
+                        
+                        DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards (starting from card {startCardIndex})");
+                        
+                        DrawCardGrid(gfx, pageCards, options, page.Width, page.Height, pageIndex + 1, totalPages);
+                        
+                        gfx.Dispose();
+                    }
+                    
+                    // Save to memory stream
+                    using var stream = new MemoryStream();
+                    document.Save(stream);
+                    document.Close();
+                    
+                    var pdfBytes = stream.ToArray();
                     DebugHelper.WriteDebug($"PDF generated successfully, size: {pdfBytes.Length} bytes");
                     return pdfBytes;
                 }
                 catch (Exception ex)
                 {
                     DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
+                    DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
                     throw;
                 }
             });
@@ -90,259 +117,513 @@ namespace ProxyStudio.Services
             {
                 try
                 {
-                    DebugHelper.WriteDebug($"Generating preview for {cards.Count} cards");
-
-                    // Create a simple preview image programmatically instead of using QuestPDF image generation
-                    return CreatePreviewBitmap(cards, options);
+                    DebugHelper.WriteDebug($"Generating preview for {cards?.Count ?? 0} cards using PDFsharp");
+                    DebugHelper.WriteDebug($"Options: ShowCuttingLines={options?.ShowCuttingLines ?? false}, CardsPerRow={options?.CardsPerRow ?? 0}");
+                    
+                    if (options == null)
+                    {
+                        DebugHelper.WriteDebug("ERROR: options is null!");
+                        return CreateFallbackPreview(cards, options);
+                    }
+                    
+                    // Create a simple preview bitmap manually
+                    var previewBitmap = CreateSimplePreview(cards, options);
+                    
+                    DebugHelper.WriteDebug($"Preview generated successfully");
+                    return previewBitmap;
                 }
                 catch (Exception ex)
                 {
                     DebugHelper.WriteDebug($"Error generating preview: {ex.Message}");
-                    return null!;
+                    DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                    return CreateFallbackPreview(cards, options);
                 }
             });
         }
 
-        private Bitmap CreatePreviewBitmap(CardCollection cards, PdfGenerationOptions options)
+        private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options)
         {
             try
             {
-                DebugHelper.WriteDebug("Creating preview bitmap");
+                DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards");
+                
+                var previewWidth = 600;
+                var previewHeight = 800;
+                
+                using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
+                using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+                
+                DebugHelper.WriteDebug("Created bitmap and graphics");
+                
+                graphics.Clear(System.Drawing.Color.White);
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                
+                // Draw title
+                using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
+                graphics.DrawString($"Card Collection - {cards?.Count ?? 0} cards ({options.CardsPerRow}x{options.CardsPerColumn})", titleFont, 
+                    System.Drawing.Brushes.Black, new System.Drawing.PointF(10, 10));
+                
+                DebugHelper.WriteDebug("Drew title");
+                
+                if (cards == null || cards.Count == 0)
+                {
+                    DebugHelper.WriteDebug("No cards to draw");
+                    // Convert to Avalonia Bitmap
+                    using var ms = new MemoryStream();
+                    bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                    ms.Position = 0;
+                    
+                    return new Bitmap(ms);
+                }
+                
+                // USE THE OPTIONS VALUES instead of hardcoded 3x3!
+                var actualCardsPerRow = options.CardsPerRow;
+                var actualCardsPerColumn = options.CardsPerColumn;
+                var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
+                var pageCards = cards.Take(cardsPerPage).ToList();
+                
+                DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+                
+                var startX = 20;
+                var startY = 40;
+                var availableWidth = previewWidth - 40;
+                var availableHeight = previewHeight - 60;
+                
+                // Account for spacing between cards
+                var totalSpacingWidth = options.CardSpacing * (actualCardsPerRow - 1);
+                var totalSpacingHeight = options.CardSpacing * (actualCardsPerColumn - 1);
+                
+                // Calculate card dimensions WITH spacing
+                var cardWidth = (availableWidth - totalSpacingWidth) / actualCardsPerRow;
+                var cardHeight = (availableHeight - totalSpacingHeight) / actualCardsPerColumn;
+                
+                // Maintain aspect ratio
+                var standardCardRatio = 2.5f / 3.5f;
+                var calculatedRatio = (float)cardWidth / cardHeight;
+                
+                if (calculatedRatio > standardCardRatio)
+                {
+                    cardWidth = (int)(cardHeight * standardCardRatio);
+                }
+                else
+                {
+                    cardHeight = (int)(cardWidth / standardCardRatio);
+                }
+                
+                DebugHelper.WriteDebug($"Card layout: {cardWidth}x{cardHeight} (spacing: {options.CardSpacing})");
+                
+                // Draw cards WITH PROPER SPACING
+                for (int row = 0; row < actualCardsPerColumn; row++)
+                {
+                    for (int col = 0; col < actualCardsPerRow; col++)
+                    {
+                        var cardIndex = row * actualCardsPerRow + col;
+                        
+                        if (cardIndex < pageCards.Count)
+                        {
+                            var card = pageCards[cardIndex];
+                            
+                            // Calculate position WITH spacing
+                            var x = (int)(startX + col * (cardWidth + options.CardSpacing));
+                            var y = (int)(startY + row * (cardHeight + options.CardSpacing));
+                            
+                            DebugHelper.WriteDebug($"Drawing card {cardIndex}: {card?.Name ?? "NULL"} at ({x},{y}) - row {row}, col {col}");
+                            
+                            DrawPreviewCard(graphics, card, options, x, y, (int)cardWidth, (int)cardHeight);
+                        }
+                    }
+                }
+                
+                DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
+                
+                // Convert to Avalonia Bitmap
+                using var outputStream = new MemoryStream();
+                bitmap.Save(outputStream, System.Drawing.Imaging.ImageFormat.Png);
+                outputStream.Position = 0;
+                
+                var avaloniaB = new Bitmap(outputStream);
+                DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
+                
+                return avaloniaB;
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
+                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                return CreateFallbackPreview(cards, options);
+            }
+        }
 
-                // Create a simple preview bitmap using WriteableBitmap
-                var width = 600;
-                var height = 800;
+        private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x, int y, int width, int height)
+        {
+            try
+            {
+                var rect = new System.Drawing.Rectangle(x, y, width, height);
+                
+                DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} at ({x},{y}) size {width}x{height}");
+                
+                if (card?.ImageData != null && card.ImageData.Length > 0)
+                {
+                    try
+                    {
+                        // Try to draw the actual image
+                        using var imageStream = new MemoryStream(card.ImageData);
+                        using var cardImage = System.Drawing.Image.FromStream(imageStream);
+                        
+                        graphics.DrawImage(cardImage, rect);
+                        DebugHelper.WriteDebug($"Drew preview image for {card.Name}");
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugHelper.WriteDebug($"Error drawing card image for {card.Name}: {ex.Message}");
+                        // Fallback to placeholder
+                        DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
+                    }
+                }
+                else
+                {
+                    DebugHelper.WriteDebug($"No image data for {card?.Name ?? "NULL"}");
+                    DrawPreviewPlaceholder(graphics, card, rect, "No Image");
+                }
+                
+                // Draw cutting lines if enabled
+                if (options.ShowCuttingLines)
+                {
+                    var color = ParseSystemDrawingColor(options.CuttingLineColor);
+                    using var pen = new System.Drawing.Pen(color, options.CuttingLineThickness);
+                    
+                    if (options.IsCuttingLineDashed)
+                    {
+                        pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    }
+                    
+                    graphics.DrawRectangle(pen, rect);
+                    DebugHelper.WriteDebug($"Drew cutting lines for {card?.Name ?? "NULL"}");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                
+                // Safe fallback
+                try
+                {
+                    DrawPreviewPlaceholder(graphics, card, new System.Drawing.Rectangle(x, y, width, height), "Error");
+                }
+                catch (Exception ex2)
+                {
+                    DebugHelper.WriteDebug($"Error in fallback placeholder: {ex2.Message}");
+                }
+            }
+        }
 
+        private void DrawPreviewPlaceholder(System.Drawing.Graphics graphics, Card card, System.Drawing.Rectangle rect, string message)
+        {
+            try
+            {
+                // Fill background
+                graphics.FillRectangle(System.Drawing.Brushes.LightGray, rect);
+                graphics.DrawRectangle(System.Drawing.Pens.Gray, rect);
+                
+                // Draw text safely
+                using var font = new System.Drawing.Font("Arial", 8, System.Drawing.FontStyle.Bold);
+                using var smallFont = new System.Drawing.Font("Arial", 6);
+                
+                var stringFormat = new System.Drawing.StringFormat
+                {
+                    Alignment = System.Drawing.StringAlignment.Center,
+                    LineAlignment = System.Drawing.StringAlignment.Center
+                };
+                
+                graphics.DrawString(message ?? "Error", font, System.Drawing.Brushes.Black, rect, stringFormat);
+                
+                var nameRect = new System.Drawing.Rectangle(rect.X, rect.Y + rect.Height * 2 / 3, rect.Width, rect.Height / 3);
+                graphics.DrawString(card?.Name ?? "Unknown", smallFont, System.Drawing.Brushes.DarkGray, nameRect, stringFormat);
+                
+                DebugHelper.WriteDebug($"Drew placeholder for {card?.Name ?? "NULL"}: {message}");
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing placeholder: {ex.Message}");
+                // Ultimate fallback - just draw a rectangle
+                try
+                {
+                    graphics.FillRectangle(System.Drawing.Brushes.Pink, rect);
+                }
+                catch
+                {
+                    // Give up
+                }
+            }
+        }
+
+        private System.Drawing.Color ParseSystemDrawingColor(string colorString)
+        {
+            try
+            {
+                if (colorString.StartsWith("#") && colorString.Length == 7)
+                {
+                    var hex = colorString.Substring(1);
+                    var r = Convert.ToByte(hex.Substring(0, 2), 16);
+                    var g = Convert.ToByte(hex.Substring(2, 2), 16);
+                    var b = Convert.ToByte(hex.Substring(4, 2), 16);
+                    return System.Drawing.Color.FromArgb(r, g, b);
+                }
+                return System.Drawing.Color.Red;
+            }
+            catch
+            {
+                return System.Drawing.Color.Red;
+            }
+        }
+
+        private Bitmap CreateFallbackPreview(CardCollection cards, PdfGenerationOptions options)
+        {
+            try
+            {
+                // Create a minimal fallback preview
+                var width = 400;
+                var height = 300;
+                
                 var bitmap = new WriteableBitmap(new Avalonia.PixelSize(width, height), new Avalonia.Vector(96, 96));
-
-                // Don't dispose the bitmap - we need to return it for the UI to use
+                
                 using (var context = bitmap.Lock())
                 {
-                    // Fill with white background
                     unsafe
                     {
                         var ptr = (uint*)context.Address;
                         var pixelCount = width * height;
                         for (int i = 0; i < pixelCount; i++)
                         {
-                            ptr[i] = 0xFFFFFFFF; // White (ARGB format)
+                            ptr[i] = 0xFFFFFFFF; // White
                         }
-
-                        // Draw some simple preview content
-                        DrawSimplePreview(ptr, width, height, cards, options);
                     }
                 }
-
-                DebugHelper.WriteDebug("Created simple preview bitmap successfully");
+                
                 return bitmap;
             }
-            catch (Exception ex)
+            catch
             {
-                DebugHelper.WriteDebug($"Error creating preview bitmap: {ex.Message}");
-
-                // Return null so the UI can handle the missing preview gracefully
                 return null!;
             }
         }
 
-        private unsafe void DrawSimplePreview(uint* ptr, int width, int height, CardCollection cards,
-            PdfGenerationOptions options)
+        private void DrawCardGrid(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
         {
-            try
-            {
-                // Draw a simple grid pattern to show card layout
-                var cardsPerRow = Math.Min(options.CardsPerRow, 3); // Limit to 3 for preview
-                var cardWidth = width / cardsPerRow;
-                var cardHeight = 200;
-                var cardCount = Math.Min(cards.Count, cardsPerRow * 3); // Max 9 cards for preview
-
-                for (int i = 0; i < cardCount; i++)
-                {
-                    var row = i / cardsPerRow;
-                    var col = i % cardsPerRow;
-
-                    var x = col * cardWidth + 10;
-                    var y = row * cardHeight + 50;
-
-                    // Draw a simple rectangle border for each card
-                    DrawRectangle(ptr, width, height, x, y, cardWidth - 20, cardHeight - 20,
-                        0xFF000000); // Black border
-
-                    // Fill with light gray
-                    FillRectangle(ptr, width, height, x + 2, y + 2, cardWidth - 24, cardHeight - 24,
-                        0xFFF0F0F0); // Light gray
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugHelper.WriteDebug($"Error drawing preview: {ex.Message}");
-            }
-        }
-
-        private unsafe void DrawRectangle(uint* ptr, int width, int height, int x, int y, int w, int h, uint color)
-        {
-            // Draw top and bottom borders
-            for (int i = 0; i < w && x + i < width; i++)
-            {
-                if (y >= 0 && y < height) ptr[y * width + x + i] = color;
-                if (y + h >= 0 && y + h < height) ptr[(y + h) * width + x + i] = color;
-            }
-
-            // Draw left and right borders
-            for (int i = 0; i < h && y + i < height; i++)
-            {
-                if (x >= 0 && x < width) ptr[(y + i) * width + x] = color;
-                if (x + w >= 0 && x + w < width) ptr[(y + i) * width + x + w] = color;
-            }
-        }
-
-        private unsafe void FillRectangle(uint* ptr, int width, int height, int x, int y, int w, int h, uint color)
-        {
-            for (int row = 0; row < h && y + row < height; row++)
-            {
-                for (int col = 0; col < w && x + col < width; col++)
-                {
-                    if (x + col >= 0 && x + col < width && y + row >= 0 && y + row < height)
-                    {
-                        ptr[(y + row) * width + (x + col)] = color;
-                    }
-                }
-            }
-        }
-
-        private void CreateCardGrid(IContainer container, CardCollection cards, PdfGenerationOptions options)
-        {
-            DebugHelper.WriteDebug($"CreateCardGrid called with {cards?.Count ?? 0} cards");
+            // USE THE OPTIONS VALUES instead of hardcoded 3x3!
+            var actualCardsPerRow = options.CardsPerRow;
+            var actualCardsPerColumn = options.CardsPerColumn;
             
-            if (cards == null || cards.Count == 0)
-            {
-                container.Text("No cards to display").FontSize(12);
-                return;
-            }
-
-            // FORCE 3x3 grid regardless of options
-            var actualCardsPerRow = 3;
-            var actualCardsPerColumn = 3;
-            DebugHelper.WriteDebug($"FORCING card grid to: {actualCardsPerRow} per row, {actualCardsPerColumn} per column (was {options.CardsPerRow}x{options.CardsPerColumn})");
-
-            var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
-            var pageCards = cards.Take(cardsPerPage).ToList();
-            DebugHelper.WriteDebug($"Cards for this page: {pageCards.Count}");
+            DebugHelper.WriteDebug($"Drawing {pageCards.Count} cards in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
             
-            // Calculate available space and card dimensions
-            var availableWidth = 555f; // A4 width minus margins
-            var availableHeight = 750f; // A4 height minus margins and title space
+            // Calculate available space
+            var availableWidth = pageWidth - XUnit.FromPoint(options.LeftMargin + options.RightMargin);
+            var availableHeight = pageHeight - XUnit.FromPoint(options.TopMargin + options.BottomMargin + 50); // Space for title
             
-            // Calculate card dimensions with NO spacing between cards
-            var cardWidth = availableWidth / actualCardsPerRow;
-            var cardHeight = availableHeight / actualCardsPerColumn;
+            // Account for spacing between cards
+            var totalSpacingWidth = XUnit.FromPoint(options.CardSpacing * (actualCardsPerRow - 1));
+            var totalSpacingHeight = XUnit.FromPoint(options.CardSpacing * (actualCardsPerColumn - 1));
+            
+            // Calculate card dimensions WITH spacing
+            var cardWidth = (availableWidth - totalSpacingWidth) / actualCardsPerRow;
+            var cardHeight = (availableHeight - totalSpacingHeight) / actualCardsPerColumn;
             
             // Maintain card aspect ratio
-            var standardCardRatio = 2.5f / 3.5f; // Standard card ratio (width/height)
+            var standardCardRatio = 2.5 / 3.5;
             var calculatedRatio = cardWidth / cardHeight;
             
             if (calculatedRatio > standardCardRatio)
             {
-                // Too wide, reduce width
                 cardWidth = cardHeight * standardCardRatio;
             }
             else
             {
-                // Too tall, reduce height
                 cardHeight = cardWidth / standardCardRatio;
             }
             
-            DebugHelper.WriteDebug($"Card dimensions: {cardWidth}x{cardHeight} (NO spacing between cards)");
+            DebugHelper.WriteDebug($"Card dimensions: {cardWidth:F1}x{cardHeight:F1} points (spacing: {options.CardSpacing}pt)");
             
-            // Create the card grid with exactly 3 rows, NO spacing
-            container.Column(column =>
+            // Draw title with page info
+            try
             {
-                for (int row = 0; row < actualCardsPerColumn; row++) // EXACTLY 3 rows
-                {
-                    DebugHelper.WriteDebug($"Creating row {row + 1} of {actualCardsPerColumn}");
+                var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
+                var title = totalPages > 1 
+                    ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn})"
+                    : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn})";
                     
-                    column.Item().Row(rowContainer =>
-                    {
-                        for (int col = 0; col < actualCardsPerRow; col++) // EXACTLY 3 columns
-                        {
-                            var cardIndex = row * actualCardsPerRow + col;
-                            
-                            if (cardIndex < pageCards.Count)
-                            {
-                                var card = pageCards[cardIndex];
-                                DebugHelper.WriteDebug($"Placing card {cardIndex + 1} at row {row + 1}, col {col + 1}: {card.Name}");
-                                
-                                // Use ConstantItem with exact width to prevent gaps
-                                rowContainer.ConstantItem(cardWidth)
-                                    .Height(cardHeight)
-                                    .Element(cellContainer => CreateCardCell(cellContainer, card, options));
-                            }
-                            else
-                            {
-                                DebugHelper.WriteDebug($"Empty slot at row {row + 1}, col {col + 1}");
-                                // Empty cell to maintain grid structure
-                                rowContainer.ConstantItem(cardWidth).Height(cardHeight);
-                            }
-                        }
-                    });
-                    
-                    // NO spacing between rows - removed the spacing code
-                }
-            });
+                gfx.DrawString(title, font, XBrushes.Black,
+                    new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
+                DebugHelper.WriteDebug("Drew title successfully");
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+                // Continue without title
+            }
             
-            DebugHelper.WriteDebug("Finished creating card grid");
+            // Draw cards WITH PROPER SPACING
+            var startX = XUnit.FromPoint(options.LeftMargin);
+            var startY = XUnit.FromPoint(options.TopMargin + 30);
+            
+            for (int row = 0; row < actualCardsPerColumn; row++)
+            {
+                for (int col = 0; col < actualCardsPerRow; col++)
+                {
+                    var cardIndex = row * actualCardsPerRow + col;
+                    
+                    if (cardIndex < pageCards.Count)
+                    {
+                        var card = pageCards[cardIndex];
+                        
+                        // Calculate position WITH spacing
+                        var x = startX + col * (cardWidth + XUnit.FromPoint(options.CardSpacing));
+                        var y = startY + row * (cardHeight + XUnit.FromPoint(options.CardSpacing));
+                        
+                        DebugHelper.WriteDebug($"Drawing card {cardIndex} at ({x:F1}, {y:F1}) - row {row}, col {col}");
+                        
+                        DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
+                    }
+                }
+            }
         }
 
-        private void CreateCardCell(IContainer container, Card card, PdfGenerationOptions options)
+        private XFont GetSafeFont(string familyName, double size, XFontStyleEx style)
         {
-            DebugHelper.WriteDebug($"Creating card cell for {card.Name}");
-            
-            if (card.ImageData != null && card.ImageData.Length > 0)
+            try
             {
+                // Try the requested font first
+                return new XFont(familyName, size, style);
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error creating font {familyName}: {ex.Message}, falling back to default");
+                
                 try
                 {
-                    DebugHelper.WriteDebug($"Attempting to render image for {card.Name}, size: {card.ImageData.Length} bytes");
-                    
-                    var processedImageData = ProcessImageForPdf(card.ImageData, card.Name);
-                    
-                    if (processedImageData != null && processedImageData.Length > 0)
+                    // Fall back to a more generic font
+                    return new XFont("Segoe UI", size, style);
+                }
+                catch
+                {
+                    try
                     {
-                        DebugHelper.WriteDebug($"Processed image data for {card.Name}: {processedImageData.Length} bytes");
+                        // Last resort - use any available font
+                        return new XFont("Helvetica", size, style);
+                    }
+                    catch
+                    {
+                        // Absolute last resort
+                        return new XFont("Times", size, style);
+                    }
+                }
+            }
+        }
+
+        private void DrawCard(XGraphics gfx, Card card, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width, XUnit height)
+        {
+            DebugHelper.WriteDebug($"Drawing card: {card.Name} at ({x:F1}, {y:F1})");
+            
+            try
+            {
+                if (card.ImageData != null && card.ImageData.Length > 0)
+                {
+                    // Process and draw the image
+                    var processedImage = ProcessImageForPdf(card.ImageData, card.Name);
+                    if (processedImage != null)
+                    {
+                        using var ms = new MemoryStream(processedImage);
+                        var xImage = XImage.FromStream(ms);
                         
-                        // Create the card with image filling the entire space
-                        if (options.ShowCuttingLines)
-                        {
-                            DebugHelper.WriteDebug($"Adding cutting lines for {card.Name}");
-                            // Add cutting lines as border around the entire card
-                            container.Border(2) // Make it thicker so it's visible
-                                .BorderColor(Colors.Red.Medium)
-                                .Image(processedImageData)
-                                .FitArea();
-                        }
-                        else
-                        {
-                            // No cutting lines, just the image filling the space
-                            container.Image(processedImageData).FitArea();
-                        }
+                        // Draw the image to fill the card
+                        gfx.DrawImage(xImage, new XRect(x, y, width, height));
                         
-                        DebugHelper.WriteDebug($"Successfully rendered image for {card.Name}");
+                        xImage.Dispose();
+                        DebugHelper.WriteDebug($"Successfully drew image for {card.Name}");
                     }
                     else
                     {
-                        DebugHelper.WriteDebug($"Failed to process image for {card.Name} - processed data is null or empty");
-                        CreateImagePlaceholder(container, card, options, "Image Processing Failed");
+                        DrawPlaceholder(gfx, card, x, y, width, height, "Image Error");
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    DebugHelper.WriteDebug($"Failed to render image for {card.Name}: {ex.Message}");
-                    CreateImagePlaceholder(container, card, options, "Image Error");
+                    DrawPlaceholder(gfx, card, x, y, width, height, "No Image");
+                }
+                
+                // Draw cutting lines if enabled
+                if (options.ShowCuttingLines)
+                {
+                    DrawCuttingLines(gfx, options, x, y, width, height);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"No image data for {card.Name}");
-                CreateImagePlaceholder(container, card, options, "No Image");
+                DebugHelper.WriteDebug($"Error drawing card {card.Name}: {ex.Message}");
+                DrawPlaceholder(gfx, card, x, y, width, height, "Error");
+            }
+        }
+
+        private void DrawPlaceholder(XGraphics gfx, Card card, XUnit x, XUnit y, XUnit width, XUnit height, string message)
+        {
+            // Draw border
+            var pen = new XPen(XColors.Gray, 1);
+            gfx.DrawRectangle(pen, XBrushes.LightGray, new XRect(x, y, width, height));
+            
+            // Draw text with safe font handling
+            try
+            {
+                var font = GetSafeFont("Arial", 10, XFontStyleEx.Bold);
+                var textRect = new XRect(x, y, width, height);
+                
+                gfx.DrawString(message, font, XBrushes.Black, textRect, XStringFormats.Center);
+                
+                var smallFont = GetSafeFont("Arial", 8, XFontStyleEx.Regular);
+                var nameRect = new XRect(x, y + height * 0.6, width, height * 0.4);
+                gfx.DrawString(card.Name ?? "Unknown", smallFont, XBrushes.DarkGray, nameRect, XStringFormats.Center);
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing placeholder text: {ex.Message}");
+            }
+        }
+
+        private void DrawCuttingLines(XGraphics gfx, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width, XUnit height)
+        {
+            var color = ParseColor(options.CuttingLineColor);
+            var pen = new XPen(color, options.CuttingLineThickness);
+            
+            if (options.IsCuttingLineDashed)
+            {
+                pen.DashStyle = XDashStyle.Dash;
+            }
+            
+            // Draw border around the card
+            gfx.DrawRectangle(pen, new XRect(x, y, width, height));
+            
+            DebugHelper.WriteDebug($"Drew cutting lines around card");
+        }
+
+        private XColor ParseColor(string colorString)
+        {
+            try
+            {
+                if (colorString.StartsWith("#"))
+                {
+                    var hex = colorString.Substring(1);
+                    if (hex.Length == 6)
+                    {
+                        var r = Convert.ToByte(hex.Substring(0, 2), 16);
+                        var g = Convert.ToByte(hex.Substring(2, 2), 16);
+                        var b = Convert.ToByte(hex.Substring(4, 2), 16);
+                        return XColor.FromArgb(r, g, b);
+                    }
+                }
+                return XColors.Red; // Default to red
+            }
+            catch
+            {
+                return XColors.Red;
             }
         }
 
@@ -350,27 +631,26 @@ namespace ProxyStudio.Services
         {
             try
             {
-                // Use SixLabors.ImageSharp to load and convert the image
-                using var image = SixLabors.ImageSharp.Image.Load(imageData);
+                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
                 DebugHelper.WriteDebug($"Loaded image for {cardName}: {image.Width}x{image.Height}");
-
-                // Resize if too large (QuestPDF might have issues with very large images)
-                if (image.Width > 1000 || image.Height > 1000)
+                
+                // Resize if too large
+                if (image.Width > 800 || image.Height > 800)
                 {
-                    var maxSize = 800;
+                    var maxSize = 600;
                     var ratio = Math.Min((double)maxSize / image.Width, (double)maxSize / image.Height);
                     var newWidth = (int)(image.Width * ratio);
                     var newHeight = (int)(image.Height * ratio);
-
+                    
                     image.Mutate(x => x.Resize(newWidth, newHeight));
                     DebugHelper.WriteDebug($"Resized image for {cardName} to: {newWidth}x{newHeight}");
                 }
-
-                // Convert to PNG format (QuestPDF handles PNG well)
-                using var ms = new MemoryStream();
-                image.SaveAsPng(ms);
-                var pngData = ms.ToArray();
-
+                
+                // Convert to PNG
+                using var pngStream = new MemoryStream();
+                image.SaveAsPng(pngStream);
+                var pngData = pngStream.ToArray();
+                
                 DebugHelper.WriteDebug($"Converted image for {cardName} to PNG: {pngData.Length} bytes");
                 return pngData;
             }
@@ -380,29 +660,49 @@ namespace ProxyStudio.Services
                 return null;
             }
         }
+    }
 
-        private void CreateImagePlaceholder(IContainer container, Card card, PdfGenerationOptions options, string message)
+    // Improved font resolver for PDFsharp
+    public class SafeFontResolver : IFontResolver
+    {
+        public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
         {
-            var borderColor = options.ShowCuttingLines ? Colors.Red.Medium : Colors.Grey.Medium;
-            var borderThickness = options.ShowCuttingLines ? 2f : 1f; // Make cutting lines thicker
-            
-            container.Border(borderThickness)
-                .BorderColor(borderColor)
-                .Background(Colors.Grey.Lighten4)
-                .Padding(10)
-                .Column(column =>
+            try
+            {
+                DebugHelper.WriteDebug($"Resolving font: {familyName}, Bold: {isBold}, Italic: {isItalic}");
+                
+                // Map common font names to safer alternatives
+                var safeFontName = familyName.ToLower() switch
                 {
-                    column.Item().AlignCenter().Text(message).FontSize(12).Bold();
-                    column.Item().PaddingVertical(5);
-                    column.Item().AlignCenter().Text(card.Name ?? "Unknown").FontSize(10);
-                    column.Item().AlignCenter().Text($"ID: {card.Id ?? "N/A"}").FontSize(8);
-                    
-                    if (card.ImageData != null)
-                    {
-                        column.Item().AlignCenter().Text($"{card.ImageData.Length} bytes").FontSize(6);
-                    }
-                });
+                    "arial" => "Arial",
+                    "helvetica" => "Arial", // Fallback to Arial
+                    "times" => "Times New Roman",
+                    "courier" => "Courier New",
+                    _ => familyName
+                };
+                
+                return new FontResolverInfo(safeFontName);
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error in ResolveTypeface: {ex.Message}");
+                return new FontResolverInfo("Arial"); // Safe fallback
+            }
         }
 
+        public byte[] GetFont(string faceName)
+        {
+            try
+            {
+                DebugHelper.WriteDebug($"GetFont called for: {faceName}");
+                // Return null to use system fonts - this is the safest approach
+                return null;
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error in GetFont: {ex.Message}");
+                return null;
+            }
+        }
     }
 }
