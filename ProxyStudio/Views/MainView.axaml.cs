@@ -19,6 +19,13 @@ public partial class MainView : Window
     private readonly IConfigManager _configManager; // Configuration settings
     public bool GlobalBleedEnabled { get; set; }
    
+    
+    // Add a parameterless constructor for design-time
+    public MainView() : this(new DesignTimeConfigManager())
+    {
+        // This constructor will be used by the designer
+    }
+    
     public MainView(IConfigManager configManager)
     {
         InitializeComponent();

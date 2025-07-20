@@ -11,7 +11,7 @@ namespace ProxyStudio.ViewModels
 {
     public class DesignTimeMainViewModel : MainViewModel
     {
-        public DesignTimeMainViewModel() : base(new DesignTimeConfigManager(), new DesignTimePdfService())
+        public DesignTimeMainViewModel() : base(new DesignTimeConfigManager())
         {
             try
             {

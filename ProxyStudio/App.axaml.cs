@@ -33,6 +33,8 @@ public partial class App : Application
 
         // Register your ViewModels
         services.AddTransient<MainViewModel>();
+        services.AddTransient<PrintViewModel>();
+        services.AddSingleton<DesignTimeConfigManager>(); // Design-time config manager for design mode
         
         Services = services.BuildServiceProvider();
         
