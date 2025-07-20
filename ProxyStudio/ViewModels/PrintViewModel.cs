@@ -131,8 +131,12 @@ namespace ProxyStudio.ViewModels
             return new PdfGenerationOptions
             {
                 IsPortrait = IsPortrait,
-                CardsPerRow = (int)CardsPerRow,
-                CardsPerColumn = (int)CardsPerColumn,
+                PageSize = SelectedPageSize,
+                // ❌ Remove these lines - we're now using fixed layouts based on orientation
+                // CardsPerRow = (int)CardsPerRow,     
+                // CardsPerColumn = (int)CardsPerColumn,
+        
+                // ✅ Don't set CardsPerRow/CardsPerColumn - let the PDF service decide based on IsPortrait
                 CardSpacing = (float)CardSpacing,
                 ShowCuttingLines = ShowCuttingLines,
                 CuttingLineColor = CuttingLineColor,

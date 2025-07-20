@@ -34,21 +34,21 @@
                 <!-- Layout Settings -->
                 <Expander Header="Layout Settings" IsExpanded="True">
                     <StackPanel Spacing="8" Margin="10">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Cards per Row:" Width="100"/>
-                            <TextBox Text="{Binding CardsPerRow, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="1-10"/>
-                            <TextBlock Text="{Binding CardsPerRow}" Foreground="Yellow" Width="30"/>
-                        </StackPanel>
-                        
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Cards per Column:" Width="100"/>
-                            <TextBox Text="{Binding CardsPerColumn, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="1-10"/>
-                            <TextBlock Text="{Binding CardsPerColumn}" Foreground="Yellow" Width="30"/>
-                        </StackPanel>
+                        <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
+                        <!--     <Label Content="Cards per Row:" Width="100"/> -->
+                        <!--     <TextBox Text="{Binding CardsPerRow, Mode=TwoWay}"  -->
+                        <!--              Width="80"  -->
+                        <!--              Watermark="1-10"/> -->
+                        <!--     <TextBlock Text="{Binding CardsPerRow}" Foreground="Yellow" Width="30"/> -->
+                        <!-- </StackPanel> -->
+                        <!-- -->
+                        <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
+                        <!--     <Label Content="Cards per Column:" Width="100"/> -->
+                        <!--     <TextBox Text="{Binding CardsPerColumn, Mode=TwoWay}"  -->
+                        <!--              Width="80"  -->
+                        <!--              Watermark="1-10"/> -->
+                        <!--     <TextBlock Text="{Binding CardsPerColumn}" Foreground="Yellow" Width="30"/> -->
+                        <!-- </StackPanel> -->
                         
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Label Content="Card Spacing:" Width="100"/>
