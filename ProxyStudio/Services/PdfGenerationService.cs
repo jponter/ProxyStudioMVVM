@@ -142,181 +142,204 @@ namespace ProxyStudio.Services
         }
 
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options)
+{
+    try
+    {
+        DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards");
+        
+        var previewWidth = 600;
+        var previewHeight = 800;
+        
+        using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        
+        DebugHelper.WriteDebug("Created bitmap and graphics");
+        
+        graphics.Clear(System.Drawing.Color.White);
+        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        
+        // Draw title
+        using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
+        graphics.DrawString($"Card Collection - {cards?.Count ?? 0} cards ({options.CardsPerRow}x{options.CardsPerColumn})", titleFont, 
+            System.Drawing.Brushes.Black, new System.Drawing.PointF(10, 10));
+        
+        DebugHelper.WriteDebug("Drew title");
+        
+        if (cards == null || cards.Count == 0)
         {
-            try
+            DebugHelper.WriteDebug("No cards to draw");
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            ms.Position = 0;
+            return new Bitmap(ms);
+        }
+        
+        var actualCardsPerRow = options.CardsPerRow;
+        var actualCardsPerColumn = options.CardsPerColumn;
+        var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
+        var pageCards = cards.Take(cardsPerPage).ToList();
+        
+        DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+        
+        var startX = 20;
+        var startY = 40;
+        var availableWidth = previewWidth - 40;
+        var availableHeight = previewHeight - 60;
+        
+        // FIXED: Calculate card dimensions WITHOUT considering spacing
+        var cardWidth = (float)availableWidth / actualCardsPerRow;
+        var cardHeight = (float)availableHeight / actualCardsPerColumn;
+        
+        // Maintain aspect ratio
+        var standardCardRatio = 2.5f / 3.5f;
+        var calculatedRatio = cardWidth / cardHeight;
+        
+        if (calculatedRatio > standardCardRatio)
+        {
+            cardWidth = cardHeight * standardCardRatio;
+        }
+        else
+        {
+            cardHeight = cardWidth / standardCardRatio;
+        }
+        
+        DebugHelper.WriteDebug($"Card layout: {cardWidth}x{cardHeight} (spacing: {options.CardSpacing})");
+        
+        // FIXED: Calculate grid layout and center it
+        var totalGridWidth = actualCardsPerRow * cardWidth + (actualCardsPerRow - 1) * options.CardSpacing;
+        var totalGridHeight = actualCardsPerColumn * cardHeight + (actualCardsPerColumn - 1) * options.CardSpacing;
+        
+        var gridStartX = startX + (availableWidth - totalGridWidth) / 2;
+        var gridStartY = startY + (availableHeight - totalGridHeight) / 2;
+        
+        // Draw cards with proper spacing
+        for (int row = 0; row < actualCardsPerColumn; row++)
+        {
+            for (int col = 0; col < actualCardsPerRow; col++)
             {
-                DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards");
+                var cardIndex = row * actualCardsPerRow + col;
                 
-                var previewWidth = 600;
-                var previewHeight = 800;
-                
-                using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
-                using var graphics = System.Drawing.Graphics.FromImage(bitmap);
-                
-                DebugHelper.WriteDebug("Created bitmap and graphics");
-                
-                graphics.Clear(System.Drawing.Color.White);
-                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                
-                // Draw title
-                using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
-                graphics.DrawString($"Card Collection - {cards?.Count ?? 0} cards ({options.CardsPerRow}x{options.CardsPerColumn})", titleFont, 
-                    System.Drawing.Brushes.Black, new System.Drawing.PointF(10, 10));
-                
-                DebugHelper.WriteDebug("Drew title");
-                
-                if (cards == null || cards.Count == 0)
+                if (cardIndex < pageCards.Count)
                 {
-                    DebugHelper.WriteDebug("No cards to draw");
-                    // Convert to Avalonia Bitmap
-                    using var ms = new MemoryStream();
-                    bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                    ms.Position = 0;
+                    var card = pageCards[cardIndex];
                     
-                    return new Bitmap(ms);
+                    // Calculate position with spacing
+                    var x = (int)(gridStartX + col * (cardWidth + options.CardSpacing));
+                    var y = (int)(gridStartY + row * (cardHeight + options.CardSpacing));
+                    
+                    DebugHelper.WriteDebug($"Drawing card {cardIndex}: {card?.Name ?? "NULL"} at ({x},{y}) - row {row}, col {col}");
+                    
+                    DrawPreviewCard(graphics, card, options, x, y, (int)cardWidth, (int)cardHeight);
                 }
-                
-                // USE THE OPTIONS VALUES instead of hardcoded 3x3!
-                var actualCardsPerRow = options.CardsPerRow;
-                var actualCardsPerColumn = options.CardsPerColumn;
-                var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
-                var pageCards = cards.Take(cardsPerPage).ToList();
-                
-                DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
-                
-                var startX = 20;
-                var startY = 40;
-                var availableWidth = previewWidth - 40;
-                var availableHeight = previewHeight - 60;
-                
-                // Account for spacing between cards
-                var totalSpacingWidth = options.CardSpacing * (actualCardsPerRow - 1);
-                var totalSpacingHeight = options.CardSpacing * (actualCardsPerColumn - 1);
-                
-                // Calculate card dimensions WITH spacing
-                var cardWidth = (availableWidth - totalSpacingWidth) / actualCardsPerRow;
-                var cardHeight = (availableHeight - totalSpacingHeight) / actualCardsPerColumn;
-                
-                // Maintain aspect ratio
-                var standardCardRatio = 2.5f / 3.5f;
-                var calculatedRatio = (float)cardWidth / cardHeight;
-                
-                if (calculatedRatio > standardCardRatio)
-                {
-                    cardWidth = (int)(cardHeight * standardCardRatio);
-                }
-                else
-                {
-                    cardHeight = (int)(cardWidth / standardCardRatio);
-                }
-                
-                DebugHelper.WriteDebug($"Card layout: {cardWidth}x{cardHeight} (spacing: {options.CardSpacing})");
-                
-                // Draw cards WITH PROPER SPACING
-                for (int row = 0; row < actualCardsPerColumn; row++)
-                {
-                    for (int col = 0; col < actualCardsPerRow; col++)
-                    {
-                        var cardIndex = row * actualCardsPerRow + col;
-                        
-                        if (cardIndex < pageCards.Count)
-                        {
-                            var card = pageCards[cardIndex];
-                            
-                            // Calculate position WITH spacing
-                            var x = (int)(startX + col * (cardWidth + options.CardSpacing));
-                            var y = (int)(startY + row * (cardHeight + options.CardSpacing));
-                            
-                            DebugHelper.WriteDebug($"Drawing card {cardIndex}: {card?.Name ?? "NULL"} at ({x},{y}) - row {row}, col {col}");
-                            
-                            DrawPreviewCard(graphics, card, options, x, y, (int)cardWidth, (int)cardHeight);
-                        }
-                    }
-                }
-                
-                DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
-                
-                // Convert to Avalonia Bitmap
-                using var outputStream = new MemoryStream();
-                bitmap.Save(outputStream, System.Drawing.Imaging.ImageFormat.Png);
-                outputStream.Position = 0;
-                
-                var avaloniaB = new Bitmap(outputStream);
-                DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
-                
-                return avaloniaB;
-            }
-            catch (Exception ex)
-            {
-                DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
-                return CreateFallbackPreview(cards, options);
             }
         }
+        
+        DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
+        
+        // Convert to Avalonia Bitmap
+        using var outputStream = new MemoryStream();
+        bitmap.Save(outputStream, System.Drawing.Imaging.ImageFormat.Png);
+        outputStream.Position = 0;
+        
+        var avaloniaB = new Bitmap(outputStream);
+        DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
+        
+        return avaloniaB;
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
+        DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+        return CreateFallbackPreview(cards, options);
+    }
+}
 
         private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x, int y, int width, int height)
+{
+    try
+    {
+        var rect = new System.Drawing.Rectangle(x, y, width, height);
+        
+        DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} at ({x},{y}) size {width}x{height}");
+        
+        if (card?.ImageData != null && card.ImageData.Length > 0)
         {
             try
             {
-                var rect = new System.Drawing.Rectangle(x, y, width, height);
+                using var imageStream = new MemoryStream(card.ImageData);
+                using var cardImage = System.Drawing.Image.FromStream(imageStream);
                 
-                DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} at ({x},{y}) size {width}x{height}");
-                
-                if (card?.ImageData != null && card.ImageData.Length > 0)
-                {
-                    try
-                    {
-                        // Try to draw the actual image
-                        using var imageStream = new MemoryStream(card.ImageData);
-                        using var cardImage = System.Drawing.Image.FromStream(imageStream);
-                        
-                        graphics.DrawImage(cardImage, rect);
-                        DebugHelper.WriteDebug($"Drew preview image for {card.Name}");
-                    }
-                    catch (Exception ex)
-                    {
-                        DebugHelper.WriteDebug($"Error drawing card image for {card.Name}: {ex.Message}");
-                        // Fallback to placeholder
-                        DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
-                    }
-                }
-                else
-                {
-                    DebugHelper.WriteDebug($"No image data for {card?.Name ?? "NULL"}");
-                    DrawPreviewPlaceholder(graphics, card, rect, "No Image");
-                }
-                
-                // Draw cutting lines if enabled
-                if (options.ShowCuttingLines)
-                {
-                    var color = ParseSystemDrawingColor(options.CuttingLineColor);
-                    using var pen = new System.Drawing.Pen(color, options.CuttingLineThickness);
-                    
-                    if (options.IsCuttingLineDashed)
-                    {
-                        pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                    }
-                    
-                    graphics.DrawRectangle(pen, rect);
-                    DebugHelper.WriteDebug($"Drew cutting lines for {card?.Name ?? "NULL"}");
-                }
+                graphics.DrawImage(cardImage, rect);
+                DebugHelper.WriteDebug($"Drew preview image for {card.Name}");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
-                
-                // Safe fallback
-                try
-                {
-                    DrawPreviewPlaceholder(graphics, card, new System.Drawing.Rectangle(x, y, width, height), "Error");
-                }
-                catch (Exception ex2)
-                {
-                    DebugHelper.WriteDebug($"Error in fallback placeholder: {ex2.Message}");
-                }
+                DebugHelper.WriteDebug($"Error drawing card image for {card.Name}: {ex.Message}");
+                DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
             }
         }
+        else
+        {
+            DebugHelper.WriteDebug($"No image data for {card?.Name ?? "NULL"}");
+            DrawPreviewPlaceholder(graphics, card, rect, "No Image");
+        }
+        
+        // FIXED: Draw cutting lines with extensions
+        if (options.ShowCuttingLines)
+        {
+            var color = ParseSystemDrawingColor(options.CuttingLineColor);
+            using var pen = new System.Drawing.Pen(color, options.CuttingLineThickness);
+            
+            if (options.IsCuttingLineDashed)
+            {
+                pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+            }
+            
+            if (options.CuttingLineExtension > 0)
+            {
+                // Draw extended cutting lines at corners
+                var ext = (int)options.CuttingLineExtension;
+                
+                // Top-left corner
+                graphics.DrawLine(pen, x - ext, y, x + ext, y); // Horizontal
+                graphics.DrawLine(pen, x, y - ext, x, y + ext); // Vertical
+                
+                // Top-right corner
+                graphics.DrawLine(pen, x + width - ext, y, x + width + ext, y); // Horizontal
+                graphics.DrawLine(pen, x + width, y - ext, x + width, y + ext); // Vertical
+                
+                // Bottom-left corner
+                graphics.DrawLine(pen, x - ext, y + height, x + ext, y + height); // Horizontal
+                graphics.DrawLine(pen, x, y + height - ext, x, y + height + ext); // Vertical
+                
+                // Bottom-right corner
+                graphics.DrawLine(pen, x + width - ext, y + height, x + width + ext, y + height); // Horizontal
+                graphics.DrawLine(pen, x + width, y + height - ext, x + width, y + height + ext); // Vertical
+            }
+            else
+            {
+                // Just draw the card border
+                graphics.DrawRectangle(pen, rect);
+            }
+            
+            DebugHelper.WriteDebug($"Drew cutting lines for {card?.Name ?? "NULL"} with {options.CuttingLineExtension}pt extension");
+        }
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+        DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+        
+        try
+        {
+            DrawPreviewPlaceholder(graphics, card, new System.Drawing.Rectangle(x, y, width, height), "Error");
+        }
+        catch (Exception ex2)
+        {
+            DebugHelper.WriteDebug($"Error in fallback placeholder: {ex2.Message}");
+        }
+    }
+}
 
         private void DrawPreviewPlaceholder(System.Drawing.Graphics graphics, Card card, System.Drawing.Rectangle rect, string message)
         {
@@ -409,84 +432,90 @@ namespace ProxyStudio.Services
             }
         }
 
-        private void DrawCardGrid(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
+ // Fix for DrawCardGrid method in PdfGenerationService.cs
+
+private void DrawCardGrid(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
+{
+    var actualCardsPerRow = options.CardsPerRow;
+    var actualCardsPerColumn = options.CardsPerColumn;
+    
+    DebugHelper.WriteDebug($"Drawing {pageCards.Count} cards in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
+    
+    // Calculate available space
+    var availableWidth = pageWidth - XUnit.FromPoint(options.LeftMargin + options.RightMargin);
+    var availableHeight = pageHeight - XUnit.FromPoint(options.TopMargin + options.BottomMargin + 50); // Space for title
+    
+    // FIXED: Calculate card dimensions WITHOUT considering spacing
+    // Spacing should only affect positioning, not card size
+    var cardWidth = availableWidth.Point / actualCardsPerRow;
+    var cardHeight = availableHeight.Point / actualCardsPerColumn;
+    
+    // Maintain card aspect ratio
+    var standardCardRatio = 2.5 / 3.5;
+    var calculatedRatio = cardWidth / cardHeight;
+    
+    if (calculatedRatio > standardCardRatio)
+    {
+        cardWidth = cardHeight * standardCardRatio;
+    }
+    else
+    {
+        cardHeight = cardWidth / standardCardRatio;
+    }
+    
+    // Convert back to XUnit for positioning calculations
+    var cardWidthXUnit = XUnit.FromPoint(cardWidth);
+    var cardHeightXUnit = XUnit.FromPoint(cardHeight);
+    
+    DebugHelper.WriteDebug($"Card dimensions: {cardWidth:F1}x{cardHeight:F1} points (spacing: {options.CardSpacing}pt)");
+    
+    // Draw title with page info
+    try
+    {
+        var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
+        var title = totalPages > 1 
+            ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn})"
+            : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn})";
+            
+        gfx.DrawString(title, font, XBrushes.Black,
+            new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
+        DebugHelper.WriteDebug("Drew title successfully");
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+    }
+    
+    // FIXED: Calculate grid layout with proper spacing
+    var totalGridWidth = actualCardsPerRow * cardWidth + (actualCardsPerRow - 1) * options.CardSpacing;
+    var totalGridHeight = actualCardsPerColumn * cardHeight + (actualCardsPerColumn - 1) * options.CardSpacing;
+    
+    // Center the grid on the page
+    var startX = XUnit.FromPoint(options.LeftMargin + (availableWidth.Point - totalGridWidth) / 2);
+    var startY = XUnit.FromPoint(options.TopMargin + 30 + (availableHeight.Point - totalGridHeight) / 2);
+    
+    // Draw cards with proper spacing
+    for (int row = 0; row < actualCardsPerColumn; row++)
+    {
+        for (int col = 0; col < actualCardsPerRow; col++)
         {
-            // USE THE OPTIONS VALUES instead of hardcoded 3x3!
-            var actualCardsPerRow = options.CardsPerRow;
-            var actualCardsPerColumn = options.CardsPerColumn;
+            var cardIndex = row * actualCardsPerRow + col;
             
-            DebugHelper.WriteDebug($"Drawing {pageCards.Count} cards in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
-            
-            // Calculate available space
-            var availableWidth = pageWidth - XUnit.FromPoint(options.LeftMargin + options.RightMargin);
-            var availableHeight = pageHeight - XUnit.FromPoint(options.TopMargin + options.BottomMargin + 50); // Space for title
-            
-            // Account for spacing between cards
-            var totalSpacingWidth = XUnit.FromPoint(options.CardSpacing * (actualCardsPerRow - 1));
-            var totalSpacingHeight = XUnit.FromPoint(options.CardSpacing * (actualCardsPerColumn - 1));
-            
-            // Calculate card dimensions WITH spacing
-            var cardWidth = (availableWidth - totalSpacingWidth) / actualCardsPerRow;
-            var cardHeight = (availableHeight - totalSpacingHeight) / actualCardsPerColumn;
-            
-            // Maintain card aspect ratio
-            var standardCardRatio = 2.5 / 3.5;
-            var calculatedRatio = cardWidth / cardHeight;
-            
-            if (calculatedRatio > standardCardRatio)
+            if (cardIndex < pageCards.Count)
             {
-                cardWidth = cardHeight * standardCardRatio;
-            }
-            else
-            {
-                cardHeight = cardWidth / standardCardRatio;
-            }
-            
-            DebugHelper.WriteDebug($"Card dimensions: {cardWidth:F1}x{cardHeight:F1} points (spacing: {options.CardSpacing}pt)");
-            
-            // Draw title with page info
-            try
-            {
-                var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
-                var title = totalPages > 1 
-                    ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn})"
-                    : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn})";
-                    
-                gfx.DrawString(title, font, XBrushes.Black,
-                    new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
-                DebugHelper.WriteDebug("Drew title successfully");
-            }
-            catch (Exception ex)
-            {
-                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
-                // Continue without title
-            }
-            
-            // Draw cards WITH PROPER SPACING
-            var startX = XUnit.FromPoint(options.LeftMargin);
-            var startY = XUnit.FromPoint(options.TopMargin + 30);
-            
-            for (int row = 0; row < actualCardsPerColumn; row++)
-            {
-                for (int col = 0; col < actualCardsPerRow; col++)
-                {
-                    var cardIndex = row * actualCardsPerRow + col;
-                    
-                    if (cardIndex < pageCards.Count)
-                    {
-                        var card = pageCards[cardIndex];
-                        
-                        // Calculate position WITH spacing
-                        var x = startX + col * (cardWidth + XUnit.FromPoint(options.CardSpacing));
-                        var y = startY + row * (cardHeight + XUnit.FromPoint(options.CardSpacing));
-                        
-                        DebugHelper.WriteDebug($"Drawing card {cardIndex} at ({x:F1}, {y:F1}) - row {row}, col {col}");
-                        
-                        DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
-                    }
-                }
+                var card = pageCards[cardIndex];
+                
+                // Calculate position with spacing
+                var x = startX + XUnit.FromPoint(col * (cardWidth + options.CardSpacing));
+                var y = startY + XUnit.FromPoint(row * (cardHeight + options.CardSpacing));
+                
+                DebugHelper.WriteDebug($"Drawing card {cardIndex} at ({x.Point:F1}, {y.Point:F1}) - row {row}, col {col}");
+                
+                DrawCard(gfx, card, options, x, y, cardWidthXUnit, cardHeightXUnit);
             }
         }
+    }
+}
 
         private XFont GetSafeFont(string familyName, double size, XFontStyleEx style)
         {
@@ -588,20 +617,51 @@ namespace ProxyStudio.Services
             }
         }
 
+        // FIXED: Updated cutting lines method with proper extensions
         private void DrawCuttingLines(XGraphics gfx, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width, XUnit height)
         {
             var color = ParseColor(options.CuttingLineColor);
             var pen = new XPen(color, options.CuttingLineThickness);
-            
+    
             if (options.IsCuttingLineDashed)
             {
                 pen.DashStyle = XDashStyle.Dash;
             }
-            
-            // Draw border around the card
-            gfx.DrawRectangle(pen, new XRect(x, y, width, height));
-            
-            DebugHelper.WriteDebug($"Drew cutting lines around card");
+    
+            var extension = XUnit.FromPoint(options.CuttingLineExtension);
+    
+            // Calculate card corners
+            var left = x;
+            var right = x + width;
+            var top = y;
+            var bottom = y + height;
+    
+            // Draw extended cutting lines at corners
+            if (options.CuttingLineExtension > 0)
+            {
+                // Top-left corner
+                gfx.DrawLine(pen, left - extension, top, left + extension, top); // Horizontal
+                gfx.DrawLine(pen, left, top - extension, left, top + extension); // Vertical
+        
+                // Top-right corner  
+                gfx.DrawLine(pen, right - extension, top, right + extension, top); // Horizontal
+                gfx.DrawLine(pen, right, top - extension, right, top + extension); // Vertical
+        
+                // Bottom-left corner
+                gfx.DrawLine(pen, left - extension, bottom, left + extension, bottom); // Horizontal
+                gfx.DrawLine(pen, left, bottom - extension, left, bottom + extension); // Vertical
+        
+                // Bottom-right corner
+                gfx.DrawLine(pen, right - extension, bottom, right + extension, bottom); // Horizontal
+                gfx.DrawLine(pen, right, bottom - extension, right, bottom + extension); // Vertical
+            }
+            else
+            {
+                // Just draw the card border if no extension
+                gfx.DrawRectangle(pen, new XRect(x, y, width, height));
+            }
+    
+            DebugHelper.WriteDebug($"Drew cutting lines with {options.CuttingLineExtension}pt extension");
         }
 
         private XColor ParseColor(string colorString)
