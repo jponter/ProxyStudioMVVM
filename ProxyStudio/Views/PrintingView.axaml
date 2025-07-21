@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:li="using:LoadingIndicators.Avalonia"
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="1000"
              x:Class="ProxyStudio.Views.PrintingView"
              x:DataType="vm:PrintViewModel">
     
@@ -96,6 +96,41 @@
                     </StackPanel>
                 </Expander>
                 
+                <!-- Print Quality Settings - Insert this BEFORE Preview Settings -->
+                <Expander Header="Print Quality Settings" IsExpanded="True">
+                    <StackPanel Spacing="8" Margin="10">
+                        <TextBlock Text="Card Size: Fixed 2.5″ × 3.5″ (Professional Standard)" 
+                                   FontWeight="SemiBold" Foreground="DarkBlue" FontSize="12"/>
+        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Label Content="Print DPI:" Width="80"/>
+                            <ComboBox ItemsSource="{Binding CommonPrintDpiOptions}" 
+                                      SelectedItem="{Binding PrintDpi}" 
+                                      Width="80"/>
+                            <TextBox Text="{Binding PrintDpi, Mode=TwoWay}" 
+                                     Width="60" 
+                                     Watermark="300"/>
+                            <TextBlock Text="DPI" VerticalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+        
+                        <CheckBox Content="Enforce minimum 300 DPI" 
+                                  IsChecked="{Binding EnsureMinimumPrintDpi}"
+                                  ToolTip.Tip="Prevents accidentally generating low-quality PDFs below 300 DPI"/>
+        
+                        <Border Background="LightYellow" BorderBrush="Orange" BorderThickness="1" 
+                                CornerRadius="4" Padding="8" Margin="0,5,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Print Quality Guide:" FontWeight="Bold" FontSize="11"/>
+                                <TextBlock Text="• 300 DPI: Professional printing quality" FontSize="10"/>
+                                <TextBlock Text="• 600 DPI: Ultra-high quality (large files)" FontSize="10"/>
+                                <TextBlock Text="• 150 DPI: Draft quality only" FontSize="10"/>
+                                <TextBlock Text="Card dimensions are FIXED at exactly 2.5″ × 3.5″" 
+                                           FontSize="10" FontWeight="SemiBold" Foreground="DarkBlue"/>
+                            </StackPanel>
+                        </Border>
+                        </StackPanel>
+                        </Expander>
+                
                 <!-- Preview Settings -->
                 <Expander Header="Preview Settings" IsExpanded="True">
                     <StackPanel Spacing="8" Margin="10">
@@ -117,26 +152,150 @@
                 </Expander>
                 
                 <!-- Action Buttons -->
-                <StackPanel Spacing="10" Margin="0,20,0,0">
-                    <Button Content="Generate Preview" 
-                            Command="{Binding GeneratePreviewCommand}"
-                            IsEnabled="{Binding !IsGeneratingPreview}"
-                            HorizontalAlignment="Stretch"/>
-                    
-                    <Button Content="Generate PDF" 
-                            Command="{Binding GeneratePdfCommand}"
-                            IsEnabled="{Binding !IsGeneratingPdf}"
-                            HorizontalAlignment="Stretch"/>
-                    
-                    <Button Content="Save PDF As..." 
-                            Command="{Binding SavePdfAsCommand}"
-                            IsEnabled="{Binding !IsGeneratingPdf}"
-                            HorizontalAlignment="Stretch"/>
-                    
-                    <li:LoadingIndicator Foreground="AliceBlue" 
-                                        IsActive="{Binding IsGeneratingPreview}" 
-                                        Mode="ThreeDots" SpeedRatio="1.2" />
-                </StackPanel>
+<StackPanel Spacing="10" Margin="0,20,0,0">
+    <Button Content="Generate Preview" 
+            Command="{Binding GeneratePreviewCommand}"
+            IsEnabled="{Binding !IsGeneratingPreview}"
+            HorizontalAlignment="Stretch"/>
+    
+    <!-- PDF Generation Button with enhanced styling -->
+    <Button Command="{Binding GeneratePdfCommand}"
+            IsEnabled="{Binding !IsGeneratingPdf}"
+            HorizontalAlignment="Stretch"
+            Height="40">
+        <Button.Styles>
+            <Style Selector="Button">
+                <Setter Property="Background" Value="#22C55E"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="BorderBrush" Value="#16A34A"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </Style>
+            <Style Selector="Button:pointerover">
+                <Setter Property="Background" Value="#16A34A"/>
+            </Style>
+            <Style Selector="Button:pressed">
+                <Setter Property="Background" Value="#15803D"/>
+            </Style>
+            <Style Selector="Button:disabled">
+                <Setter Property="Background" Value="#9CA3AF"/>
+                <Setter Property="BorderBrush" Value="#6B7280"/>
+            </Style>
+        </Button.Styles>
+        
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="🖨️" FontSize="16" VerticalAlignment="Center"/>
+            <TextBlock VerticalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="Generate PDF ({0} DPI)">
+                        <Binding Path="PrintDpi"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </StackPanel>
+    </Button>
+    
+    <!-- Progress Section - Only visible during PDF generation -->
+    <Border Background="#F0F9FF" BorderBrush="#3B82F6" BorderThickness="2" 
+            CornerRadius="8" Padding="15" Margin="0,10,0,0"
+            IsVisible="{Binding ShowProgressDetails}">
+        <StackPanel Spacing="10">
+            <TextBlock Text="📊 PDF Generation Progress" 
+                       FontWeight="Bold" FontSize="14" 
+                       Foreground="#1E40AF"/>
+            
+            <!-- Progress Bar -->
+            <ProgressBar Value="{Binding PdfGenerationProgress}" 
+                         Minimum="0" Maximum="100" 
+                         Height="20" 
+                         Background="#E5E7EB"
+                         Foreground="#3B82F6"/>
+            
+            <!-- Progress Text -->
+            <TextBlock Text="{Binding PdfGenerationStatus}" 
+                       FontWeight="SemiBold" 
+                       Foreground="#1E40AF"
+                       TextWrapping="Wrap"/>
+            
+            <!-- Current Operation -->
+            <TextBlock Text="{Binding CurrentOperation}" 
+                       FontSize="11" 
+                       Foreground="#6B7280"
+                       TextWrapping="Wrap"/>
+            
+            <!-- Time Remaining -->
+            <TextBlock Text="{Binding TimeRemaining}" 
+                       FontSize="11" 
+                       FontStyle="Italic" 
+                       Foreground="#059669"
+                       IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            
+            <!-- Cancel Button (for future enhancement) -->
+            <Button Content="Cancel Generation" 
+                    Command="{Binding CancelPdfGenerationCommand}"
+                    IsVisible="False"
+                    Background="#EF4444" 
+                    Foreground="White"
+                    Width="150" 
+                    HorizontalAlignment="Center"
+                    Margin="0,10,0,0"/>
+        </StackPanel>
+    </Border>
+    
+    <Button Content="Save PDF As..." 
+            Command="{Binding SavePdfAsCommand}"
+            IsEnabled="{Binding !IsGeneratingPdf}"
+            HorizontalAlignment="Stretch"/>
+    
+    <!-- Loading Indicator for Preview -->
+    <li:LoadingIndicator Foreground="AliceBlue" 
+                        IsActive="{Binding IsGeneratingPreview}" 
+                        Mode="ThreeDots" SpeedRatio="1.2" />
+    
+    <!-- PDF Generation Status Summary -->
+    <Border Background="#F9FAFB" BorderBrush="#D1D5DB" BorderThickness="1" 
+            CornerRadius="6" Padding="12" Margin="0,15,0,0"
+            IsVisible="{Binding !ShowProgressDetails}">
+        <StackPanel Spacing="6">
+            <TextBlock Text="📋 Generation Summary" FontWeight="SemiBold" 
+                       Foreground="#374151" FontSize="12"/>
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Print Quality:" 
+                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" 
+                           Text="{Binding PrintDpi, StringFormat='{}{0} DPI'}" 
+                           FontSize="11" Foreground="#059669"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Card Size:" 
+                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="2.5″ × 3.5″ (Fixed)" 
+                           FontSize="11" Foreground="#059669"/>
+                
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Est. File Size:" 
+                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="#6B7280">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="~{0:F1} MB for {1} cards">
+                            <Binding Path="EstimatedFileSize"/>
+                            <Binding Path="CardCount"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Grid>
+        </StackPanel>
+    </Border>
+</StackPanel>
             </StackPanel>
         </ScrollViewer>
         

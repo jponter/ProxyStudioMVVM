@@ -96,15 +96,135 @@
                <views:PrintingView DataContext="{Binding PrintViewModel}"/>
            </TabItem>
            
-           <!-- Settings Tab -->
-           <TabItem Header="Settings">
-               <StackPanel>
-                   <StackPanel Orientation="Horizontal">
-                       <Label Content="Global Bleed Enable"></Label>
-                       <CheckBox IsChecked="{Binding GlobalBleedEnabled}"></CheckBox>
-                   </StackPanel>
-               </StackPanel>
-           </TabItem>
+<!-- Replace your current Settings TabItem with this minimal, working version -->
+<TabItem Header="Settings">
+    <ScrollViewer>
+        <StackPanel Spacing="15" Margin="20">
+            <!-- Global Card Settings -->
+            <Expander Header="Global Card Settings" IsExpanded="True">
+                <StackPanel Spacing="10" Margin="15">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Label Content="Global Bleed Enable" Width="150"/>
+                        <CheckBox IsChecked="{Binding GlobalBleedEnabled}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <!-- Print Quality Settings -->
+            <Expander Header="Print Quality Settings" IsExpanded="True">
+                <StackPanel Spacing="12" Margin="15">
+                    <!-- Card Size Info -->
+                    <Border Background="#E8F4FD" BorderBrush="#4A90E2" BorderThickness="2" 
+                            CornerRadius="6" Padding="12">
+                        <StackPanel>
+                            <TextBlock Text="📏 Card Dimensions" FontWeight="Bold" FontSize="13" 
+                                       Foreground="#2C5282"/>
+                            <TextBlock Text="Fixed at exactly 2.5″ × 3.5″ (63mm × 88mm)" 
+                                       FontWeight="SemiBold" Foreground="#2C5282" Margin="0,2,0,0"/>
+                            <TextBlock Text="Professional trading card standard - dimensions never change" 
+                                       FontSize="11" Foreground="#4A5568" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Print DPI Setting via PrintViewModel -->
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Label Content="Print Resolution:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox ItemsSource="{Binding PrintViewModel.CommonPrintDpiOptions}" 
+                                  SelectedItem="{Binding PrintViewModel.PrintDpi}" 
+                                  Width="80" Height="32"/>
+                        <TextBox Text="{Binding PrintViewModel.PrintDpi, Mode=TwoWay}" 
+                                 Width="70" Height="32" Watermark="300"/>
+                        <TextBlock Text="DPI" VerticalAlignment="Center" FontWeight="Bold"/>
+                    </StackPanel>
+                    
+                    <!-- Minimum DPI Enforcement -->
+                    <CheckBox Content="🛡️ Enforce minimum 300 DPI for print quality" 
+                              IsChecked="{Binding PrintViewModel.EnsureMinimumPrintDpi}" 
+                              FontWeight="SemiBold"
+                              ToolTip.Tip="Prevents accidentally generating low-quality PDFs below 300 DPI"/>
+                    
+                    <!-- Quality Guide -->
+                    <Border Background="#FFFBEB" BorderBrush="#F59E0B" BorderThickness="1" 
+                            CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="🎯 Print Quality Guide" FontWeight="Bold" FontSize="12" 
+                                       Foreground="#92400E"/>
+                            <StackPanel Margin="0,6,0,0" Spacing="4">
+                                <TextBlock Text="• 150 DPI: Draft quality - For internal use only" FontSize="10"/>
+                                <TextBlock Text="• 300 DPI: Professional printing - Recommended standard" 
+                                           FontSize="10" Foreground="Green" FontWeight="SemiBold"/>
+                                <TextBlock Text="• 600 DPI: Ultra-high quality - Large files, slow generation" FontSize="10"/>
+                                <TextBlock Text="• 1200 DPI: Maximum quality - Very large files" FontSize="10"/>
+                            </StackPanel>
+                            
+                            <TextBlock Text="💡 Higher DPI = Better print quality but larger file size and slower generation" 
+                                       FontSize="11" FontStyle="Italic" Foreground="#92400E" 
+                                       Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Expander>
+
+            <!-- Preview Settings -->
+            <Expander Header="Preview Settings" IsExpanded="False">
+                <StackPanel Spacing="10" Margin="15">
+                    <TextBlock Text="ℹ️ Preview settings are separate from print settings to maintain UI performance" 
+                               FontSize="12" FontStyle="Italic" Foreground="Gray"/>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Label Content="Preview DPI:" Width="100" VerticalAlignment="Center"/>
+                        <Slider Value="{Binding PrintViewModel.PreviewDpi, Mode=TwoWay}" 
+                                Minimum="72" Maximum="300" Width="150" 
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding PrintViewModel.PreviewDpi}" Width="40" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="DPI" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Label Content="Preview Quality:" Width="100" VerticalAlignment="Center"/>
+                        <Slider Value="{Binding PrintViewModel.PreviewQuality, Mode=TwoWay}" 
+                                Minimum="1" Maximum="100" Width="150" 
+                                VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding PrintViewModel.PreviewQuality}" Width="40" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="%" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+
+            <!-- Current Status Display -->
+            <Expander Header="Current Print Configuration" IsExpanded="False">
+                <StackPanel Spacing="8" Margin="15">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Card Size:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="2.5″ × 3.5″ (FIXED)" Foreground="Green"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Print Resolution:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" 
+                                   Text="{Binding PrintViewModel.PrintDpi, StringFormat='{}{0} DPI'}" 
+                                   Foreground="Blue"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Preview Resolution:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" 
+                                   Text="{Binding PrintViewModel.PreviewDpi, StringFormat='{}{0} DPI'}" 
+                                   Foreground="Gray"/>
+                    </Grid>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</TabItem>
        </TabControl>
     </Grid>
 </Window>

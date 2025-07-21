@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Dialogs;
@@ -75,7 +76,8 @@ public partial class MainViewModel : ViewModelBase
 #endif
 
         GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
-        Cards.AddRange(AddTestCards());
+        // Cards.AddRange(AddTestCards());
+        // PrintViewModel?.RefreshCardInfo();
         
         DebugHelper.WriteDebug($"Cards loaded: {Cards.Count} cards");
         
@@ -94,10 +96,24 @@ public partial class MainViewModel : ViewModelBase
     }
 
     // Simple design-time PDF service
+    // Simple design-time PDF service
     private class DesignTimePdfService : IPdfGenerationService
     {
-        public Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options)
+        public Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
         {
+            // Simulate progress for design-time
+            if (progress != null)
+            {
+                var progressInfo = new PdfGenerationProgress
+                {
+                    CurrentStep = 1,
+                    TotalSteps = 1,
+                    CurrentOperation = "Design-time generation",
+                    //PercentageComplete = 100
+                };
+                progress.Report(progressInfo);
+            }
+        
             return Task.FromResult(new byte[0]);
         }
 
@@ -106,6 +122,8 @@ public partial class MainViewModel : ViewModelBase
             return Task.FromResult<Bitmap>(null!);
         }
     }
+
+    // Update the AddTestCardsRelayAsync method in MainViewModel:
 
     [RelayCommand(CanExecute = nameof(CanAddTestCards))]
     private async Task AddTestCardsRelayAsync()
@@ -116,6 +134,11 @@ public partial class MainViewModel : ViewModelBase
         var newCards = await Task.Run(() => { return AddTestCards(); });
 
         Cards.AddRange(newCards);
+    
+        // IMPORTANT: Refresh PrintViewModel after adding cards
+        PrintViewModel?.RefreshCardInfo();
+    
+        DebugHelper.WriteDebug($"Added {newCards.Count} cards, total now: {Cards.Count}");
 
         IsBusy = false;
     }
@@ -128,57 +151,70 @@ public partial class MainViewModel : ViewModelBase
         SelectedCard = card;
     }
 
-    private List<Card> AddTestCards()
+    // Fix 1: Update AddTestCards() in MainViewModel.cs to store high-resolution images
+
+private List<Card> AddTestCards()
+{
+    List<Card> cards = new();
+
+    DebugHelper.WriteDebug("Loading high-resolution images for dynamic DPI scaling...");
+    
+    // Load images at their native resolution
+    var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/preacher.jpg");
+    var image2 = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/vampire.jpg");
+
+    DebugHelper.WriteDebug($"Loaded images: preacher={image.Width}x{image.Height}, vampire={image2.Width}x{image2.Height}");
+
+    // IMPORTANT: Store images at a high base resolution instead of scaling at startup
+    // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
+    const int baseDpi = 600;
+    var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
+    var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+
+    // Resize to high base resolution for maximum quality
+    image.Mutate(x => x.Resize(new ResizeOptions
     {
-        List<Card> cards = new();
+        Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+        Mode = ResizeMode.Stretch,
+        Sampler = KnownResamplers.Lanczos3 // High-quality resampling
+    }));
 
-        #region Add some default cards to the collection
+    image2.Mutate(x => x.Resize(new ResizeOptions
+    {
+        Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+        Mode = ResizeMode.Stretch,
+        Sampler = KnownResamplers.Lanczos3
+    }));
 
-        //reset the cards
+    // Store as high-quality PNG to preserve all detail for later scaling
+    var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+    {
+        CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+        ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+    };
 
-        //Helper.WriteDebug("Loading images...");
-        // Load images using SixLabors.ImageSharp
-        var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/preacher.jpg");
-        var image2 = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/vampire.jpg");
+    using var ms1 = new MemoryStream();
+    image.Save(ms1, pngEncoder);
+    var buffer = ms1.ToArray();
 
-        //change the image to 2.5 x 3.5 inches at 300 DPI
-        image.Mutate(x => x.Resize(new ResizeOptions
-        {
-            Size = new SixLabors.ImageSharp.Size(750,
-                1050) // 2.5 inches * 300 DPI = 750 pixels, 3.5 inches * 300 DPI = 1050 pixels
-            //Mode = ResizeMode
-        }));
+    using var ms2 = new MemoryStream();
+    image2.Save(ms2, pngEncoder);
+    var buffer2 = ms2.ToArray();
 
-        //var t = image.Metadata.HorizontalResolution ; // Set horizontal resolution to 300 DPI
+    DebugHelper.WriteDebug($"Created high-resolution base images: {baseWidth}x{baseHeight} ({baseDpi} DPI base)");
+    DebugHelper.WriteDebug($"Image sizes: preacher={buffer.Length} bytes, vampire={buffer2.Length} bytes");
 
-        image2.Mutate(x => x.Resize(new ResizeOptions
-        {
-            Size = new SixLabors.ImageSharp.Size(750,
-                1050) // 2.5 inches * 300 DPI = 750 pixels, 3.5 inches * 300 DPI = 1050 pixels
-            //Mode = ResizeMode
-        }));
-
-        //image2.Metadata.HorizontalResolution = 300; // Set horizontal resolution to 300 DPI
-
-        // Fix for CS0176: Qualify the static method call with the type name instead of using an instance reference.
-        var buffer = ImageSharpToWPFConverter.ImageToByteArray(image);
-
-        var buffer2 = ImageSharpToWPFConverter.ImageToByteArray(image2);
-
-        //really stress the program
-        for (var i = 0; i < 2; i++)
-        {
-            cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
-            cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
-            cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
-            cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
-        }
-
-        //set the command of each card directly
-        foreach (var card in cards) card.EditMeCommand = EditCardCommand;
-
-        #endregion
-
-        return cards;
+    for (var i = 0; i < 2; i++)
+    {
+        cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
+        cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
+        cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
+        cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
     }
+
+    foreach (var card in cards) card.EditMeCommand = EditCardCommand;
+    
+    DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
+    return cards;
+}
 }

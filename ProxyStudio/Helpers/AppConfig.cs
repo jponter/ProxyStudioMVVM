@@ -30,6 +30,11 @@ namespace ProxyStudio.Helpers
         public int CardsPerColumn { get; set; } = 3;
         public float CardSpacing { get; set; } = 0f; // No spacing for cutting
         
+        // Print Resolution Settings - NEW
+        public int PrintDpi { get; set; } = 300; // High-quality print resolution
+        public bool EnsureMinimumPrintDpi { get; set; } = true; // Enforce minimum 300 DPI
+        public int MinimumPrintDpi { get; set; } = 300; // Minimum allowed DPI
+        
         // Cutting lines
         public bool ShowCuttingLines { get; set; } = true;
         public string CuttingLineColor { get; set; } = "#FF0000"; // Red
@@ -43,8 +48,8 @@ namespace ProxyStudio.Helpers
         public float LeftMargin { get; set; } = 20f;
         public float RightMargin { get; set; } = 20f;
         
-        // Preview settings
-        public int PreviewDpi { get; set; } = 150;
+        // Preview settings (separate from print settings)
+        public int PreviewDpi { get; set; } = 150; // Lower for performance
         public int PreviewQuality { get; set; } = 85;
         
         // Output settings

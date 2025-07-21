@@ -77,11 +77,29 @@ namespace ProxyStudio.ViewModels
     /// <summary>
     /// Design-time implementation of IPdfGenerationService
     /// </summary>
+    /// <summary>
+    /// Design-time implementation of IPdfGenerationService
+    /// </summary>
     public class DesignTimePdfService : IPdfGenerationService
     {
-        public Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options)
+        public Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
         {
-            return Task.FromResult(new byte[0]);
+            // Simulate some progress reporting for design-time
+            if (progress != null)
+            {
+                var progressInfo = new PdfGenerationProgress
+                {
+                    CurrentStep = 1,
+                    TotalSteps = 1,
+                    CurrentOperation = "Design-time PDF generation",
+                    CurrentCardName = "Sample Card",
+                    CurrentPage = 1,
+                    TotalPages = 1
+                };
+                progress.Report(progressInfo);
+            }
+        
+            return Task.FromResult(new byte[1024]); // Return dummy PDF data
         }
 
         public Task<Bitmap> GeneratePreviewImageAsync(CardCollection cards, PdfGenerationOptions options)
