@@ -205,8 +205,8 @@ namespace ProxyStudio.ViewModels
             var settings = _configManager.Config.PdfSettings;
             
             // Convert decimal back to the original types
-            settings.CardsPerRow = (int)CardsPerRow;
-            settings.CardsPerColumn = (int)CardsPerColumn;
+            // settings.CardsPerRow = (int)CardsPerRow;
+            // settings.CardsPerColumn = (int)CardsPerColumn;
             settings.CardSpacing = (float)CardSpacing;
             settings.ShowCuttingLines = ShowCuttingLines;
             settings.CuttingLineColor = CuttingLineColor;
@@ -233,13 +233,19 @@ namespace ProxyStudio.ViewModels
             var actualPrintDpi = EnsureMinimumPrintDpi ? 
                 Math.Max((int)PrintDpi, _configManager.Config.PdfSettings.MinimumPrintDpi) : 
                 (int)PrintDpi;
-                
+        
             DebugHelper.WriteDebug($"Creating PDF options with PrintDpi={actualPrintDpi} (requested: {PrintDpi}, minimum enforced: {EnsureMinimumPrintDpi})");
-            
+    
+            // Use fixed layout based on orientation
+            var actualCardsPerRow = IsPortrait ? 3 : 4;
+            var actualCardsPerColumn = IsPortrait ? 3 : 2;
+    
             return new PdfGenerationOptions
             {
                 IsPortrait = IsPortrait,
                 PageSize = SelectedPageSize,
+                CardsPerRow = actualCardsPerRow,        // FIXED: Use calculated layout
+                CardsPerColumn = actualCardsPerColumn,  // FIXED: Use calculated layout
                 CardSpacing = (float)CardSpacing,
                 ShowCuttingLines = ShowCuttingLines,
                 CuttingLineColor = CuttingLineColor,
@@ -248,7 +254,7 @@ namespace ProxyStudio.ViewModels
                 CuttingLineThickness = (float)CuttingLineThickness,
                 PreviewDpi = (int)PreviewDpi,
                 PreviewQuality = (int)PreviewQuality,
-                PrintDpi = actualPrintDpi // Pass print DPI to PDF service
+                PrintDpi = actualPrintDpi
             };
         }
 
@@ -344,20 +350,20 @@ namespace ProxyStudio.ViewModels
             try
             {
                 UpdatePageInfo();
-                
+        
                 DebugHelper.WriteDebug($"Starting preview generation with {_cards.Count} cards (Page {CurrentPreviewPage} of {TotalPreviewPages})");
                 var options = CreateOptions();
-                DebugHelper.WriteDebug($"Created options - PrintDpi: {options.PrintDpi}, PreviewDpi: {options.PreviewDpi}");
-                
-                // Get cards for current preview page
-                var cardsPerPage = options.CardsPerRow * options.CardsPerColumn;
+                DebugHelper.WriteDebug($"Created options - PrintDpi: {options.PrintDpi}, PreviewDpi: {options.PreviewDpi}, Layout: {options.CardsPerRow}x{options.CardsPerColumn}");
+        
+                // Get cards for current preview page using FIXED layout
+                var cardsPerPage = options.CardsPerRow * options.CardsPerColumn; // Use options layout
                 var startIndex = (CurrentPreviewPage - 1) * cardsPerPage;
                 var pageCards = new CardCollection();
                 pageCards.AddRange(_cards.Skip(startIndex).Take(cardsPerPage));
-                
+        
                 PreviewImage = await _pdfService.GeneratePreviewImageAsync(pageCards, options);
                 DebugHelper.WriteDebug($"Preview generation completed. Image is null: {PreviewImage == null}");
-                
+        
                 SaveSettings();
             }
             catch (Exception ex)
@@ -524,13 +530,17 @@ namespace ProxyStudio.ViewModels
 
         private void UpdatePageInfo()
         {
-            var cardsPerPage = (int)(CardsPerRow * CardsPerColumn);
+            // Use fixed layout based on orientation
+            var actualCardsPerRow = IsPortrait ? 3 : 4;
+            var actualCardsPerColumn = IsPortrait ? 3 : 2;
+            var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
+    
             TotalPreviewPages = cardsPerPage == 0 ? 1 : (int)Math.Ceiling((double)_cards.Count / cardsPerPage);
-            
+    
             if (CurrentPreviewPage > TotalPreviewPages)
                 CurrentPreviewPage = Math.Max(1, TotalPreviewPages);
-                
-            DebugHelper.WriteDebug($"Updated page info: Page {CurrentPreviewPage} of {TotalPreviewPages}");
+        
+            DebugHelper.WriteDebug($"Updated page info: Page {CurrentPreviewPage} of {TotalPreviewPages} (Fixed layout: {actualCardsPerRow}x{actualCardsPerColumn})");
         }
 
         // Command for cancellation (future enhancement)
@@ -542,26 +552,24 @@ namespace ProxyStudio.ViewModels
             DebugHelper.WriteDebug("PDF generation cancellation requested (not yet implemented)");
         }
 
-        // Property change handlers - now check initialization flag
+        // Update property change handlers to not affect layout
         partial void OnCardsPerRowChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCardsPerRowChanged: {value} (initializing: {_isInitializing})");
-            if (value > 0 && value <= 10 && !_isInitializing)
+            DebugHelper.WriteDebug($"OnCardsPerRowChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
+            // Remove preview regeneration since layout is fixed
+            if (!_isInitializing)
             {
-                CurrentPreviewPage = 1;
-                _ = GeneratePreviewAsync();
-                SaveSettings();
+                SaveSettings(); // Keep for compatibility but doesn't affect layout
             }
         }
 
         partial void OnCardsPerColumnChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCardsPerColumnChanged: {value} (initializing: {_isInitializing})");
-            if (value > 0 && value <= 10 && !_isInitializing)
+            DebugHelper.WriteDebug($"OnCardsPerColumnChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
+            // Remove preview regeneration since layout is fixed
+            if (!_isInitializing)
             {
-                CurrentPreviewPage = 1;
-                _ = GeneratePreviewAsync();
-                SaveSettings();
+                SaveSettings(); // Keep for compatibility but doesn't affect layout
             }
         }
 
@@ -657,10 +665,11 @@ namespace ProxyStudio.ViewModels
 
         partial void OnIsPortraitChanged(bool value)
         {
-            DebugHelper.WriteDebug($"OnIsPortraitChanged: {value} (initializing: {_isInitializing})");
+            DebugHelper.WriteDebug($"OnIsPortraitChanged: {value} (initializing: {_isInitializing}) - This affects fixed layout");
             if (!_isInitializing)
             {
-                _ = GeneratePreviewAsync();
+                CurrentPreviewPage = 1; // Reset to page 1 when layout changes
+                _ = GeneratePreviewAsync(); // Regenerate because layout actually changed
                 SaveSettings();
             }
         }

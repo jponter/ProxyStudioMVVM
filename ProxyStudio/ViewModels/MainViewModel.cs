@@ -137,6 +137,8 @@ public partial class MainViewModel : ViewModelBase
     
         // IMPORTANT: Refresh PrintViewModel after adding cards
         PrintViewModel?.RefreshCardInfo();
+        //this will ensure the PrintViewModel has the latest cards
+        PrintViewModel?.GeneratePreviewCommand.Execute(null);
     
         DebugHelper.WriteDebug($"Added {newCards.Count} cards, total now: {Cards.Count}");
 

@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using ProxyStudio.Models;
+using System.Windows;
 
 namespace ProxyStudio.Behaviors
 {
@@ -142,7 +143,7 @@ namespace ProxyStudio.Behaviors
         private static void OnDragOver(object? sender, DragEventArgs e)
         {
             Helpers.DebugHelper.WriteDebug("Drag over.");
-
+            
             // Update adorner position using the same coordinate system as creation
             if (_dragAdorner != null && sender is ListBox listBox)
             {

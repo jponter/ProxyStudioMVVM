@@ -901,15 +901,12 @@ namespace ProxyStudio.Services
         {
             try
             {
-                if (colorString.StartsWith("#") && colorString.Length == 7)
-                {
-                    var hex = colorString.Substring(1);
-                    var r = Convert.ToByte(hex.Substring(0, 2), 16);
-                    var g = Convert.ToByte(hex.Substring(2, 2), 16);
-                    var b = Convert.ToByte(hex.Substring(4, 2), 16);
-                    return System.Drawing.Color.FromArgb(r, g, b);
-                }
-                return System.Drawing.Color.Red;
+                if (!colorString.StartsWith("#") || colorString.Length != 7) return System.Drawing.Color.Red;
+                var hex = colorString.Substring(1);
+                var r = Convert.ToByte(hex.Substring(0, 2), 16);
+                var g = Convert.ToByte(hex.Substring(2, 2), 16);
+                var b = Convert.ToByte(hex.Substring(4, 2), 16);
+                return System.Drawing.Color.FromArgb(r, g, b);
             }
             catch
             {
