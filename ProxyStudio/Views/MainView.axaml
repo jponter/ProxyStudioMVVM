@@ -43,6 +43,7 @@
                                 ItemsSource="{Binding Cards}"
                                 SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
                                 behaviors:ReorderableListBoxBehavior.IsReorderEnabled="True"
+                                behaviors:ReorderableListBoxBehavior.AcceptXmlFiles="True"
                                 DragDrop.AllowDrop="True"
                                 BorderBrush="Gray" BorderThickness="1"
                                 Background="Transparent"
@@ -57,14 +58,19 @@
                        
                            <ListBox.ItemTemplate>
                                <DataTemplate>
-                                   <StackPanel Margin="4" Background="Transparent" >
-                                       <Label Content="{Binding Name}" FontSize="10"></Label>
-                       
-                                       <Image Source="{Binding ImageSource}"
-                                              Stretch="UniformToFill"/>
-                                       <StackPanel Orientation="Horizontal">
-                                           <Button Content="&lt;"></Button>
-                                           <Button Content="&gt;"/>
+                                   <StackPanel Margin="4" Background="Transparent">
+                                       <Label Content="{Binding Name}" FontSize="10" />
+            
+                                       <Image Source="{Binding ImageSource}" Stretch="UniformToFill" />
+            
+                                       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                                           <Button Content="&lt;" Width="30" Height="25" />
+                                           <Button Content="&gt;" Width="30" Height="25" />
+                                           <Button Content="🗑️" Width="30" Height="25" 
+                                                   Background="#FF4444" Foreground="White"
+                                                   Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).DeleteCardCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   ToolTip.Tip="Delete this card" />
                                        </StackPanel>
                                    </StackPanel>
                                </DataTemplate>

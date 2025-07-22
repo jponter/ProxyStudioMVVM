@@ -29,6 +29,10 @@ namespace ProxyStudio.ViewModels
         [ObservableProperty] private bool _isGeneratingPdf;
         [ObservableProperty] private decimal _previewZoom = 100m;
         
+        // Computed properties for actual preview dimensions (affects layout)
+        public double ActualPreviewWidth => PreviewImage?.PixelSize.Width * PreviewScale ?? 400;
+        public double ActualPreviewHeight => PreviewImage?.PixelSize.Height * PreviewScale ?? 300;
+        
         // Multi-page preview support
         [ObservableProperty] private int _currentPreviewPage = 1;
         [ObservableProperty] private int _totalPreviewPages = 1;
@@ -698,6 +702,16 @@ namespace ProxyStudio.ViewModels
         {
             DebugHelper.WriteDebug($"OnPreviewZoomChanged: {value}%");
             OnPropertyChanged(nameof(PreviewScale));
+            OnPropertyChanged(nameof(ActualPreviewWidth));   // Updated property name
+            OnPropertyChanged(nameof(ActualPreviewHeight));  // Updated property name
+        }
+
+// Also update when PreviewImage changes
+        partial void OnPreviewImageChanged(Bitmap? value)
+        {
+            OnPropertyChanged(nameof(ActualPreviewWidth));   // Updated property name
+            OnPropertyChanged(nameof(ActualPreviewHeight));  // Updated property name
+            DebugHelper.WriteDebug($"PreviewImage changed. New size: {value?.PixelSize.Width}x{value?.PixelSize.Height}");
         }
     }
 }

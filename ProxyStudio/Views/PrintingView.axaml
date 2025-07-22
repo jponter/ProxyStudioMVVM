@@ -437,27 +437,29 @@
                 </Grid>
             </Border>
             
-            <!-- Preview Area -->
+            <!-- Replace the preview ScrollViewer section in PrintingView.axaml -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                           Background="LightGray" Padding="20">
                 <Border Background="White" 
                         BorderBrush="Gray" BorderThickness="1"
                         HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Grid>
-                        <!-- Preview Image -->
-                        <Image Source="{Binding PreviewImage}" 
-                               Stretch="Uniform"
-                               Margin="10">
-                            <Image.RenderTransform>
-                                <ScaleTransform ScaleX="{Binding PreviewScale}" ScaleY="{Binding PreviewScale}"/>
-                            </Image.RenderTransform>
-                        </Image>
-                        
+                        <!-- Use Viewbox for proper scaling that affects layout -->
+                        <Viewbox Width="{Binding ActualPreviewWidth}" 
+                                 Height="{Binding ActualPreviewHeight}"
+                                 Stretch="Fill"
+                                 Margin="10">
+                            <Image Source="{Binding PreviewImage}" 
+                                   Width="{Binding PreviewImage.PixelSize.Width}"
+                                   Height="{Binding PreviewImage.PixelSize.Height}"
+                                   Stretch="Fill"/>
+                        </Viewbox>
+            
                         <!-- No Preview Message -->
                         <TextBlock Text="No preview available. Click 'Generate Preview' to create one." 
-                                  IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                  Margin="20" FontSize="14" Foreground="Gray"/>
+                                   IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Margin="20" FontSize="14" Foreground="Gray"/>
                     </Grid>
                 </Border>
             </ScrollViewer>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Dialogs;
@@ -155,68 +156,340 @@ public partial class MainViewModel : ViewModelBase
 
     // Fix 1: Update AddTestCards() in MainViewModel.cs to store high-resolution images
 
-private List<Card> AddTestCards()
-{
-    List<Card> cards = new();
+    private List<Card> AddTestCards()
+    {
+        List<Card> cards = new();
 
-    DebugHelper.WriteDebug("Loading high-resolution images for dynamic DPI scaling...");
+        DebugHelper.WriteDebug("Loading high-resolution images for dynamic DPI scaling...");
     
-    // Load images at their native resolution
-    var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/preacher.jpg");
-    var image2 = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/vampire.jpg");
+        // Load images at their native resolution
+        var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/preacher.jpg");
+        var image2 = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/vampire.jpg");
 
-    DebugHelper.WriteDebug($"Loaded images: preacher={image.Width}x{image.Height}, vampire={image2.Width}x{image2.Height}");
+        DebugHelper.WriteDebug($"Loaded images: preacher={image.Width}x{image.Height}, vampire={image2.Width}x{image2.Height}");
 
-    // IMPORTANT: Store images at a high base resolution instead of scaling at startup
-    // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
-    const int baseDpi = 600;
-    var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
-    var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+        // IMPORTANT: Store images at a high base resolution instead of scaling at startup
+        // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
+        const int baseDpi = 600;
+        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
 
-    // Resize to high base resolution for maximum quality
-    image.Mutate(x => x.Resize(new ResizeOptions
+        // Resize to high base resolution for maximum quality
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+            Mode = ResizeMode.Stretch,
+            Sampler = KnownResamplers.Lanczos3 // High-quality resampling
+        }));
+
+        image2.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+            Mode = ResizeMode.Stretch,
+            Sampler = KnownResamplers.Lanczos3
+        }));
+
+        // Store as high-quality PNG to preserve all detail for later scaling
+        var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+        {
+            CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+            ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+        };
+
+        using var ms1 = new MemoryStream();
+        image.Save(ms1, pngEncoder);
+        var buffer = ms1.ToArray();
+
+        using var ms2 = new MemoryStream();
+        image2.Save(ms2, pngEncoder);
+        var buffer2 = ms2.ToArray();
+
+        DebugHelper.WriteDebug($"Created high-resolution base images: {baseWidth}x{baseHeight} ({baseDpi} DPI base)");
+        DebugHelper.WriteDebug($"Image sizes: preacher={buffer.Length} bytes, vampire={buffer2.Length} bytes");
+
+        for (var i = 0; i < 2; i++)
+        {
+            cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
+            cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
+            cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
+            cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
+        }
+
+        foreach (var card in cards) card.EditMeCommand = EditCardCommand;
+    
+        DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
+        return cards;
+    }
+    /// <summary>
+    /// Processes image files dropped onto the application
+    /// </summary>
+    /// <param name="imageData">The raw image data</param>
+    /// <param name="fileName">The original file name (used as card name)</param>
+    public async Task ProcessImageFileAsync(byte[] imageData, string fileName)
     {
-        Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
-        Mode = ResizeMode.Stretch,
-        Sampler = KnownResamplers.Lanczos3 // High-quality resampling
-    }));
-
-    image2.Mutate(x => x.Resize(new ResizeOptions
-    {
-        Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
-        Mode = ResizeMode.Stretch,
-        Sampler = KnownResamplers.Lanczos3
-    }));
-
-    // Store as high-quality PNG to preserve all detail for later scaling
-    var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
-    {
-        CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
-        ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
-    };
-
-    using var ms1 = new MemoryStream();
-    image.Save(ms1, pngEncoder);
-    var buffer = ms1.ToArray();
-
-    using var ms2 = new MemoryStream();
-    image2.Save(ms2, pngEncoder);
-    var buffer2 = ms2.ToArray();
-
-    DebugHelper.WriteDebug($"Created high-resolution base images: {baseWidth}x{baseHeight} ({baseDpi} DPI base)");
-    DebugHelper.WriteDebug($"Image sizes: preacher={buffer.Length} bytes, vampire={buffer2.Length} bytes");
-
-    for (var i = 0; i < 2; i++)
-    {
-        cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
-        cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
-        cards.Add(new Card("Preacher of the Schism", "12345", buffer, _configManager));
-        cards.Add(new Card("Vampire Token", "563726", buffer2, _configManager));
+        try
+        {
+            DebugHelper.WriteDebug($"Processing image file: {fileName}");
+        
+            IsBusy = true;
+        
+            var card = await Task.Run(() => CreateCardFromImage(imageData, fileName));
+        
+            if (card != null)
+            {
+                Cards.AddCard(card);
+                PrintViewModel?.RefreshCardInfo();
+                PrintViewModel?.GeneratePreviewCommand.Execute(null);
+            
+                DebugHelper.WriteDebug($"Successfully added card from image: {fileName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Error processing image file {fileName}: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    foreach (var card in cards) card.EditMeCommand = EditCardCommand;
+    /// <summary>
+    /// Create a Card from image data, processing it to high resolution
+    /// </summary>
+    private Card CreateCardFromImage(byte[] imageData, string fileName)
+    {
+        // Use filename without extension as card name
+        var cardName = Path.GetFileNameWithoutExtension(fileName);
+        var cardId = Guid.NewGuid().ToString();
     
-    DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
-    return cards;
-}
+        // Process image using same high-resolution logic as AddTestCards
+        var processedImageData = ProcessImageToHighResolution(imageData);
+    
+        var card = new Card(cardName, cardId, processedImageData, _configManager);
+        card.EditMeCommand = EditCardCommand;
+    
+        return card;
+    }
+
+    /// <summary>
+    /// Process image to high base resolution for quality scaling
+    /// </summary>
+    private byte[] ProcessImageToHighResolution(byte[] imageData)
+    {
+        const int baseDpi = 600;
+        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+    
+        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+    
+        // Resize to high base resolution
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+            Mode = ResizeMode.Stretch,
+            Sampler = KnownResamplers.Lanczos3
+        }));
+    
+        // Save as high-quality PNG
+        var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+        {
+            CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+            ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+        };
+    
+        using var ms = new MemoryStream();
+        image.Save(ms, pngEncoder);
+        return ms.ToArray();
+    }
+
+// Add this method to your MainViewModel class
+
+    /// <summary>
+    /// Processes XML files dropped onto the application
+    /// </summary>
+    /// <param name="xmlContent">The XML content as string</param>
+    /// <param name="fileName">The original file name</param>
+    public async Task ProcessXmlFileAsync(string xmlContent, string fileName)
+    {
+        try
+        {
+            DebugHelper.WriteDebug($"Processing XML file: {fileName}");
+        
+            // Set busy state
+            IsBusy = true;
+        
+            // Parse XML content - replace this with your actual XML parsing logic
+            var newCards = await Task.Run(() => ParseXmlToCards(xmlContent, fileName));
+        
+            if (newCards.Any())
+            {
+                // Add cards to collection
+                Cards.AddRange(newCards);
+            
+                // Refresh PrintViewModel
+                PrintViewModel?.RefreshCardInfo();
+                PrintViewModel?.GeneratePreviewCommand.Execute(null);
+            
+                DebugHelper.WriteDebug($"Successfully added {newCards.Count} cards from {fileName}");
+            }
+            else
+            {
+                DebugHelper.WriteDebug($"No valid cards found in {fileName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Error processing XML file {fileName}: {ex.Message}");
+            // You might want to show a user-friendly error message here
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Parse XML content to Card objects - implement your specific XML format here
+    /// </summary>
+    /// <param name="xmlContent">Raw XML content</param>
+    /// <param name="fileName">Source file name for debugging</param>
+    /// <returns>List of parsed cards</returns>
+    private List<Card> ParseXmlToCards(string xmlContent, string fileName)
+    {
+        var cards = new List<Card>();
+    
+        try
+        {
+            var doc = System.Xml.Linq.XDocument.Parse(xmlContent);
+        
+            // Example: MPC XML format - adjust for your specific XML structure
+            var cardElements = doc.Descendants("card");
+        
+            foreach (var cardElement in cardElements)
+            {
+                try
+                {
+                    var name = cardElement.Element("name")?.Value ?? "Unknown Card";
+                    var id = cardElement.Element("id")?.Value ?? Guid.NewGuid().ToString();
+                    var query = cardElement.Element("query")?.Value ?? "";
+                    var imageUrl = cardElement.Element("imageUrl")?.Value;
+                
+                    Card newCard;
+                
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        // // Download image if URL is provided
+                        // var imageData = await DownloadImageAsync(imageUrl);
+                        // if (imageData != null)
+                        // {
+                        //     newCard = new Card(name, id, imageData, _configManager);
+                        // }
+                        // else
+                        // {
+                        //     // Fallback to query-based card if image download fails
+                        //     newCard = new Card(name, id, query);
+                        // }
+                    }
+                    else
+                    {
+                        // Create card with query for later image loading
+                        newCard = new Card(name, id, query);
+                    }
+                
+                    // // Set up edit command
+                    // newCard.EditMeCommand = EditCardCommand;
+                    //
+                    // cards.Add(newCard);
+                
+                    DebugHelper.WriteDebug($"Parsed card: {name} (ID: {id})");
+                }
+                catch (Exception ex)
+                {
+                    DebugHelper.WriteDebug($"Error parsing individual card in {fileName}: {ex.Message}");
+                    // Continue with other cards
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Error parsing XML document {fileName}: {ex.Message}");
+            throw; // Re-throw to be handled by calling method
+        }
+    
+        return cards;
+    }
+
+    /// <summary>
+    /// Downloads image from URL and returns as byte array
+    /// </summary>
+    /// <param name="imageUrl">URL to download image from</param>
+    /// <returns>Image data or null if download fails</returns>
+    private async Task<byte[]?> DownloadImageAsync(string imageUrl)
+    {
+        try
+        {
+            using var httpClient = new System.Net.Http.HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(30); // Set reasonable timeout
+        
+            var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+        
+            // Optional: Resize to your preferred resolution here
+            // You could use your existing image processing logic from AddTestCards()
+        
+            DebugHelper.WriteDebug($"Downloaded image from {imageUrl}: {imageBytes.Length} bytes");
+            return imageBytes;
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Failed to download image from {imageUrl}: {ex.Message}");
+            return null;
+        }
+    }
+
+
+// Add this RelayCommand to your MainViewModel.cs
+
+    [RelayCommand]
+    private void DeleteCard(Card card)
+    {
+        try
+        {
+            if (card == null)
+            {
+                DebugHelper.WriteDebug("DeleteCard: Card parameter is null");
+                return;
+            }
+
+            DebugHelper.WriteDebug($"Deleting card: {card.Name} (ID: {card.Id})");
+
+            // Clear selection if we're deleting the selected card
+            if (SelectedCard == card)
+            {
+                SelectedCard = null;
+            }
+
+            // Remove from collection
+            Cards.RemoveCard(card);
+
+            // Refresh PrintViewModel
+            PrintViewModel?.RefreshCardInfo();
+        
+            // Regenerate preview to reflect the change
+            PrintViewModel?.GeneratePreviewCommand.Execute(null);
+
+            DebugHelper.WriteDebug($"Successfully deleted card. Remaining cards: {Cards.Count}");
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Error deleting card {card?.Name}: {ex.Message}");
+        }
+    }
+
+// Optional: Add a method to check if deletion is allowed
+    private bool CanDeleteCard(Card card)
+    {
+        return card != null && !IsBusy;
+    }
+
 }

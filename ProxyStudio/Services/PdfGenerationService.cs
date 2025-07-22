@@ -478,138 +478,139 @@ namespace ProxyStudio.Services
             }
         }
 
+        // Update DrawCard method to pass bleed flag
         private void DrawCard(XGraphics gfx, Card card, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width, XUnit height)
         {
-            DebugHelper.WriteDebug($"DrawCard: {card.Name} at ({x:F1}, {y:F1}) - FIXED size {CARD_WIDTH_INCHES}\" × {CARD_HEIGHT_INCHES}\" at {options.PrintDpi} DPI");
-            
+            DebugHelper.WriteDebug($"DrawCard: {card.Name} - EnableBleed: {card.EnableBleed}");
+    
             try
             {
                 if (card.ImageData != null && card.ImageData.Length > 0)
                 {
-                    // FIXED: Call the correct high-DPI processing method
-                    var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi);
+                    // Pass the bleed flag to image processing
+                    var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
                     if (processedImage != null)
                     {
                         using var ms = new MemoryStream(processedImage);
                         var xImage = XImage.FromStream(ms);
-                        
-                        // Draw the image to fill the EXACT card dimensions
+                
+                        // Draw at full card size - the image is already processed for bleed
                         gfx.DrawImage(xImage, new XRect(x, y, width, height));
-                        
-                        DebugHelper.WriteDebug($"SUCCESS: Drew high-DPI image for {card.Name} at {options.PrintDpi} DPI - processed size: {processedImage.Length} bytes");
-                        
+                
+                        DebugHelper.WriteDebug($"SUCCESS: Drew {(card.EnableBleed ? "bleed-cropped" : "full")} image for {card.Name}");
+                
                         xImage.Dispose();
-                    }
-                    else
-                    {
-                        DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf returned null for {card.Name}");
-                        DrawPlaceholder(gfx, card, x, y, width, height, $"Image Error ({options.PrintDpi} DPI)");
                     }
                 }
                 else
                 {
-                    DebugHelper.WriteDebug($"WARNING: No image data for {card.Name}");
-                    DrawPlaceholder(gfx, card, x, y, width, height, $"No Image ({options.PrintDpi} DPI)");
+                    DrawPlaceholder(gfx, card, x, y, width, height, card.EnableBleed ? "No Image (Bleed)" : "No Image");
                 }
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: Exception in DrawCard for {card.Name} at {options.PrintDpi} DPI: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
-                DrawPlaceholder(gfx, card, x, y, width, height, $"Error ({options.PrintDpi} DPI)");
+                DebugHelper.WriteDebug($"ERROR: Exception in DrawCard for {card.Name}: {ex.Message}");
+                DrawPlaceholder(gfx, card, x, y, width, height, "Error");
             }
         }
 
-        private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int targetDpi)
+        // Update ProcessImageForHighDpiPdf method in PdfGenerationService.cs to handle bleed
+private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int targetDpi, bool enableBleed = false)
+{
+    try
+    {
+        DebugHelper.WriteDebug($"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI - EnableBleed: {enableBleed}");
+        
+        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+        var originalSize = $"{image.Width}x{image.Height}";
+        
+        DebugHelper.WriteDebug($"  Source: {originalSize}");
+        
+        // Calculate target dimensions for exact 2.5" × 3.5" at target DPI
+        var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
+        var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
+        
+        // If bleed is enabled, crop 2mm from all sides of source image
+        if (enableBleed)
         {
-            try
-            {
-                DebugHelper.WriteDebug($"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI");
-                
-                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
-                var originalSize = $"{image.Width}x{image.Height}";
-                var originalDataSize = imageData.Length;
-                
-                DebugHelper.WriteDebug($"  Source: {originalSize}, {originalDataSize} bytes");
-                
-                // Calculate target dimensions for exact 2.5" × 3.5" at target DPI
-                var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
-                var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
-                
-                DebugHelper.WriteDebug($"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
-                
-                // Resize to exact target dimensions
-                if (image.Width != targetWidth || image.Height != targetHeight)
-                {
-                    var scaleX = (double)targetWidth / image.Width;
-                    var scaleY = (double)targetHeight / image.Height;
-                    DebugHelper.WriteDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
-                    
-                    image.Mutate(x => x.Resize(new ResizeOptions
-                    {
-                        Size = new SixLabors.ImageSharp.Size(targetWidth, targetHeight),
-                        Mode = ResizeMode.Stretch, // Ensure exact dimensions
-                        Sampler = KnownResamplers.Lanczos3 // High-quality resampling
-                    }));
-                    
-                    DebugHelper.WriteDebug($"  Resized to: {image.Width}x{image.Height}");
-                }
-                else
-                {
-                    DebugHelper.WriteDebug($"  No resize needed - already at target resolution");
-                }
-                
-                // Set the DPI metadata
-                image.Metadata.HorizontalResolution = targetDpi;
-                image.Metadata.VerticalResolution = targetDpi;
-                
-                // Choose output format based on quality requirements
-                MemoryStream outputStream = new MemoryStream();
-                string format;
-                
-                if (targetDpi >= 600) // Use PNG for very high DPI to preserve quality
-                {
-                    var pngEncoder = new PngEncoder
-                    {
-                        CompressionLevel = PngCompressionLevel.BestCompression,
-                        ColorType = PngColorType.RgbWithAlpha
-                    };
-                    image.Save(outputStream, pngEncoder);
-                    format = "PNG";
-                }
-                else // Use high-quality JPEG for reasonable file sizes
-                {
-                    var jpegEncoder = new JpegEncoder
-                    {
-                        Quality = 95 // Very high quality
-                        // Note: Subsample property may not be available in all versions
-                    };
-                    image.Save(outputStream, jpegEncoder);
-                    format = "JPEG";
-                }
-                
-                var processedData = outputStream.ToArray();
-                outputStream.Dispose();
-                
-                // Log the results
-                var sizeRatio = (double)processedData.Length / originalDataSize;
-                var pixelCount = targetWidth * targetHeight;
-                
-                DebugHelper.WriteDebug($"  Output: {processedData.Length} bytes as {format}");
-                DebugHelper.WriteDebug($"  Size change: {originalDataSize} → {processedData.Length} bytes ({sizeRatio:F2}x)");
-                DebugHelper.WriteDebug($"  Pixel count: {pixelCount:N0} pixels");
-                DebugHelper.WriteDebug($"  Final DPI metadata: {image.Metadata.HorizontalResolution}x{image.Metadata.VerticalResolution}");
-                DebugHelper.WriteDebug($"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName}");
-                
-                return processedData;
-            }
-            catch (Exception ex)
-            {
-                DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
-                return null;
-            }
+            // Calculate 2mm in pixels based on the current image resolution
+            // Assume source image represents a 2.5" × 3.5" card with bleed
+            var sourcePixelsPerMm = Math.Min(image.Width / (2.5 * 25.4), image.Height / (3.5 * 25.4));
+            var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
+            
+            DebugHelper.WriteDebug($"  Bleed crop: {cropPixels} pixels from each edge");
+            
+            // Crop the image (remove 2mm bleed from all sides)
+            var cropRect = new SixLabors.ImageSharp.Rectangle(
+                cropPixels, 
+                cropPixels, 
+                image.Width - (cropPixels * 2), 
+                image.Height - (cropPixels * 2)
+            );
+            
+            image.Mutate(x => x.Crop(cropRect));
+            DebugHelper.WriteDebug($"  After crop: {image.Width}x{image.Height}");
         }
+        
+        DebugHelper.WriteDebug($"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
+        
+        // Resize to exact target dimensions (this stretches the cropped image to full card size)
+        if (image.Width != targetWidth || image.Height != targetHeight)
+        {
+            var scaleX = (double)targetWidth / image.Width;
+            var scaleY = (double)targetHeight / image.Height;
+            DebugHelper.WriteDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
+            
+            image.Mutate(x => x.Resize(new ResizeOptions
+            {
+                Size = new SixLabors.ImageSharp.Size(targetWidth, targetHeight),
+                Mode = ResizeMode.Stretch, // Stretch cropped image to fill full card
+                Sampler = KnownResamplers.Lanczos3
+            }));
+        }
+        
+        // Set DPI metadata
+        image.Metadata.HorizontalResolution = targetDpi;
+        image.Metadata.VerticalResolution = targetDpi;
+        
+        // Choose output format
+        MemoryStream outputStream = new MemoryStream();
+        string format;
+        
+        if (targetDpi >= 600)
+        {
+            var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+            {
+                CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+                ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+            };
+            image.Save(outputStream, pngEncoder);
+            format = "PNG";
+        }
+        else
+        {
+            var jpegEncoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+            {
+                Quality = 95
+            };
+            image.Save(outputStream, jpegEncoder);
+            format = "JPEG";
+        }
+        
+        var processedData = outputStream.ToArray();
+        outputStream.Dispose();
+        
+        DebugHelper.WriteDebug($"  Output: {processedData.Length} bytes as {format}");
+        DebugHelper.WriteDebug($"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName} - Bleed {(enableBleed ? "removed" : "preserved")}");
+        
+        return processedData;
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
+        return null;
+    }
+}
 
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
         {
@@ -755,50 +756,61 @@ namespace ProxyStudio.Services
             }
         }
 
-        private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x, int y, int width, int height)
+        // Update preview drawing to handle bleed
+private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x, int y, int width, int height)
+{
+    try
+    {
+        var rect = new System.Drawing.Rectangle(x, y, width, height);
+        
+        DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+        
+        if (card?.ImageData != null && card.ImageData.Length > 0)
         {
             try
             {
-                var rect = new System.Drawing.Rectangle(x, y, width, height);
+                using var imageStream = new MemoryStream(card.ImageData);
+                using var originalImage = System.Drawing.Image.FromStream(imageStream);
                 
-                DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} at ({x},{y}) size {width}x{height}");
-                
-                if (card?.ImageData != null && card.ImageData.Length > 0)
+                if (card.EnableBleed)
                 {
-                    try
-                    {
-                        using var imageStream = new MemoryStream(card.ImageData);
-                        using var cardImage = System.Drawing.Image.FromStream(imageStream);
-                        
-                        graphics.DrawImage(cardImage, rect);
-                        DebugHelper.WriteDebug($"Drew preview image for {card.Name}");
-                    }
-                    catch (Exception ex)
-                    {
-                        DebugHelper.WriteDebug($"Error drawing card image for {card.Name}: {ex.Message}");
-                        DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
-                    }
+                    // Crop 2mm from preview image (approximate scaling)
+                    var sourcePixelsPerMm = Math.Min(originalImage.Width / (2.5 * 25.4), originalImage.Height / (3.5 * 25.4));
+                    var cropPixels = (int)(2.0 * sourcePixelsPerMm);
+                    
+                    var cropRect = new System.Drawing.Rectangle(
+                        cropPixels, 
+                        cropPixels, 
+                        originalImage.Width - (cropPixels * 2), 
+                        originalImage.Height - (cropPixels * 2)
+                    );
+                    
+                    // Draw cropped portion stretched to full card size
+                    graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
+                    DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
                 }
                 else
                 {
-                    DebugHelper.WriteDebug($"No image data for {card?.Name ?? "NULL"}");
-                    DrawPreviewPlaceholder(graphics, card, rect, "No Image");
+                    // Draw full image
+                    graphics.DrawImage(originalImage, rect);
                 }
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
-                
-                try
-                {
-                    DrawPreviewPlaceholder(graphics, card, new System.Drawing.Rectangle(x, y, width, height), "Error");
-                }
-                catch (Exception ex2)
-                {
-                    DebugHelper.WriteDebug($"Error in fallback placeholder: {ex2.Message}");
-                }
+                DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
+                DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
             }
         }
+        else
+        {
+            DrawPreviewPlaceholder(graphics, card, rect, card?.EnableBleed == true ? "No Image (Bleed)" : "No Image");
+        }
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+    }
+}
 
         private void DrawPreviewPlaceholder(System.Drawing.Graphics graphics, Card card, System.Drawing.Rectangle rect, string message)
         {
