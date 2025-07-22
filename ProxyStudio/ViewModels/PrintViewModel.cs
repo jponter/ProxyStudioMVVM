@@ -332,12 +332,20 @@ namespace ProxyStudio.ViewModels
             else if (Math.Abs(dpiValue - 1200) < 1) DebugHelper.WriteDebug($"  ✅ Expected 30 MB, Estimated: {totalMB:F2} MB (should be exact)");
         }
 
-        // Method to refresh card information when cards collection changes
+        // Update the existing RefreshCardInfo method to also clear preview when no cards
         public void RefreshCardInfo()
         {
             DebugHelper.WriteDebug($"RefreshCardInfo called - cards collection has {_cards?.Count ?? 0} cards");
             UpdateCardCount();
             UpdateEstimatedFileSize();
+    
+            // If no cards, clear the preview
+            if (CardCount == 0)
+            {
+                ClearPreview();
+                DebugHelper.WriteDebug("RefreshCardInfo: No cards found, cleared preview");
+            }
+    
             DebugHelper.WriteDebug($"RefreshCardInfo completed - CardCount={CardCount}, EstimatedFileSize={EstimatedFileSize:F2} MB");
         }
 
@@ -713,5 +721,31 @@ namespace ProxyStudio.ViewModels
             OnPropertyChanged(nameof(ActualPreviewHeight));  // Updated property name
             DebugHelper.WriteDebug($"PreviewImage changed. New size: {value?.PixelSize.Width}x{value?.PixelSize.Height}");
         }
+        
+        
+        // Add this method to your PrintViewModel.cs class
+
+        /// <summary>
+        /// Clears the preview and resets preview-related properties
+        /// </summary>
+        public void ClearPreview()
+        {
+            DebugHelper.WriteDebug("ClearPreview: Clearing preview image and resetting preview state");
+    
+            PreviewImage = null;
+            CurrentPreviewPage = 1;
+            TotalPreviewPages = 1;
+    
+            // Also clear any generation status
+            PdfGenerationStatus = "";
+            PdfGenerationProgress = 0.0;
+            CurrentOperation = "";
+            TimeRemaining = "";
+            ShowProgressDetails = false;
+    
+            DebugHelper.WriteDebug("ClearPreview: Preview cleared successfully");
+        }
+        
+        
     }
 }

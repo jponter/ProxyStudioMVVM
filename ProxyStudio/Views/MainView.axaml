@@ -27,12 +27,46 @@
                <!-- Card Management Page -->
                <Grid ShowGridLines="False" >
                    <Grid.ColumnDefinitions>250,*,550</Grid.ColumnDefinitions>
-                   <!-- Card Management Actions -->
+                   <!-- Update the Card Management Actions section in your MainView.axaml -->
+                   <!-- Replace the existing StackPanel in Grid.Column="0" with this: -->
+
                    <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
                        <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
                        <Button Content="Add Cards from MPC XML" HorizontalAlignment="Stretch" />
-                       <Button Content="Load Test Cards" HorizontalAlignment="Stretch" Command="{Binding AddTestCardsRelayCommand}"/>
-                       <li:LoadingIndicator Foreground="AliceBlue" IsActive="{Binding IsBusy}" Mode="ThreeDots" SpeedRatio="1.2" ></li:LoadingIndicator>
+                       <Button Content="Load Test Cards" 
+                               HorizontalAlignment="Stretch" 
+                               Command="{Binding AddTestCardsRelayCommand}"/>
+    
+                       <!-- Add the Delete All Cards button -->
+                       <Button Content="🗑️ Delete All Cards" 
+                               HorizontalAlignment="Stretch"
+                               Command="{Binding DeleteAllCardsCommand}"
+                               IsEnabled="{Binding !IsBusy}"
+                               ToolTip.Tip="Remove all cards from the collection and clear preview">
+                           <Button.Styles>
+                               <Style Selector="Button">
+                                   <Setter Property="Background" Value="#DC2626"/>
+                                   <Setter Property="Foreground" Value="White"/>
+                                   <Setter Property="BorderBrush" Value="#B91C1C"/>
+                                   <Setter Property="BorderThickness" Value="1"/>
+                               </Style>
+                               <Style Selector="Button:pointerover">
+                                   <Setter Property="Background" Value="#B91C1C"/>
+                               </Style>
+                               <Style Selector="Button:pressed">
+                                   <Setter Property="Background" Value="#991B1B"/>
+                               </Style>
+                               <Style Selector="Button:disabled">
+                                   <Setter Property="Background" Value="#9CA3AF"/>
+                                   <Setter Property="BorderBrush" Value="#6B7280"/>
+                               </Style>
+                           </Button.Styles>
+                       </Button>
+    
+                       <li:LoadingIndicator Foreground="AliceBlue" 
+                                            IsActive="{Binding IsBusy}" 
+                                            Mode="ThreeDots" 
+                                            SpeedRatio="1.2" />
                    </StackPanel>
 
                    <!-- Main Card Grid View -->

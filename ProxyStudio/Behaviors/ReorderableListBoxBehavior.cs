@@ -308,11 +308,17 @@ namespace ProxyStudio.Behaviors
                     {
                         if (file.Name.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
                         {
-                            using var stream = await file.OpenReadAsync();
-                            using var reader = new StreamReader(stream);
-                            var xmlContent = await reader.ReadToEndAsync();
-                            
-                            await mainViewModel.ProcessXmlFileAsync(xmlContent, file.Name);
+                            //using var stream = await file.OpenReadAsync();
+                            //using var reader = new StreamReader(stream);
+                            //var xmlContent = await reader.ReadToEndAsync();
+                            var path = file.TryGetLocalPath();
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                Helpers.DebugHelper.WriteDebug($"File {file.Name} does not have a local path.");
+                                continue;
+                            }
+                            var fullPath = Path.GetFullPath(path);
+                            await mainViewModel.ProcessMPCFillXML(fullPath);
                         }
                         else if (IsImageFile(file.Name))
                         {

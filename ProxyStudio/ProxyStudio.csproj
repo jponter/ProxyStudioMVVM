@@ -38,17 +38,17 @@
 
     <ItemGroup>
       <None Remove="Resources\comingsoon.jpg" />
-      <AvaloniaResource Include="Resources\comingsoon.jpg">
+      <Content Include="Resources\comingsoon.jpg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AvaloniaResource>
+      </Content>
       <None Remove="Resources\preacher.jpg" />
-      <AvaloniaResource Include="Resources\preacher.jpg">
+      <Content Include="Resources\preacher.jpg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AvaloniaResource>
+      </Content>
       <None Remove="Resources\vampire.jpg" />
-      <AvaloniaResource Include="Resources\vampire.jpg">
+      <Content Include="Resources\vampire.jpg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AvaloniaResource>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>

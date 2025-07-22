@@ -3,17 +3,23 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Dialogs;
+using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Metsys.Bson;
 using Microsoft.Extensions.DependencyInjection;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -24,6 +30,7 @@ public partial class MainViewModel : ViewModelBase
     //di configmanager interface
     private readonly IConfigManager _configManager;
     private readonly IPdfGenerationService _pdfService;
+    private static readonly HttpClient httpClient = new HttpClient();
 
     //public ObservableCollection<Card> Cards { get; } = new();
     public CardCollection Cards { get; private set; } = new();
@@ -216,6 +223,8 @@ public partial class MainViewModel : ViewModelBase
         }
 
         foreach (var card in cards) card.EditMeCommand = EditCardCommand;
+        foreach (var card in cards) card.EnableBleed= true;
+        
     
         DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
         return cards;
@@ -447,6 +456,48 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    
+    // Add this RelayCommand to your MainViewModel.cs class
+
+    [RelayCommand]
+    private void DeleteAllCards()
+    {
+        try
+        {
+            DebugHelper.WriteDebug("DeleteAllCards: Starting to delete all cards");
+        
+            var cardCount = Cards.Count;
+        
+            if (cardCount == 0)
+            {
+                DebugHelper.WriteDebug("DeleteAllCards: No cards to delete");
+                return;
+            }
+        
+            // Clear selection first
+            SelectedCard = null;
+        
+            // Remove all cards from collection
+            Cards.RemoveAllCards();
+        
+            // IMPORTANT: Refresh PrintViewModel after clearing cards
+            // This will automatically clear the preview since CardCount = 0
+            PrintViewModel?.RefreshCardInfo();
+        
+            DebugHelper.WriteDebug($"Successfully deleted all {cardCount} cards and cleared preview");
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"Error deleting all cards: {ex.Message}");
+        }
+    }
+
+// Optional: Add a method to check if deletion is allowed
+    private bool CanDeleteAllCards()
+    {
+        return Cards.Count > 0 && !IsBusy;
+    }
+    
 
 // Add this RelayCommand to your MainViewModel.cs
 
@@ -491,5 +542,139 @@ public partial class MainViewModel : ViewModelBase
     {
         return card != null && !IsBusy;
     }
+    
+    
+    
+    public async Task ProcessMPCFillXML( String fileName)
+    {
+        DebugHelper.WriteDebug("Entering LoadMPCFill Button.");
+        IsBusy = true;
+      
+        var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/comingsoon.jpg");
+        
+        // IMPORTANT: Store images at a high base resolution instead of scaling at startup
+        // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
+        const int baseDpi = 300;
+        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
 
+        // Resize to high base resolution for maximum quality
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+            Mode = ResizeMode.Stretch,
+            Sampler = KnownResamplers.Lanczos3 // High-quality resampling
+        }));
+
+        DebugHelper.WriteDebug($"Loaded image: {fileName} with size {image.Width}x{image.Height}");
+
+        // Store as high-quality PNG to preserve all detail for later scaling
+        var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+        {
+            CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+            ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+        };
+
+        using var ms1 = new MemoryStream();
+        image.Save(ms1, pngEncoder);
+        var buffer = ms1.ToArray();
+        
+
+        
+        DebugHelper.WriteDebug($"Selected file: {fileName}");
+
+        var mpcFillXML = new MpcFillXML();
+        var cardsToAdd = mpcFillXML.ParseMyXML(File.ReadAllText(fileName));
+
+        foreach (var card in cardsToAdd)
+        {
+            DebugHelper.WriteDebug($"Adding card: {card.Name} with ID: {card.Id} , and Query: {card.Query}");
+            card.ImageDownloaded = false;
+            card.ImageData = buffer; // Use the high-res image as a placeholder
+            Cards.AddCard(card);
+        }
+
+        DebugHelper.WriteDebug($"Added {cardsToAdd.Count} cards from MPCFill XML.");
+        //RedrawCardGrid(true);
+        
+       
+        
+        // we need to update the image data for all cards
+        await UpdateCardCollectionAsync(); // Now async
+        
+        
+        
+        // Refresh PrintViewModel
+        
+        PrintViewModel?.RefreshCardInfo();
+        DebugHelper.WriteDebug($"Refreshing PrintViewModel after loading MPCFill XML. Cards count: {Cards.Count}");
+        // Regenerate preview to reflect the change
+        PrintViewModel?.GeneratePreviewCommand.Execute(null);
+        DebugHelper.WriteDebug($"PrintViewModel preview generated after loading MPCFill XML.");
+        
+        IsBusy = false;
+        DebugHelper.WriteDebug($"Exiting LoadMPCFill Button. Total cards: {Cards.Count}");
+        
+    }
+    
+
+    private async Task UpdateCardCollectionAsync()
+    {
+        DebugHelper.WriteDebug($"Entering UpdateCardCollectionAsnc. Total cards: {Cards.Count}");
+
+        var checkedCards = Cards.Count > 0 ? Cards : null;
+        var checkedCards1 = Cards.Where(card => !card.ImageDownloaded).ToList();
+
+        var tasks = Cards
+            .Where(card => !card.ImageDownloaded)
+            .Select(async card =>
+            {
+                DebugHelper.WriteDebug($"Card {card.Name} with ID {card.Id} has not downloaded the image yet.");
+
+                await LoadImageFromCacheAsync(card); // Async load
+                card.ImageDownloaded = true;
+            });
+        DebugHelper.WriteDebug($"UpdateCardCollectionAsync - Finished selecting cards for tasks");
+
+        await Task.WhenAll(tasks); // Wait for all image loading tasks
+    }
+
+    public async Task LoadImageFromCacheAsync(Card card)
+    {
+        DebugHelper.WriteDebug("Entering LoadImageFromCacheAsync");
+        byte[] imageBuffer = Array.Empty<byte>();
+        string cacheFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ProxyStudio", "Cache");
+        string imageFilePath = Path.Combine(cacheFolder, $"{card.Id}.jpg");
+
+        if (!File.Exists(imageFilePath))
+        {
+            DebugHelper.WriteDebug($"Image for card {card.Name} with ID {card.Id} does not exist in cache. Downloading...");
+
+            GetMPCImages helperInstance = new GetMPCImages();
+            imageBuffer = await helperInstance.GetImageFromMPCFill(card.Id, httpClient);
+
+            if (!Directory.Exists(cacheFolder))
+                Directory.CreateDirectory(cacheFolder);
+
+            await Task.Run(() =>
+            {
+                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageBuffer);
+                var encoder = new JpegEncoder { Quality = 100 };
+                image.Save(imageFilePath, encoder);
+            });
+        }
+        else
+        {
+            DebugHelper.WriteDebug($"Image for card {card.Name} with ID {card.Id} found in cache.");
+
+            imageBuffer = await Task.Run(() =>
+            {
+                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageFilePath);
+                return ImageSharpToWPFConverter.ImageToByteArray(image);
+            });
+        }
+
+        card.ImageData = imageBuffer;
+    }
+    
 }
