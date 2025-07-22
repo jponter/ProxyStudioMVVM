@@ -20,10 +20,12 @@ namespace ProxyStudio.Services
 {
     public interface IPdfGenerationService
     {
-        Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null);
+        Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options,
+            IProgress<PdfGenerationProgress>? progress = null);
+
         Task<Bitmap> GeneratePreviewImageAsync(CardCollection cards, PdfGenerationOptions options);
     }
-    
+
     public class PdfGenerationProgress
     {
         public int CurrentStep { get; set; }
@@ -35,9 +37,9 @@ namespace ProxyStudio.Services
         public TimeSpan ElapsedTime { get; set; }
         public TimeSpan? EstimatedRemainingTime { get; set; }
         public long ProcessedBytes { get; set; }
-    
+
         public double PercentageComplete => TotalSteps > 0 ? (double)CurrentStep / TotalSteps * 100 : 0;
-    
+
         public string StatusMessage => $"Page {CurrentPage}/{TotalPages}: {CurrentOperation} - {CurrentCardName}";
     }
 
@@ -56,13 +58,15 @@ namespace ProxyStudio.Services
         public float BottomMargin { get; set; } = 20f;
         public float LeftMargin { get; set; } = 20f;
         public float RightMargin { get; set; } = 20f;
-        
+
         // Separate DPI settings for preview vs print
-        public int PreviewDpi { get; set; } = 150;    // Lower for performance
-        public int PrintDpi { get; set; } = 300;      // High quality for print
+        public int PreviewDpi { get; set; } = 150; // Lower for performance
+        public int PrintDpi { get; set; } = 300; // High quality for print
         public int PreviewQuality { get; set; } = 85;
         public string PageSize { get; set; } = "A4";
     }
+    
+    
 
     public class PdfGenerationService : IPdfGenerationService
     {
@@ -85,241 +89,277 @@ namespace ProxyStudio.Services
                 DebugHelper.WriteDebug($"Error setting up font resolver: {ex.Message}");
             }
         }
-
-        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
-{
-    return await Task.Run(() =>
-    {
-        try
+        
+        // Add this helper method to convert problematic images to PNG
+        private byte[]? ConvertToPng(byte[] imageData, string cardName)
         {
-            var startTime = DateTime.Now;
-            var progressInfo = new PdfGenerationProgress();
-            
-            // Calculate total steps for progress tracking
+            try
+            {
+                DebugHelper.WriteDebug($"Converting {cardName} to PNG for PDFsharp compatibility...");
+
+                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+
+                var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                {
+                    CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+                    ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+                };
+
+                using var outputStream = new MemoryStream();
+                image.Save(outputStream, pngEncoder);
+
+                var pngData = outputStream.ToArray();
+                DebugHelper.WriteDebug($"Successfully converted {cardName} to PNG: {pngData.Length} bytes");
+
+                return pngData;
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"ERROR: Failed to convert {cardName} to PNG: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options,
+            IProgress<PdfGenerationProgress>? progress = null)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var startTime = DateTime.Now;
+                    var progressInfo = new PdfGenerationProgress();
+
+                    // Calculate total steps for progress tracking
+                    var actualCardsPerRow = options.IsPortrait ? 3 : 4;
+                    var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
+                    var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
+                    var totalPages = (int)Math.Ceiling((double)cards.Count / cardsPerPage);
+
+                    progressInfo.TotalSteps = cards.Count + totalPages + 2; // Cards + Pages + Setup + Finalization
+                    progressInfo.TotalPages = totalPages;
+                    progressInfo.CurrentOperation = "Initializing PDF generation...";
+
+                    progress?.Report(progressInfo);
+
+                    DebugHelper.WriteDebug($"=== PDF GENERATION START ===");
+                    DebugHelper.WriteDebug($"Target DPI: {options.PrintDpi}");
+                    DebugHelper.WriteDebug($"Cards: {cards.Count}, Pages: {totalPages}");
+
+                    // Create PDF document
+                    progressInfo.CurrentStep = 1;
+                    progressInfo.CurrentOperation = "Creating PDF document...";
+                    progress?.Report(progressInfo);
+
+                    var document = new PdfDocument();
+                    ApplyHighDpiSettings(document, options.PrintDpi);
+
+                    DebugHelper.WriteDebug($"Layout: {actualCardsPerRow}x{actualCardsPerColumn}");
+
+                    // Track processed data
+                    var processedImageCount = 0;
+                    var totalProcessedBytes = 0L;
+
+                    // Process each page
+                    for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
+                    {
+                        progressInfo.CurrentPage = pageIndex + 1;
+                        progressInfo.CurrentStep = 2 + pageIndex;
+                        progressInfo.CurrentOperation = $"Creating page {pageIndex + 1}...";
+                        progressInfo.ElapsedTime = DateTime.Now - startTime;
+
+                        // Estimate remaining time
+                        if (pageIndex > 0)
+                        {
+                            var averageTimePerPage = progressInfo.ElapsedTime.TotalSeconds / pageIndex;
+                            var remainingPages = totalPages - pageIndex;
+                            progressInfo.EstimatedRemainingTime =
+                                TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
+                        }
+
+                        progress?.Report(progressInfo);
+
+                        var page = document.AddPage();
+                        page.Size = GetPageSize(options.PageSize);
+                        page.Orientation = options.IsPortrait
+                            ? PdfSharp.PageOrientation.Portrait
+                            : PdfSharp.PageOrientation.Landscape;
+
+                        var gfx = XGraphics.FromPdfPage(page);
+                        ApplyHighDpiTransformation(gfx, options.PrintDpi);
+
+                        var startCardIndex = pageIndex * cardsPerPage;
+                        var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
+
+                        DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards");
+
+                        // Draw cards with progress reporting
+                        DrawCardGridWithProgress(gfx, pageCards, options, page.Width, page.Height,
+                            pageIndex + 1, totalPages, progress, progressInfo, startTime);
+
+                        processedImageCount += pageCards.Count;
+                        gfx.Dispose();
+                    }
+
+                    // Finalize PDF
+                    progressInfo.CurrentStep = progressInfo.TotalSteps - 1;
+                    progressInfo.CurrentOperation = "Finalizing PDF...";
+                    progressInfo.CurrentCardName = "";
+                    progressInfo.ElapsedTime = DateTime.Now - startTime;
+                    progress?.Report(progressInfo);
+
+                    using var stream = new MemoryStream();
+                    document.Save(stream);
+                    document.Close();
+
+                    var pdfBytes = stream.ToArray();
+                    var endTime = DateTime.Now;
+                    var duration = endTime - startTime;
+
+                    // Report completion
+                    progressInfo.CurrentStep = progressInfo.TotalSteps;
+                    progressInfo.CurrentOperation = "PDF generation complete!";
+                    progressInfo.ProcessedBytes = pdfBytes.Length;
+                    progressInfo.ElapsedTime = duration;
+                    progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
+                    progress?.Report(progressInfo);
+
+                    DebugHelper.WriteDebug($"=== PDF GENERATION COMPLETE ===");
+                    DebugHelper.WriteDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
+                    DebugHelper.WriteDebug($"Images processed: {processedImageCount}");
+                    DebugHelper.WriteDebug($"Generation time: {duration.TotalSeconds:F1} seconds");
+                    DebugHelper.WriteDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
+
+                    return pdfBytes;
+                }
+                catch (Exception ex)
+                {
+                    DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
+
+                    // Report error
+                    progress?.Report(new PdfGenerationProgress
+                    {
+                        CurrentStep = 0,
+                        TotalSteps = 1,
+                        CurrentOperation = $"Error: {ex.Message}",
+                        CurrentCardName = ""
+                    });
+
+                    throw;
+                }
+            });
+        }
+
+        private void DrawCardGridWithProgress(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options,
+            XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages,
+            IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
+        {
             var actualCardsPerRow = options.IsPortrait ? 3 : 4;
             var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
-            var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
-            var totalPages = (int)Math.Ceiling((double)cards.Count / cardsPerPage);
-            
-            progressInfo.TotalSteps = cards.Count + totalPages + 2; // Cards + Pages + Setup + Finalization
-            progressInfo.TotalPages = totalPages;
-            progressInfo.CurrentOperation = "Initializing PDF generation...";
-            
-            progress?.Report(progressInfo);
-            
-            DebugHelper.WriteDebug($"=== PDF GENERATION START ===");
-            DebugHelper.WriteDebug($"Target DPI: {options.PrintDpi}");
-            DebugHelper.WriteDebug($"Cards: {cards.Count}, Pages: {totalPages}");
-            
-            // Create PDF document
-            progressInfo.CurrentStep = 1;
-            progressInfo.CurrentOperation = "Creating PDF document...";
-            progress?.Report(progressInfo);
-            
-            var document = new PdfDocument();
-            ApplyHighDpiSettings(document, options.PrintDpi);
-            
-            DebugHelper.WriteDebug($"Layout: {actualCardsPerRow}x{actualCardsPerColumn}");
-            
-            // Track processed data
-            var processedImageCount = 0;
-            var totalProcessedBytes = 0L;
-            
-            // Process each page
-            for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
-            {
-                progressInfo.CurrentPage = pageIndex + 1;
-                progressInfo.CurrentStep = 2 + pageIndex;
-                progressInfo.CurrentOperation = $"Creating page {pageIndex + 1}...";
-                progressInfo.ElapsedTime = DateTime.Now - startTime;
-                
-                // Estimate remaining time
-                if (pageIndex > 0)
-                {
-                    var averageTimePerPage = progressInfo.ElapsedTime.TotalSeconds / pageIndex;
-                    var remainingPages = totalPages - pageIndex;
-                    progressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
-                }
-                
-                progress?.Report(progressInfo);
-                
-                var page = document.AddPage();
-                page.Size = GetPageSize(options.PageSize);
-                page.Orientation = options.IsPortrait ? 
-                    PdfSharp.PageOrientation.Portrait : 
-                    PdfSharp.PageOrientation.Landscape;
-                
-                var gfx = XGraphics.FromPdfPage(page);
-                ApplyHighDpiTransformation(gfx, options.PrintDpi);
-                
-                var startCardIndex = pageIndex * cardsPerPage;
-                var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
-                
-                DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards");
-                
-                // Draw cards with progress reporting
-                DrawCardGridWithProgress(gfx, pageCards, options, page.Width, page.Height, 
-                    pageIndex + 1, totalPages, progress, progressInfo, startTime);
-                
-                processedImageCount += pageCards.Count;
-                gfx.Dispose();
-            }
-            
-            // Finalize PDF
-            progressInfo.CurrentStep = progressInfo.TotalSteps - 1;
-            progressInfo.CurrentOperation = "Finalizing PDF...";
-            progressInfo.CurrentCardName = "";
-            progressInfo.ElapsedTime = DateTime.Now - startTime;
-            progress?.Report(progressInfo);
-            
-            using var stream = new MemoryStream();
-            document.Save(stream);
-            document.Close();
-            
-            var pdfBytes = stream.ToArray();
-            var endTime = DateTime.Now;
-            var duration = endTime - startTime;
-            
-            // Report completion
-            progressInfo.CurrentStep = progressInfo.TotalSteps;
-            progressInfo.CurrentOperation = "PDF generation complete!";
-            progressInfo.ProcessedBytes = pdfBytes.Length;
-            progressInfo.ElapsedTime = duration;
-            progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
-            progress?.Report(progressInfo);
-            
-            DebugHelper.WriteDebug($"=== PDF GENERATION COMPLETE ===");
-            DebugHelper.WriteDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
-            DebugHelper.WriteDebug($"Images processed: {processedImageCount}");
-            DebugHelper.WriteDebug($"Generation time: {duration.TotalSeconds:F1} seconds");
-            DebugHelper.WriteDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
-            
-            return pdfBytes;
-        }
-        catch (Exception ex)
-        {
-            DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
-            
-            // Report error
-            progress?.Report(new PdfGenerationProgress
-            {
-                CurrentStep = 0,
-                TotalSteps = 1,
-                CurrentOperation = $"Error: {ex.Message}",
-                CurrentCardName = ""
-            });
-            
-            throw;
-        }
-    });
-}
 
-        private void DrawCardGridWithProgress(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, 
-    XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages,
-    IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
-{
-    var actualCardsPerRow = options.IsPortrait ? 3 : 4;
-    var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
-    
-    var cardWidthPt = CARD_WIDTH_POINTS;
-    var cardHeightPt = CARD_HEIGHT_POINTS;
-    
-    var totalHorizontalSpacing = (actualCardsPerRow - 1) * options.CardSpacing;
-    var totalVerticalSpacing = (actualCardsPerColumn - 1) * options.CardSpacing;
-    var totalGridWidthPt = actualCardsPerRow * cardWidthPt + totalHorizontalSpacing;
-    var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
-    
-    var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
-    var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin + 50);
-    
-    var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
-    var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
-    
-    // Draw title
-    try
-    {
-        var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
-        var title = totalPages > 1 
-            ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI"
-            : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI";
-            
-        gfx.DrawString(title, font, XBrushes.Black,
-            new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
-    }
-    catch (Exception ex)
-    {
-        DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
-    }
-    
-    // Draw cards with individual progress updates
-    for (int row = 0; row < actualCardsPerColumn; row++)
-    {
-        for (int col = 0; col < actualCardsPerRow; col++)
-        {
-            var cardIndex = row * actualCardsPerRow + col;
-            
-            if (cardIndex < pageCards.Count)
+            var cardWidthPt = CARD_WIDTH_POINTS;
+            var cardHeightPt = CARD_HEIGHT_POINTS;
+
+            var totalHorizontalSpacing = (actualCardsPerRow - 1) * options.CardSpacing;
+            var totalVerticalSpacing = (actualCardsPerColumn - 1) * options.CardSpacing;
+            var totalGridWidthPt = actualCardsPerRow * cardWidthPt + totalHorizontalSpacing;
+            var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
+
+            var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
+            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin + 50);
+
+            var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
+            var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
+
+            // Draw title
+            try
             {
-                var card = pageCards[cardIndex];
-                
-                // Update progress for this card
-                progressInfo.CurrentStep = 2 + totalPages + (currentPage - 1) * pageCards.Count + cardIndex;
-                progressInfo.CurrentOperation = $"Processing card {cardIndex + 1} of {pageCards.Count}";
-                progressInfo.CurrentCardName = card.Name;
-                progressInfo.ElapsedTime = DateTime.Now - startTime;
-                
-                // Update estimated time based on cards processed so far
-                var totalCardsProcessed = (currentPage - 1) * pageCards.Count + cardIndex;
-                if (totalCardsProcessed > 0)
+                var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
+                var title = totalPages > 1
+                    ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI"
+                    : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI";
+
+                gfx.DrawString(title, font, XBrushes.Black,
+                    new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+            }
+
+            // Draw cards with individual progress updates
+            for (int row = 0; row < actualCardsPerColumn; row++)
+            {
+                for (int col = 0; col < actualCardsPerRow; col++)
                 {
-                    var averageTimePerCard = progressInfo.ElapsedTime.TotalSeconds / totalCardsProcessed;
-                    var remainingCards = progressInfo.TotalSteps - progressInfo.CurrentStep;
-                    progressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
+                    var cardIndex = row * actualCardsPerRow + col;
+
+                    if (cardIndex < pageCards.Count)
+                    {
+                        var card = pageCards[cardIndex];
+
+                        // Update progress for this card
+                        progressInfo.CurrentStep = 2 + totalPages + (currentPage - 1) * pageCards.Count + cardIndex;
+                        progressInfo.CurrentOperation = $"Processing card {cardIndex + 1} of {pageCards.Count}";
+                        progressInfo.CurrentCardName = card.Name;
+                        progressInfo.ElapsedTime = DateTime.Now - startTime;
+
+                        // Update estimated time based on cards processed so far
+                        var totalCardsProcessed = (currentPage - 1) * pageCards.Count + cardIndex;
+                        if (totalCardsProcessed > 0)
+                        {
+                            var averageTimePerCard = progressInfo.ElapsedTime.TotalSeconds / totalCardsProcessed;
+                            var remainingCards = progressInfo.TotalSteps - progressInfo.CurrentStep;
+                            progressInfo.EstimatedRemainingTime =
+                                TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
+                        }
+
+                        progress?.Report(progressInfo);
+
+                        var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
+                        var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
+
+                        var x = XUnit.FromPoint(xPt);
+                        var y = XUnit.FromPoint(yPt);
+                        var cardWidth = XUnit.FromPoint(cardWidthPt);
+                        var cardHeight = XUnit.FromPoint(cardHeightPt);
+
+                        DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
+                    }
                 }
-                
+            }
+
+            // Draw cutting lines
+            if (options.ShowCuttingLines)
+            {
+                progressInfo.CurrentOperation = "Drawing cutting lines...";
                 progress?.Report(progressInfo);
-                
-                var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
-                var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
-                
-                var x = XUnit.FromPoint(xPt);
-                var y = XUnit.FromPoint(yPt);
-                var cardWidth = XUnit.FromPoint(cardWidthPt);
-                var cardHeight = XUnit.FromPoint(cardHeightPt);
-                
-                DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
+
+                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt,
+                    actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
             }
         }
-    }
-    
-    // Draw cutting lines
-    if (options.ShowCuttingLines)
-    {
-        progressInfo.CurrentOperation = "Drawing cutting lines...";
-        progress?.Report(progressInfo);
-        
-        DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt, 
-            actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
-    }
-}
+
         public async Task<Bitmap> GeneratePreviewImageAsync(CardCollection cards, PdfGenerationOptions options)
         {
             return await Task.Run(() =>
             {
                 try
                 {
-                    DebugHelper.WriteDebug($"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
-                    
+                    DebugHelper.WriteDebug(
+                        $"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
+
                     if (options == null)
                     {
                         DebugHelper.WriteDebug("ERROR: options is null!");
                         return CreateFallbackPreview(cards, options);
                     }
-                    
+
                     // Use preview DPI for preview generation (not print DPI)
                     var previewBitmap = CreateSimplePreview(cards, options, options.PreviewDpi);
-                    
-                    DebugHelper.WriteDebug($"Preview generated successfully using {options.PreviewDpi} DPI (final PDF will use {options.PrintDpi} DPI)");
+
+                    DebugHelper.WriteDebug(
+                        $"Preview generated successfully using {options.PreviewDpi} DPI (final PDF will use {options.PrintDpi} DPI)");
                     return previewBitmap;
                 }
                 catch (Exception ex)
@@ -339,7 +379,7 @@ namespace ProxyStudio.Services
                 document.Info.Title = $"ProxyStudio Cards - {targetDpi} DPI";
                 document.Info.Creator = "ProxyStudio";
                 document.Info.Subject = $"Proxy Cards at {targetDpi} DPI for high-quality printing";
-                
+
                 DebugHelper.WriteDebug($"Applied high-DPI settings: {targetDpi} DPI");
             }
             catch (Exception ex)
@@ -353,7 +393,7 @@ namespace ProxyStudio.Services
             // REMOVED: The graphics transformation was breaking card dimensions
             // High-DPI is now handled purely through image processing, not graphics scaling
             // This ensures cards remain exactly 2.5" × 3.5" regardless of DPI setting
-            
+
             DebugHelper.WriteDebug($"Skipped graphics DPI transformation - handling DPI through image processing only");
             DebugHelper.WriteDebug($"Cards will maintain EXACT 2.5\" × 3.5\" dimensions at {targetDpi} DPI");
         }
@@ -363,21 +403,21 @@ namespace ProxyStudio.Services
             // Page dimensions in points (72 DPI)
             var dimensions = pageSize?.ToUpper() switch
             {
-                "A3" => (841.89, 1190.55),   // A3: 297 × 420 mm
-                "A4" => (595.28, 841.89),    // A4: 210 × 297 mm  
-                "A5" => (419.53, 595.28),    // A5: 148 × 210 mm
-                "LETTER" => (612.0, 792.0),  // Letter: 8.5 × 11 inches
-                "LEGAL" => (612.0, 1008.0),  // Legal: 8.5 × 14 inches
+                "A3" => (841.89, 1190.55), // A3: 297 × 420 mm
+                "A4" => (595.28, 841.89), // A4: 210 × 297 mm  
+                "A5" => (419.53, 595.28), // A5: 148 × 210 mm
+                "LETTER" => (612.0, 792.0), // Letter: 8.5 × 11 inches
+                "LEGAL" => (612.0, 1008.0), // Legal: 8.5 × 14 inches
                 "TABLOID" => (792.0, 1224.0), // Tabloid: 11 × 17 inches
                 _ => (595.28, 841.89) // Default to A4
             };
-            
+
             // Swap dimensions for landscape
             if (isLandscape)
             {
                 return (dimensions.Item2, dimensions.Item1);
             }
-            
+
             return dimensions;
         }
 
@@ -395,44 +435,49 @@ namespace ProxyStudio.Services
             };
         }
 
-        private void DrawCardGrid(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
+        private void DrawCardGrid(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options, XUnit pageWidth,
+            XUnit pageHeight, int currentPage, int totalPages)
         {
             // Use user's orientation choice for layout
             var actualCardsPerRow = options.IsPortrait ? 3 : 4;
             var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
-            
-            DebugHelper.WriteDebug($"Drawing {pageCards.Count} cards in FIXED {actualCardsPerRow}x{actualCardsPerColumn} grid ({(options.IsPortrait ? "Portrait" : "Landscape")}) with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
-            
+
+            DebugHelper.WriteDebug(
+                $"Drawing {pageCards.Count} cards in FIXED {actualCardsPerRow}x{actualCardsPerColumn} grid ({(options.IsPortrait ? "Portrait" : "Landscape")}) with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
+
             // FIXED CARD DIMENSIONS: Always exactly 2.5" x 3.5" (180 x 252 points)
             var cardWidthPt = CARD_WIDTH_POINTS;
             var cardHeightPt = CARD_HEIGHT_POINTS;
-            
-            DebugHelper.WriteDebug($"Card dimensions: {cardWidthPt:F3}x{cardHeightPt:F3} points (FIXED 2.5\" x 3.5\") - spacing: {options.CardSpacing}pt");
-            
+
+            DebugHelper.WriteDebug(
+                $"Card dimensions: {cardWidthPt:F3}x{cardHeightPt:F3} points (FIXED 2.5\" x 3.5\") - spacing: {options.CardSpacing}pt");
+
             // Calculate total grid size
             var totalHorizontalSpacing = (actualCardsPerRow - 1) * options.CardSpacing;
             var totalVerticalSpacing = (actualCardsPerColumn - 1) * options.CardSpacing;
             var totalGridWidthPt = actualCardsPerRow * cardWidthPt + totalHorizontalSpacing;
             var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
-            
+
             // Calculate available space
             var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
-            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin + 50); // Space for title
-            
+            var availableHeightPt =
+                pageHeight.Point - (options.TopMargin + options.BottomMargin + 50); // Space for title
+
             // Center the grid on the page
             var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
             var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
-            
-            DebugHelper.WriteDebug($"Grid layout: start=({startXPt:F3}, {startYPt:F3}), total size=({totalGridWidthPt:F3}x{totalGridHeightPt:F3})");
-            
+
+            DebugHelper.WriteDebug(
+                $"Grid layout: start=({startXPt:F3}, {startYPt:F3}), total size=({totalGridWidthPt:F3}x{totalGridHeightPt:F3})");
+
             // Draw title with page info
             try
             {
                 var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
-                var title = totalPages > 1 
+                var title = totalPages > 1
                     ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn})"
                     : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn})";
-                    
+
                 gfx.DrawString(title, font, XBrushes.Black,
                     new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
                 DebugHelper.WriteDebug("Drew title successfully");
@@ -441,66 +486,101 @@ namespace ProxyStudio.Services
             {
                 DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
             }
-            
+
             // Draw cards with precise positioning
             for (int row = 0; row < actualCardsPerColumn; row++)
             {
                 for (int col = 0; col < actualCardsPerRow; col++)
                 {
                     var cardIndex = row * actualCardsPerRow + col;
-                    
+
                     if (cardIndex < pageCards.Count)
                     {
                         var card = pageCards[cardIndex];
-                        
+
                         // Calculate position with spacing - use precise double arithmetic
                         var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
                         var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
-                        
+
                         // Convert to XUnit only at the very end to preserve precision
                         var x = XUnit.FromPoint(xPt);
                         var y = XUnit.FromPoint(yPt);
                         var cardWidth = XUnit.FromPoint(cardWidthPt);
                         var cardHeight = XUnit.FromPoint(cardHeightPt);
-                        
-                        DebugHelper.WriteDebug($"Drawing card {cardIndex} ({card.Name}) at ({xPt:F3}, {yPt:F3}) - row {row}, col {col}");
-                        
+
+                        DebugHelper.WriteDebug(
+                            $"Drawing card {cardIndex} ({card.Name}) at ({xPt:F3}, {yPt:F3}) - row {row}, col {col}");
+
                         DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
                     }
                 }
             }
-            
+
             // Draw cutting lines for the entire grid (outside card areas)
             if (options.ShowCuttingLines)
             {
-                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt, 
+                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt,
                     actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
             }
         }
 
-        // Update DrawCard method to pass bleed flag
-        private void DrawCard(XGraphics gfx, Card card, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width, XUnit height)
+        // Update DrawCard method to pass bleed flag and fix image loading issue
+        private void DrawCard(XGraphics gfx, Card card, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width,
+            XUnit height)
         {
             DebugHelper.WriteDebug($"DrawCard: {card.Name} - EnableBleed: {card.EnableBleed}");
-    
+
             try
             {
                 if (card.ImageData != null && card.ImageData.Length > 0)
                 {
                     // Pass the bleed flag to image processing
-                    var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
+                    var processedImage =
+                        ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
                     if (processedImage != null)
                     {
-                        using var ms = new MemoryStream(processedImage);
-                        var xImage = XImage.FromStream(ms);
-                
-                        // Draw at full card size - the image is already processed for bleed
-                        // updated xunit to use .Point as conversion from XUnit to double was obsolete
-                        gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
-                
-                        DebugHelper.WriteDebug($"SUCCESS: Drew {(card.EnableBleed ? "bleed-cropped" : "full")} image for {card.Name}");
-                
-                        xImage.Dispose();
+                        XImage? xImage = null;
+                        try
+                        {
+                            // FIX: Create memory stream that stays alive during XImage creation
+                            using var ms = new MemoryStream(processedImage);
+
+                            // Try to create XImage - if it fails, convert to PNG first
+                            try
+                            {
+                                xImage = XImage.FromStream(ms);
+                            }
+                            catch (Exception ex)
+                            {
+                                DebugHelper.WriteDebug(
+                                    $"Failed to create XImage directly: {ex.Message}, converting to PNG...");
+
+                                // Convert to PNG as fallback - PDFsharp handles PNG better
+                                var pngData = ConvertToPng(processedImage, card.Name);
+                                if (pngData != null)
+                                {
+                                    using var pngMs = new MemoryStream(pngData);
+                                    xImage = XImage.FromStream(pngMs);
+                                }
+                            }
+
+                            if (xImage != null)
+                            {
+                                // Draw at full card size - the image is already processed for bleed
+                                gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
+                                DebugHelper.WriteDebug(
+                                    $"SUCCESS: Drew {(card.EnableBleed ? "bleed-cropped" : "full")} image for {card.Name}");
+                            }
+                            else
+                            {
+                                DebugHelper.WriteDebug($"ERROR: Failed to create XImage for {card.Name}");
+                                DrawPlaceholder(gfx, card, x, y, width, height, "Image Load Error");
+                            }
+                        }
+                        finally
+                        {
+                            xImage?.Dispose();
+                        }
                     }
                 }
                 else
@@ -516,147 +596,158 @@ namespace ProxyStudio.Services
         }
 
         // Update ProcessImageForHighDpiPdf method in PdfGenerationService.cs to handle bleed
-private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int targetDpi, bool enableBleed = false)
-{
-    try
-    {
-        DebugHelper.WriteDebug($"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI - EnableBleed: {enableBleed}");
-        
-        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
-        var originalSize = $"{image.Width}x{image.Height}";
-        
-        DebugHelper.WriteDebug($"  Source: {originalSize}");
-        
-        // Calculate target dimensions for exact 2.5" × 3.5" at target DPI
-        var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
-        var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
-        
-        // If bleed is enabled, crop 2mm from all sides of source image
-        if (enableBleed)
+        private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int targetDpi,
+            bool enableBleed = false)
         {
-            // Calculate 2mm in pixels based on the current image resolution
-            // Assume source image represents a 2.5" × 3.5" card with bleed
-            var sourcePixelsPerMm = Math.Min(image.Width / (2.5 * 25.4), image.Height / (3.5 * 25.4));
-            var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
-            
-            DebugHelper.WriteDebug($"  Bleed crop: {cropPixels} pixels from each edge");
-            
-            // Crop the image (remove 2mm bleed from all sides)
-            var cropRect = new SixLabors.ImageSharp.Rectangle(
-                cropPixels, 
-                cropPixels, 
-                image.Width - (cropPixels * 2), 
-                image.Height - (cropPixels * 2)
-            );
-            
-            image.Mutate(x => x.Crop(cropRect));
-            DebugHelper.WriteDebug($"  After crop: {image.Width}x{image.Height}");
-        }
-        
-        DebugHelper.WriteDebug($"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
-        
-        // Resize to exact target dimensions (this stretches the cropped image to full card size)
-        if (image.Width != targetWidth || image.Height != targetHeight)
-        {
-            var scaleX = (double)targetWidth / image.Width;
-            var scaleY = (double)targetHeight / image.Height;
-            DebugHelper.WriteDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
-            
-            image.Mutate(x => x.Resize(new ResizeOptions
+            try
             {
-                Size = new SixLabors.ImageSharp.Size(targetWidth, targetHeight),
-                Mode = ResizeMode.Stretch, // Stretch cropped image to fill full card
-                Sampler = KnownResamplers.Lanczos3
-            }));
-        }
-        
-        // Set DPI metadata
-        image.Metadata.HorizontalResolution = targetDpi;
-        image.Metadata.VerticalResolution = targetDpi;
-        
-        // Choose output format
-        MemoryStream outputStream = new MemoryStream();
-        string format;
-        
-        if (targetDpi >= 600)
-        {
-            var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                DebugHelper.WriteDebug(
+                    $"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI - EnableBleed: {enableBleed}");
+
+                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+                var originalSize = $"{image.Width}x{image.Height}";
+
+                DebugHelper.WriteDebug($"  Source: {originalSize}");
+
+                // Calculate target dimensions for exact 2.5" × 3.5" at target DPI
+                var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
+                var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
+
+                // If bleed is enabled, crop 2mm from all sides of source image
+                if (enableBleed)
+                {
+                    // Calculate 2mm in pixels based on the current image resolution
+                    // Assume source image represents a 2.5" × 3.5" card with bleed
+                    var sourcePixelsPerMm = Math.Min(image.Width / (2.5 * 25.4), image.Height / (3.5 * 25.4));
+                    var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
+
+                    DebugHelper.WriteDebug($"  Bleed crop: {cropPixels} pixels from each edge");
+
+                    // Crop the image (remove 2mm bleed from all sides)
+                    var cropRect = new SixLabors.ImageSharp.Rectangle(
+                        cropPixels,
+                        cropPixels,
+                        image.Width - (cropPixels * 2),
+                        image.Height - (cropPixels * 2)
+                    );
+
+                    image.Mutate(x => x.Crop(cropRect));
+                    DebugHelper.WriteDebug($"  After crop: {image.Width}x{image.Height}");
+                }
+
+                DebugHelper.WriteDebug(
+                    $"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
+
+                // Resize to exact target dimensions (this stretches the cropped image to full card size)
+                if (image.Width != targetWidth || image.Height != targetHeight)
+                {
+                    var scaleX = (double)targetWidth / image.Width;
+                    var scaleY = (double)targetHeight / image.Height;
+                    DebugHelper.WriteDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
+
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new SixLabors.ImageSharp.Size(targetWidth, targetHeight),
+                        Mode = ResizeMode.Stretch, // Stretch cropped image to fill full card
+                        Sampler = KnownResamplers.Lanczos3
+                    }));
+                }
+
+                // Set DPI metadata
+                image.Metadata.HorizontalResolution = targetDpi;
+                image.Metadata.VerticalResolution = targetDpi;
+
+                // Choose output format
+                MemoryStream outputStream = new MemoryStream();
+                string format;
+
+                if (targetDpi >= 600)
+                {
+                    var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                    {
+                        CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+                        ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+                    };
+                    image.Save(outputStream, pngEncoder);
+                    format = "PNG";
+                }
+                else
+                {
+                    var jpegEncoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                    {
+                        Quality = 95
+                    };
+                    image.Save(outputStream, jpegEncoder);
+                    format = "JPEG";
+                }
+
+                var processedData = outputStream.ToArray();
+                outputStream.Dispose();
+
+                DebugHelper.WriteDebug($"  Output: {processedData.Length} bytes as {format}");
+                DebugHelper.WriteDebug(
+                    $"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName} - Bleed {(enableBleed ? "removed" : "preserved")}");
+
+                return processedData;
+            }
+            catch (Exception ex)
             {
-                CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
-                ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
-            };
-            image.Save(outputStream, pngEncoder);
-            format = "PNG";
+                DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
+                return null;
+            }
         }
-        else
-        {
-            var jpegEncoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
-            {
-                Quality = 95
-            };
-            image.Save(outputStream, jpegEncoder);
-            format = "JPEG";
-        }
-        
-        var processedData = outputStream.ToArray();
-        outputStream.Dispose();
-        
-        DebugHelper.WriteDebug($"  Output: {processedData.Length} bytes as {format}");
-        DebugHelper.WriteDebug($"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName} - Bleed {(enableBleed ? "removed" : "preserved")}");
-        
-        return processedData;
-    }
-    catch (Exception ex)
-    {
-        DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
-        return null;
-    }
-}
 
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
         {
             try
             {
-                DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
-                
+                DebugHelper.WriteDebug(
+                    $"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+
                 // Use the user's orientation choice, not automatic layout
                 var actualCardsPerRow = options.IsPortrait ? 3 : 4;
                 var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
                 var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                 var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
-                
-                DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
-                
+
+                DebugHelper.WriteDebug(
+                    $"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+
                 // Get page dimensions based on selected page size and USER'S orientation choice
-                var pageDimensions = GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
-                
+                var pageDimensions =
+                    GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
+
                 // Calculate preview scale to fit in a reasonable screen size
                 var maxPreviewWidth = 1200;
                 var maxPreviewHeight = 900;
                 var scaleX = maxPreviewWidth / pageDimensions.Width;
                 var scaleY = maxPreviewHeight / pageDimensions.Height;
                 var pageScale = Math.Min(scaleX, scaleY);
-                
+
                 // Calculate preview dimensions maintaining page aspect ratio
                 var previewWidth = (int)(pageDimensions.Width * pageScale);
                 var previewHeight = (int)(pageDimensions.Height * pageScale);
-                
-                DebugHelper.WriteDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
-                DebugHelper.WriteDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
-                
+
+                DebugHelper.WriteDebug(
+                    $"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
+                DebugHelper.WriteDebug(
+                    $"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+
                 using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
-                
+
                 graphics.Clear(System.Drawing.Color.White);
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                
+
                 // Draw title
                 using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
-                var titleText = $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
-                graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black, new System.Drawing.PointF(10, 10));
-                
+                var titleText =
+                    $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
+                graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
+                    new System.Drawing.PointF(10, 10));
+
                 DebugHelper.WriteDebug("Drew title");
-                
+
                 if (pageCards.Count == 0)
                 {
                     DebugHelper.WriteDebug("No cards to draw");
@@ -665,88 +756,92 @@ private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int
                     ms.Position = 0;
                     return new Bitmap(ms);
                 }
-                
+
                 // FIXED CARD DIMENSIONS: Always 2.5" x 3.5" scaled for preview
                 var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
-                
-                DebugHelper.WriteDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
-                
+
+                DebugHelper.WriteDebug(
+                    $"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+
                 // Calculate total grid size
                 var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
-                var totalGridHeight = actualCardsPerColumn * cardHeightPreview + (actualCardsPerColumn - 1) * spacingPreview;
-                
+                var totalGridHeight = actualCardsPerColumn * cardHeightPreview +
+                                      (actualCardsPerColumn - 1) * spacingPreview;
+
                 // Calculate available space for grid (scaled margins)
                 var marginLeftScaled = options.LeftMargin * pageScale;
                 var marginRightScaled = options.RightMargin * pageScale;
                 var marginTopScaled = options.TopMargin * pageScale;
                 var marginBottomScaled = options.BottomMargin * pageScale;
                 var titleSpaceScaled = 30 * pageScale; // Space for title
-                
+
                 var availableWidth = previewWidth - marginLeftScaled - marginRightScaled;
                 var availableHeight = previewHeight - marginTopScaled - marginBottomScaled - titleSpaceScaled;
-                
+
                 // Center the grid on the page
                 var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
                 var gridStartY = marginTopScaled + titleSpaceScaled + (availableHeight - totalGridHeight) / 2;
-                
+
                 DebugHelper.WriteDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
-                
+
                 // Check if grid fits
                 if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
                 {
-                    DebugHelper.WriteDebug($"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+                    DebugHelper.WriteDebug(
+                        $"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
                 }
                 else
                 {
                     DebugHelper.WriteDebug($"SUCCESS: Preview grid fits within page margins");
                 }
-                
+
                 // Draw cards with FIXED spacing
                 for (int row = 0; row < actualCardsPerColumn; row++)
                 {
                     for (int col = 0; col < actualCardsPerRow; col++)
                     {
                         var cardIndex = row * actualCardsPerRow + col;
-                        
+
                         if (cardIndex < pageCards.Count)
                         {
                             var card = pageCards[cardIndex];
-                            
+
                             // Calculate exact position with spacing
                             var exactX = gridStartX + col * (cardWidthPreview + spacingPreview);
                             var exactY = gridStartY + row * (cardHeightPreview + spacingPreview);
-                            
+
                             // Round for display
                             var x = (int)Math.Round(exactX);
                             var y = (int)Math.Round(exactY);
-                            
+
                             DebugHelper.WriteDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
                             DebugHelper.WriteDebug($"  Position: ({x}, {y})");
-                            
-                            DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview), (int)Math.Round(cardHeightPreview));
+
+                            DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
+                                (int)Math.Round(cardHeightPreview));
                         }
                     }
                 }
-                
+
                 // Draw cutting lines for the entire grid (outside card areas)
                 if (options.ShowCuttingLines)
                 {
-                    DrawPreviewGridCuttingLines(graphics, options, (float)gridStartX, (float)gridStartY, 
+                    DrawPreviewGridCuttingLines(graphics, options, (float)gridStartX, (float)gridStartY,
                         actualCardsPerRow, actualCardsPerColumn, cardWidthPreview, cardHeightPreview, spacingPreview);
                 }
-                
+
                 DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
-                
+
                 // Convert to Avalonia Bitmap
                 using var outputStream = new MemoryStream();
                 bitmap.Save(outputStream, System.Drawing.Imaging.ImageFormat.Png);
                 outputStream.Position = 0;
-                
+
                 var avaloniaB = new Bitmap(outputStream);
                 DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
-                
+
                 return avaloniaB;
             }
             catch (Exception ex)
@@ -758,84 +853,91 @@ private byte[]? ProcessImageForHighDpiPdf(byte[] imageData, string cardName, int
         }
 
         // Update preview drawing to handle bleed
-private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x, int y, int width, int height)
-{
-    try
-    {
-        var rect = new System.Drawing.Rectangle(x, y, width, height);
-        
-        DebugHelper.WriteDebug($"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
-        
-        if (card?.ImageData != null && card.ImageData.Length > 0)
+        private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x,
+            int y, int width, int height)
         {
             try
             {
-                using var imageStream = new MemoryStream(card.ImageData);
-                using var originalImage = System.Drawing.Image.FromStream(imageStream);
-                
-                if (card.EnableBleed)
+                var rect = new System.Drawing.Rectangle(x, y, width, height);
+
+                DebugHelper.WriteDebug(
+                    $"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+
+                if (card?.ImageData != null && card.ImageData.Length > 0)
                 {
-                    // Crop 2mm from preview image (approximate scaling)
-                    var sourcePixelsPerMm = Math.Min(originalImage.Width / (2.5 * 25.4), originalImage.Height / (3.5 * 25.4));
-                    var cropPixels = (int)(2.0 * sourcePixelsPerMm);
-                    
-                    var cropRect = new System.Drawing.Rectangle(
-                        cropPixels, 
-                        cropPixels, 
-                        originalImage.Width - (cropPixels * 2), 
-                        originalImage.Height - (cropPixels * 2)
-                    );
-                    
-                    // Draw cropped portion stretched to full card size
-                    graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
-                    DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
+                    try
+                    {
+                        using var imageStream = new MemoryStream(card.ImageData);
+                        using var originalImage = System.Drawing.Image.FromStream(imageStream);
+
+                        if (card.EnableBleed)
+                        {
+                            // Crop 2mm from preview image (approximate scaling)
+                            var sourcePixelsPerMm = Math.Min(originalImage.Width / (2.5 * 25.4),
+                                originalImage.Height / (3.5 * 25.4));
+                            var cropPixels = (int)(2.0 * sourcePixelsPerMm);
+
+                            var cropRect = new System.Drawing.Rectangle(
+                                cropPixels,
+                                cropPixels,
+                                originalImage.Width - (cropPixels * 2),
+                                originalImage.Height - (cropPixels * 2)
+                            );
+
+                            // Draw cropped portion stretched to full card size
+                            graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
+                            DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
+                        }
+                        else
+                        {
+                            // Draw full image
+                            graphics.DrawImage(originalImage, rect);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
+                        DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
+                    }
                 }
                 else
                 {
-                    // Draw full image
-                    graphics.DrawImage(originalImage, rect);
+                    DrawPreviewPlaceholder(graphics, card, rect,
+                        card?.EnableBleed == true ? "No Image (Bleed)" : "No Image");
                 }
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
-                DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
+                DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
             }
         }
-        else
-        {
-            DrawPreviewPlaceholder(graphics, card, rect, card?.EnableBleed == true ? "No Image (Bleed)" : "No Image");
-        }
-    }
-    catch (Exception ex)
-    {
-        DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
-    }
-}
 
-        private void DrawPreviewPlaceholder(System.Drawing.Graphics graphics, Card card, System.Drawing.Rectangle rect, string message)
+        private void DrawPreviewPlaceholder(System.Drawing.Graphics graphics, Card card, System.Drawing.Rectangle rect,
+            string message)
         {
             try
             {
                 // Fill background
                 graphics.FillRectangle(System.Drawing.Brushes.LightGray, rect);
                 graphics.DrawRectangle(System.Drawing.Pens.Gray, rect);
-                
+
                 // Draw text safely
                 using var font = new System.Drawing.Font("Arial", 8, System.Drawing.FontStyle.Bold);
                 using var smallFont = new System.Drawing.Font("Arial", 6);
-                
+
                 var stringFormat = new System.Drawing.StringFormat
                 {
                     Alignment = System.Drawing.StringAlignment.Center,
                     LineAlignment = System.Drawing.StringAlignment.Center
                 };
-                
+
                 graphics.DrawString(message ?? "Error", font, System.Drawing.Brushes.Black, rect, stringFormat);
-                
-                var nameRect = new System.Drawing.Rectangle(rect.X, rect.Y + rect.Height * 2 / 3, rect.Width, rect.Height / 3);
-                graphics.DrawString(card?.Name ?? "Unknown", smallFont, System.Drawing.Brushes.DarkGray, nameRect, stringFormat);
-                
+
+                var nameRect =
+                    new System.Drawing.Rectangle(rect.X, rect.Y + rect.Height * 2 / 3, rect.Width, rect.Height / 3);
+                graphics.DrawString(card?.Name ?? "Unknown", smallFont, System.Drawing.Brushes.DarkGray, nameRect,
+                    stringFormat);
+
                 DebugHelper.WriteDebug($"Drew placeholder for {card?.Name ?? "NULL"}: {message}");
             }
             catch (Exception ex)
@@ -852,56 +954,56 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
             }
         }
 
-        private void DrawPreviewGridCuttingLines(System.Drawing.Graphics graphics, PdfGenerationOptions options, 
-            float gridStartX, float gridStartY, int cardsPerRow, int cardsPerColumn, 
+        private void DrawPreviewGridCuttingLines(System.Drawing.Graphics graphics, PdfGenerationOptions options,
+            float gridStartX, float gridStartY, int cardsPerRow, int cardsPerColumn,
             float cardWidth, float cardHeight, float spacing)
         {
             try
             {
                 var color = ParseSystemDrawingColor(options.CuttingLineColor);
                 using var pen = new System.Drawing.Pen(color, options.CuttingLineThickness);
-                
+
                 if (options.IsCuttingLineDashed)
                 {
                     pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                 }
-                
+
                 var extension = options.CuttingLineExtension;
-                
+
                 DebugHelper.WriteDebug($"Drawing grid cutting lines with {extension}pt extension OUTSIDE grid only");
-                
+
                 // Calculate grid boundaries
                 var gridLeft = gridStartX;
                 var gridRight = gridStartX + cardsPerRow * cardWidth + (cardsPerRow - 1) * spacing;
                 var gridTop = gridStartY;
                 var gridBottom = gridStartY + cardsPerColumn * cardHeight + (cardsPerColumn - 1) * spacing;
-                
+
                 // Draw horizontal cutting line extensions (only outside grid)
                 for (int row = 0; row <= cardsPerColumn; row++)
                 {
                     var y = gridStartY + row * (cardHeight + spacing);
                     if (row > 0) y -= spacing; // Adjust for spacing except at top
-                    
+
                     // Left extension
                     graphics.DrawLine(pen, gridLeft - extension, y, gridLeft, y);
-                    
+
                     // Right extension  
                     graphics.DrawLine(pen, gridRight, y, gridRight + extension, y);
                 }
-                
+
                 // Draw vertical cutting line extensions (only outside grid)
                 for (int col = 0; col <= cardsPerRow; col++)
                 {
                     var x = gridStartX + col * (cardWidth + spacing);
                     if (col > 0) x -= spacing; // Adjust for spacing except at left
-                    
+
                     // Top extension
                     graphics.DrawLine(pen, x, gridTop - extension, x, gridTop);
-                    
+
                     // Bottom extension
                     graphics.DrawLine(pen, x, gridBottom, x, gridBottom + extension);
                 }
-                
+
                 DebugHelper.WriteDebug("Completed drawing grid cutting line extensions");
             }
             catch (Exception ex)
@@ -934,9 +1036,9 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
                 // Create a minimal fallback preview
                 var width = 400;
                 var height = 300;
-                
+
                 var bitmap = new WriteableBitmap(new Avalonia.PixelSize(width, height), new Avalonia.Vector(96, 96));
-                
+
                 using (var context = bitmap.Lock())
                 {
                     unsafe
@@ -949,7 +1051,7 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
                         }
                     }
                 }
-                
+
                 return bitmap;
             }
             catch
@@ -967,7 +1069,7 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
             catch (Exception ex)
             {
                 DebugHelper.WriteDebug($"Error creating font {familyName}: {ex.Message}, falling back to default");
-                
+
                 try
                 {
                     return new XFont("Segoe UI", size, style);
@@ -986,20 +1088,21 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
             }
         }
 
-        private void DrawPlaceholder(XGraphics gfx, Card card, XUnit x, XUnit y, XUnit width, XUnit height, string message)
+        private void DrawPlaceholder(XGraphics gfx, Card card, XUnit x, XUnit y, XUnit width, XUnit height,
+            string message)
         {
             // Draw border
             var pen = new XPen(XColors.Gray, 1);
             gfx.DrawRectangle(pen, XBrushes.LightGray, new XRect(x, y, width, height));
-            
+
             // Draw text with safe font handling
             try
             {
                 var font = GetSafeFont("Arial", 10, XFontStyleEx.Bold);
                 var textRect = new XRect(x, y, width, height);
-                
+
                 gfx.DrawString(message, font, XBrushes.Black, textRect, XStringFormats.Center);
-                
+
                 var smallFont = GetSafeFont("Arial", 8, XFontStyleEx.Regular);
                 var nameRect = new XRect(x, y + height * 0.6, width, height * 0.4);
                 gfx.DrawString(card.Name ?? "Unknown", smallFont, XBrushes.DarkGray, nameRect, XStringFormats.Center);
@@ -1010,68 +1113,69 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
             }
         }
 
-        private void DrawPdfGridCuttingLines(XGraphics gfx, PdfGenerationOptions options, 
-            double gridStartX, double gridStartY, int cardsPerRow, int cardsPerColumn, 
+        private void DrawPdfGridCuttingLines(XGraphics gfx, PdfGenerationOptions options,
+            double gridStartX, double gridStartY, int cardsPerRow, int cardsPerColumn,
             double cardWidth, double cardHeight)
         {
             try
             {
                 var color = ParseColor(options.CuttingLineColor);
                 var pen = new XPen(color, options.CuttingLineThickness);
-        
+
                 if (options.IsCuttingLineDashed)
                 {
                     pen.DashStyle = XDashStyle.Dash;
                 }
-        
+
                 var extension = options.CuttingLineExtension;
-                
-                DebugHelper.WriteDebug($"Drawing PDF grid cutting lines with {extension}pt extension OUTSIDE grid only");
-                
+
+                DebugHelper.WriteDebug(
+                    $"Drawing PDF grid cutting lines with {extension}pt extension OUTSIDE grid only");
+
                 // Calculate grid boundaries
                 var gridLeft = gridStartX;
                 var gridRight = gridStartX + cardsPerRow * cardWidth + (cardsPerRow - 1) * options.CardSpacing;
                 var gridTop = gridStartY;
                 var gridBottom = gridStartY + cardsPerColumn * cardHeight + (cardsPerColumn - 1) * options.CardSpacing;
-                
+
                 // Draw horizontal cutting line extensions (only outside grid)
                 for (int row = 0; row <= cardsPerColumn; row++)
                 {
                     var y = gridStartY + row * (cardHeight + options.CardSpacing);
                     if (row > 0) y -= options.CardSpacing; // Adjust for spacing except at top
-                    
+
                     var yUnit = XUnit.FromPoint(y);
-                    
+
                     // Left extension
-                    gfx.DrawLine(pen, 
-                        XUnit.FromPoint(gridLeft - extension), yUnit, 
+                    gfx.DrawLine(pen,
+                        XUnit.FromPoint(gridLeft - extension), yUnit,
                         XUnit.FromPoint(gridLeft), yUnit);
-                    
+
                     // Right extension  
-                    gfx.DrawLine(pen, 
-                        XUnit.FromPoint(gridRight), yUnit, 
+                    gfx.DrawLine(pen,
+                        XUnit.FromPoint(gridRight), yUnit,
                         XUnit.FromPoint(gridRight + extension), yUnit);
                 }
-                
+
                 // Draw vertical cutting line extensions (only outside grid)
                 for (int col = 0; col <= cardsPerRow; col++)
                 {
                     var x = gridStartX + col * (cardWidth + options.CardSpacing);
                     if (col > 0) x -= options.CardSpacing; // Adjust for spacing except at left
-                    
+
                     var xUnit = XUnit.FromPoint(x);
-                    
+
                     // Top extension
-                    gfx.DrawLine(pen, 
-                        xUnit, XUnit.FromPoint(gridTop - extension), 
+                    gfx.DrawLine(pen,
+                        xUnit, XUnit.FromPoint(gridTop - extension),
                         xUnit, XUnit.FromPoint(gridTop));
-                    
+
                     // Bottom extension
-                    gfx.DrawLine(pen, 
-                        xUnit, XUnit.FromPoint(gridBottom), 
+                    gfx.DrawLine(pen,
+                        xUnit, XUnit.FromPoint(gridBottom),
                         xUnit, XUnit.FromPoint(gridBottom + extension));
                 }
-                
+
                 DebugHelper.WriteDebug("Completed drawing PDF grid cutting line extensions");
             }
             catch (Exception ex)
@@ -1095,6 +1199,7 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
                         return XColor.FromArgb(r, g, b);
                     }
                 }
+
                 return XColors.Red; // Default to red
             }
             catch
@@ -1112,7 +1217,7 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
             try
             {
                 DebugHelper.WriteDebug($"Resolving font: {familyName}, Bold: {isBold}, Italic: {isItalic}");
-                
+
                 // Map common font names to safer alternatives
                 var safeFontName = familyName.ToLower() switch
                 {
@@ -1122,7 +1227,7 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
                     "courier" => "Courier New",
                     _ => familyName
                 };
-                
+
                 return new FontResolverInfo(safeFontName);
             }
             catch (Exception ex)
@@ -1146,5 +1251,10 @@ private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGen
                 return null;
             }
         }
+
+
+
+
+        
     }
 }
