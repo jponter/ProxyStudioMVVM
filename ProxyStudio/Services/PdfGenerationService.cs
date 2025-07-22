@@ -495,7 +495,8 @@ namespace ProxyStudio.Services
                         var xImage = XImage.FromStream(ms);
                 
                         // Draw at full card size - the image is already processed for bleed
-                        gfx.DrawImage(xImage, new XRect(x, y, width, height));
+                        // updated xunit to use .Point as conversion from XUnit to double was obsolete
+                        gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
                 
                         DebugHelper.WriteDebug($"SUCCESS: Drew {(card.EnableBleed ? "bleed-cropped" : "full")} image for {card.Name}");
                 
