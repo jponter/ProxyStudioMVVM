@@ -644,9 +644,9 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
     {
         public int Quantity { get; set; }
         public int Bracket { get; set; }
-        public string Stock { get; set; }
+        public string? Stock { get; set; }
         public bool Foil { get; set; }
         public List<Card> Cards { get; set; } = new();
-        public string CardBack { get; set; }
+        public string? CardBack { get; set; }
     }
 }

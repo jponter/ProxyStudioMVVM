@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
@@ -60,7 +59,7 @@ namespace ProxyStudio.ViewModels
 
         public void UpdateConfig(Action<AppConfig> updateAction)
         {
-            updateAction?.Invoke(Config);
+            updateAction.Invoke(Config);
         }
 
         public AppConfig LoadConfig()

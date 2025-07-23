@@ -11,7 +11,7 @@ namespace ProxyStudio.Models;
 public partial class Card : ObservableObject
 {
     
-    private readonly IConfigManager _configManager;
+    //private readonly IConfigManager _configManager;
     
     // ── Plain auto-properties ───────────────────────────────────────────────────
     public string Name        { get; set; } = "Default Name";

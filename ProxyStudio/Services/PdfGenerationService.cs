@@ -635,7 +635,7 @@ namespace ProxyStudio.Services
             // High-DPI is now handled purely through image processing, not graphics scaling
             // This ensures cards remain exactly 2.5" × 3.5" regardless of DPI setting
 
-            DebugHelper.WriteDebug($"Skipped graphics DPI transformation - handling DPI through image processing only");
+            DebugHelper.WriteDebug("Skipped graphics DPI transformation - handling DPI through image processing only");
             DebugHelper.WriteDebug($"Cards will maintain EXACT 2.5\" × 3.5\" dimensions at {targetDpi} DPI");
         }
 
@@ -1334,13 +1334,13 @@ namespace ProxyStudio.Services
         {
             // Draw border
             var pen = new XPen(XColors.Gray, 1);
-            gfx.DrawRectangle(pen, XBrushes.LightGray, new XRect(x, y, width, height));
+            gfx.DrawRectangle(pen, XBrushes.LightGray, new XRect(x.Point, y.Point, width.Point, height.Point));
 
             // Draw text with safe font handling
             try
             {
                 var font = GetSafeFont("Arial", 10, XFontStyleEx.Bold);
-                var textRect = new XRect(x, y, width, height);
+                var textRect = new XRect(x.Point, y.Point, width.Point, height.Point);
 
                 gfx.DrawString(message, font, XBrushes.Black, textRect, XStringFormats.Center);
 

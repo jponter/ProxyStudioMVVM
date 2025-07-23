@@ -13,7 +13,7 @@ namespace ProxyStudio.Behaviors
     public class DragAdorner : ContentControl
     {
         private readonly Visual _originalElement;
-        private Point _offset;
+        //private Point _offset;
 
         public DragAdorner(Visual originalElement, Visual adornerLayer)
         {

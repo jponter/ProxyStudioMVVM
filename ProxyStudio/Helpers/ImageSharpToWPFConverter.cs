@@ -19,18 +19,16 @@ public class ImageSharpToWPFConverter
 
     public static Image<Rgba32> ByteArrayToImage(byte[] byteArray)
     {
-        using (var memoryStream = new MemoryStream(byteArray))
+        using var memoryStream = new MemoryStream(byteArray);
+        if (byteArray == null || byteArray.Length == 0)
         {
-            if (byteArray == null || byteArray.Length == 0)
-            {
 
-                //Helper.WriteDebug("ByteArrayToImage: byteArray is null or empty.");
-                return null; // Return null if the byte array is empty or null
-            }
-            else
-            {
-                return Image.Load<Rgba32>(memoryStream);
-            }
+            //Helper.WriteDebug("ByteArrayToImage: byteArray is null or empty.");
+            return null; // Return null if the byte array is empty or null
+        }
+        else
+        {
+            return Image.Load<Rgba32>(memoryStream);
         }
     }
 }
