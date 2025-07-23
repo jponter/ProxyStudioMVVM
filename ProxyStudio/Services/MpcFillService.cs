@@ -104,6 +104,8 @@ namespace ProxyStudio.Services
         // Auto-detect based on CPU cores
         //var maxConcurrency = Math.Max(2, Environment.ProcessorCount / 2);
         //var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+// Replace your ProcessXmlContentAsync method with this enhanced debugging version:
+
 public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgress<MpcFillProgress>? progress = null)
 {
     try
@@ -118,80 +120,256 @@ public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgres
         };
         progress?.Report(progressInfo);
 
-        var completedCards = new ConcurrentBag<Card>();
-        var completedCount = 0; // Keep as int
-        var processingCards = new ConcurrentDictionary<string, string>();
-
-        // Process 3 cards simultaneously
-        //var semaphore = new SemaphoreSlim(3, 3);
-        // Auto-detect based on CPU cores
-        var maxConcurrency = Math.Max(2, Environment.ProcessorCount / 2);
-        var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-        
-
-        DebugHelper.WriteDebug($"PARALLEL: Starting {cardMetadata.Count} tasks with max 3 concurrent");
-
-        var tasks = cardMetadata.Select(async metadata =>
+        // ✅ FIXED: Run Parallel.ForEach on background thread to avoid UI blocking
+        return await Task.Run(() =>
         {
-            await semaphore.WaitAsync();
+            // ✅ Use array to preserve order
+            var completedCards = new Card[cardMetadata.Count];
+            var completedCount = 0;
+
+            // ✅ BALANCED APPROACH: Determine optimal concurrency
+            var maxConcurrency = Math.Max(2, Environment.ProcessorCount / 2);
             
+            // ✅ PARALLEL.FOREACH: Guaranteed parallel execution
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = maxConcurrency
+            };
+
+            DebugHelper.WriteDebug($"=== MPC FILL PARALLEL PROCESSING START ===");
+            DebugHelper.WriteDebug($"Cards to process: {cardMetadata.Count}");
+            DebugHelper.WriteDebug($"System has {Environment.ProcessorCount} logical processors");
+            DebugHelper.WriteDebug($"Using {maxConcurrency} max concurrent threads (balanced approach)");
+            DebugHelper.WriteDebug($"Using Parallel.ForEach on background thread (non-blocking UI)");
+            DebugHelper.WriteDebug($"Order preservation: Using fixed array at original XML indices");
+
+            var parallelStartTime = DateTime.Now;
+
+            // ✅ FIXED: Parallel.ForEach on background thread
             try
             {
-                // Add to processing tracker for progress display
-                processingCards.TryAdd(metadata.Id, metadata.Name);
-                
-                DebugHelper.WriteDebug($"PARALLEL: Processing {metadata.Name} on thread {Thread.CurrentThread.ManagedThreadId}");
-                
-                Card card;
-                try
-                {
-                    var imageData = await LoadImageWithCacheAsync(metadata.Id, metadata.Name);
-                    card = CreateCardFromMetadata(metadata, imageData);
-                    DebugHelper.WriteDebug($"PARALLEL SUCCESS: {metadata.Name}");
-                }
-                catch (Exception ex)
-                {
-                    DebugHelper.WriteDebug($"PARALLEL ERROR: {metadata.Name} - {ex.Message}");
-                    var placeholderImage = CreatePlaceholderImage();
-                    card = CreateCardFromMetadata(metadata, placeholderImage);
-                }
+                Parallel.ForEach(
+                    cardMetadata.Select((metadata, index) => new { Metadata = metadata, Index = index }),
+                    parallelOptions,
+                    item =>
+                    {
+                        var threadId = Thread.CurrentThread.ManagedThreadId;
+                        var metadata = item.Metadata;
+                        var index = item.Index;
+                        
+                        try
+                        {
+                            DebugHelper.WriteDebug($"PARALLEL MPC: Processing {metadata.Name} (XML index {index}) on thread {threadId}");
+                            
+                            var cardStartTime = DateTime.Now;
+                            Card card;
+                            try
+                            {
+                                var imageData = LoadImageWithCacheSync(metadata.Id, metadata.Name);
+                                card = CreateCardFromMetadata(metadata, imageData);
+                                
+                                var cardProcessTime = DateTime.Now - cardStartTime;
+                                DebugHelper.WriteDebug($"PARALLEL MPC SUCCESS: {metadata.Name} (index {index}) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                            }
+                            catch (Exception ex)
+                            {
+                                var cardProcessTime = DateTime.Now - cardStartTime;
+                                DebugHelper.WriteDebug($"PARALLEL MPC ERROR: {metadata.Name} (index {index}) on thread {threadId} after {cardProcessTime.TotalSeconds:F1}s - {ex.Message}");
+                                var placeholderImage = CreatePlaceholderImage();
+                                card = CreateCardFromMetadata(metadata, placeholderImage);
+                            }
 
-                completedCards.Add(card);
-                
-                // Remove from processing tracker
-                processingCards.TryRemove(metadata.Id, out _);
-                
-                // Update progress - Interlocked.Increment works with int and returns the new value
-                var newCompletedCount = Interlocked.Increment(ref completedCount);
-                
-                var finalProgress = new MpcFillProgress
-                {
-                    TotalSteps = cardMetadata.Count + 1,
-                    CurrentStep = newCompletedCount + 1,
-                    CurrentOperation = $"Completed {newCompletedCount}/{cardMetadata.Count} cards",
-                    CurrentCardName = metadata.Name
-                };
-                progress?.Report(finalProgress);
+                            // ✅ Store card at its original index to preserve order
+                            completedCards[index] = card;
+                            
+                            // Update progress
+                            var newCompletedCount = Interlocked.Increment(ref completedCount);
+                            
+                            var tempProgressInfo = new MpcFillProgress
+                            {
+                                TotalSteps = cardMetadata.Count + 1,
+                                CurrentStep = newCompletedCount + 1,
+                                CurrentOperation = $"Completed {newCompletedCount}/{cardMetadata.Count} cards (Thread {threadId})",
+                                CurrentCardName = metadata.Name
+                            };
+                            progress?.Report(tempProgressInfo);
 
-                return card;
+                            DebugHelper.WriteDebug($"PROGRESS UPDATE: Stored {metadata.Name} at index {index}, completed {newCompletedCount}/{cardMetadata.Count}, thread {threadId}");
+                        }
+                        catch (Exception ex)
+                        {
+                            DebugHelper.WriteDebug($"ERROR: Processing {metadata?.Name ?? "unknown"} (index {index}) failed on thread {threadId}: {ex.Message}");
+                            
+                            // Still increment counter and store placeholder for failed cards
+                            var placeholderImage = CreatePlaceholderImage();
+                            var errorCard = CreateCardFromMetadata(metadata, placeholderImage);  
+                            completedCards[index] = errorCard;
+                            Interlocked.Increment(ref completedCount);
+                        }
+                    });
+                    
+                var parallelEndTime = DateTime.Now;
+                var parallelDuration = parallelEndTime - parallelStartTime;
+                
+                // ✅ DETAILED PERFORMANCE ANALYSIS
+                DebugHelper.WriteDebug($"=== MPC FILL PARALLEL PROCESSING COMPLETE ===");
+                DebugHelper.WriteDebug($"Processed {cardMetadata.Count} cards successfully");
+                DebugHelper.WriteDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
+                DebugHelper.WriteDebug($"Average per card: {parallelDuration.TotalMilliseconds / cardMetadata.Count:F0} ms");
+                
+                if (cardMetadata.Count > 1)
+                {
+                    var estimatedSequentialTime = cardMetadata.Count * 5.0; // Assume 5s per card sequential
+                    var speedupRatio = estimatedSequentialTime / parallelDuration.TotalSeconds;
+                    DebugHelper.WriteDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
+                }
             }
-            finally
+            catch (Exception ex)
             {
-                semaphore.Release();
+                DebugHelper.WriteDebug($"ERROR: Parallel.ForEach failed: {ex.Message}");
+                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                throw;
             }
-        });
-
-        // Wait for all parallel tasks to complete
-        await Task.WhenAll(tasks);
-        
-        DebugHelper.WriteDebug($"PARALLEL: All {cardMetadata.Count} tasks completed successfully");
-        
-        return completedCards.ToList();
+            
+            // ✅ Convert array to list - maintains original XML order
+            var orderedResult = completedCards.ToList();
+            
+            // ✅ VERIFY ORDER PRESERVATION
+            DebugHelper.WriteDebug($"=== ORDER PRESERVATION VERIFICATION ===");
+            var orderCorrect = true;
+            for (int i = 0; i < Math.Min(orderedResult.Count, cardMetadata.Count); i++)
+            {
+                var expectedName = cardMetadata[i].Name;
+                var actualName = orderedResult[i]?.Name ?? "NULL";
+                if (expectedName != actualName)
+                {
+                    DebugHelper.WriteDebug($"❌ ORDER MISMATCH at index {i}: expected '{expectedName}', got '{actualName}'");
+                    orderCorrect = false;
+                }
+                else
+                {
+                    DebugHelper.WriteDebug($"✅ ORDER CORRECT at index {i}: '{actualName}'");
+                }
+            }
+            
+            if (orderCorrect)
+            {
+                DebugHelper.WriteDebug($"✅ ALL CARDS IN CORRECT XML ORDER - Parallel processing with order preservation successful!");
+            }
+            else
+            {
+                DebugHelper.WriteDebug($"❌ ORDER PRESERVATION FAILED - Check array indexing logic");
+            }
+            
+            DebugHelper.WriteDebug($"PARALLEL MPC: Returning {orderedResult.Count} cards in original XML order");
+            return orderedResult;
+        }); // ✅ End of Task.Run - this keeps UI responsive!
     }
     catch (Exception ex)
     {
-        DebugHelper.WriteDebug($"Error in parallel processing: {ex.Message}");
+        DebugHelper.WriteDebug($"Error in parallel MPC Fill processing: {ex.Message}");
+        DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
         throw new InvalidOperationException($"Failed to process MPC Fill XML: {ex.Message}", ex);
+    }
+}
+
+// ✅ NEW: Synchronous version of LoadImageWithCacheAsync for Parallel.ForEach
+private byte[] LoadImageWithCacheSync(string cardId, string cardName)
+{
+    var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
+    
+    DebugHelper.WriteDebug($"Checking cache for {cardName} at: {cacheFilePath}");
+
+    if (File.Exists(cacheFilePath))
+    {
+        try
+        {
+            DebugHelper.WriteDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
+            return LoadImageFromFileSync(cacheFilePath);
+        }
+        catch (Exception ex)
+        {
+            DebugHelper.WriteDebug($"CACHE ERROR: {ex.Message}");
+        }
+    }
+
+    // Download, process, and cache
+    DebugHelper.WriteDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+    var imageData = DownloadCardImageSync(cardId);
+    
+    // Save to cache
+    SaveImageToCacheSync(imageData, cacheFilePath);
+
+    // Load the cached high-res version we just saved
+    if (File.Exists(cacheFilePath))
+    {
+        return LoadImageFromFileSync(cacheFilePath);
+    }
+    
+    // Fallback: process in memory if caching failed
+    return ProcessImageToHighResolution(imageData);
+}
+
+// ✅ NEW: Synchronous helper methods for Parallel.ForEach
+private byte[] LoadImageFromFileSync(string filePath)
+{
+    using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(filePath);
+    return ImageSharpToWPFConverter.ImageToByteArray(image);
+}
+
+private byte[] DownloadCardImageSync(string cardId)
+{
+    const string baseUrl = "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec";
+    
+    var queryParams = new Dictionary<string, string> { { "id", cardId } };
+    var fullUrl = QueryStringHelper.BuildUrlWithQueryStringUsingStringConcat(baseUrl, queryParams);
+
+    try
+    {
+        // Use synchronous HTTP call for Parallel.ForEach
+        var base64String = _httpClient.GetStringAsync(fullUrl).Result;
+        return Convert.FromBase64String(base64String);
+    }
+    catch (HttpRequestException ex)
+    {
+        throw new InvalidOperationException($"Failed to download image for card ID {cardId}: {ex.Message}", ex);
+    }
+}
+
+private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
+{
+    try
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(cacheFilePath)!);
+        
+        using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+        
+        // Process to high resolution ONCE during caching
+        const int baseDpi = 600;
+        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+
+        image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+            Mode = ResizeMode.Stretch,
+            Sampler = KnownResamplers.Lanczos3
+        }));
+
+        // Save as high-quality PNG
+        var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+        {
+            CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
+            ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+        };
+        
+        image.Save(cacheFilePath, pngEncoder);
+
+        DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
     }
 }
 

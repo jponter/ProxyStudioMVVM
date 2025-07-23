@@ -15,6 +15,8 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace ProxyStudio.Services
 {
@@ -120,8 +122,7 @@ namespace ProxyStudio.Services
             }
         }
 
-        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options,
-            IProgress<PdfGenerationProgress>? progress = null)
+        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
         {
             return await Task.Run(() =>
             {
@@ -129,93 +130,91 @@ namespace ProxyStudio.Services
                 {
                     var startTime = DateTime.Now;
                     var progressInfo = new PdfGenerationProgress();
-
+            
                     // Calculate total steps for progress tracking
                     var actualCardsPerRow = options.IsPortrait ? 3 : 4;
                     var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
                     var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                     var totalPages = (int)Math.Ceiling((double)cards.Count / cardsPerPage);
-
+            
                     progressInfo.TotalSteps = cards.Count + totalPages + 2; // Cards + Pages + Setup + Finalization
                     progressInfo.TotalPages = totalPages;
-                    progressInfo.CurrentOperation = "Initializing PDF generation...";
-
+                    progressInfo.CurrentOperation = "Pre-processing all images in parallel...";
+            
                     progress?.Report(progressInfo);
-
-                    DebugHelper.WriteDebug($"=== PDF GENERATION START ===");
+            
+                    DebugHelper.WriteDebug($"=== PDF GENERATION START (PARALLEL) ===");
                     DebugHelper.WriteDebug($"Target DPI: {options.PrintDpi}");
                     DebugHelper.WriteDebug($"Cards: {cards.Count}, Pages: {totalPages}");
-
+            
+                    // ✅ NEW: PRE-PROCESS ALL IMAGES IN PARALLEL
+                    var processedImages = PreProcessAllImagesParallel(cards, options, progress, progressInfo, startTime);
+            
                     // Create PDF document
-                    progressInfo.CurrentStep = 1;
+                    progressInfo.CurrentStep = cards.Count + 1;
                     progressInfo.CurrentOperation = "Creating PDF document...";
                     progress?.Report(progressInfo);
-
+            
                     var document = new PdfDocument();
                     ApplyHighDpiSettings(document, options.PrintDpi);
-
-                    DebugHelper.WriteDebug($"Layout: {actualCardsPerRow}x{actualCardsPerColumn}");
-
-                    // Track processed data
-                    var processedImageCount = 0;
-                    var totalProcessedBytes = 0L;
-
-                    // Process each page
+            
+                    DebugHelper.WriteDebug($"Parallel pre-processing complete, now drawing {totalPages} pages sequentially");
+                    DebugHelper.WriteDebug($"Successfully processed {processedImages.Count} images in parallel");
+            
+                    // Process each page (sequential due to PDFsharp thread-safety)
                     for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
                     {
                         progressInfo.CurrentPage = pageIndex + 1;
-                        progressInfo.CurrentStep = 2 + pageIndex;
-                        progressInfo.CurrentOperation = $"Creating page {pageIndex + 1}...";
+                        progressInfo.CurrentStep = cards.Count + 2 + pageIndex;
+                        progressInfo.CurrentOperation = $"Drawing page {pageIndex + 1} of {totalPages}...";
                         progressInfo.ElapsedTime = DateTime.Now - startTime;
-
-                        // Estimate remaining time
+                
+                        // Estimate remaining time for page drawing phase
                         if (pageIndex > 0)
                         {
-                            var averageTimePerPage = progressInfo.ElapsedTime.TotalSeconds / pageIndex;
+                            var averageTimePerPage = (DateTime.Now - startTime).TotalSeconds / (pageIndex + 1);
                             var remainingPages = totalPages - pageIndex;
-                            progressInfo.EstimatedRemainingTime =
-                                TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
+                            progressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
                         }
-
+                
                         progress?.Report(progressInfo);
-
+                
                         var page = document.AddPage();
                         page.Size = GetPageSize(options.PageSize);
-                        page.Orientation = options.IsPortrait
-                            ? PdfSharp.PageOrientation.Portrait
-                            : PdfSharp.PageOrientation.Landscape;
-
+                        page.Orientation = options.IsPortrait ? 
+                            PdfSharp.PageOrientation.Portrait : 
+                            PdfSharp.PageOrientation.Landscape;
+                
                         var gfx = XGraphics.FromPdfPage(page);
                         ApplyHighDpiTransformation(gfx, options.PrintDpi);
-
+                
                         var startCardIndex = pageIndex * cardsPerPage;
                         var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
-
-                        DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards");
-
-                        // Draw cards with progress reporting
-                        DrawCardGridWithProgress(gfx, pageCards, options, page.Width, page.Height,
-                            pageIndex + 1, totalPages, progress, progressInfo, startTime);
-
-                        processedImageCount += pageCards.Count;
+                
+                        DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards using pre-processed images");
+                
+                        // ✅ FAST DRAWING: Use pre-processed images (no processing during drawing!)
+                        DrawCardGridWithPreProcessedImages(gfx, pageCards, processedImages, options, 
+                            page.Width, page.Height, pageIndex + 1, totalPages);
+                
                         gfx.Dispose();
                     }
-
+            
                     // Finalize PDF
                     progressInfo.CurrentStep = progressInfo.TotalSteps - 1;
                     progressInfo.CurrentOperation = "Finalizing PDF...";
                     progressInfo.CurrentCardName = "";
                     progressInfo.ElapsedTime = DateTime.Now - startTime;
                     progress?.Report(progressInfo);
-
+            
                     using var stream = new MemoryStream();
                     document.Save(stream);
                     document.Close();
-
+            
                     var pdfBytes = stream.ToArray();
                     var endTime = DateTime.Now;
                     var duration = endTime - startTime;
-
+            
                     // Report completion
                     progressInfo.CurrentStep = progressInfo.TotalSteps;
                     progressInfo.CurrentOperation = "PDF generation complete!";
@@ -223,19 +222,19 @@ namespace ProxyStudio.Services
                     progressInfo.ElapsedTime = duration;
                     progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
                     progress?.Report(progressInfo);
-
-                    DebugHelper.WriteDebug($"=== PDF GENERATION COMPLETE ===");
+            
+                    DebugHelper.WriteDebug($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
                     DebugHelper.WriteDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
-                    DebugHelper.WriteDebug($"Images processed: {processedImageCount}");
-                    DebugHelper.WriteDebug($"Generation time: {duration.TotalSeconds:F1} seconds");
+                    DebugHelper.WriteDebug($"Total generation time: {duration.TotalSeconds:F1} seconds");
                     DebugHelper.WriteDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
-
+                    DebugHelper.WriteDebug($"Parallel processing saved significant time during image processing phase");
+            
                     return pdfBytes;
                 }
                 catch (Exception ex)
                 {
                     DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
-
+            
                     // Report error
                     progress?.Report(new PdfGenerationProgress
                     {
@@ -244,11 +243,253 @@ namespace ProxyStudio.Services
                         CurrentOperation = $"Error: {ex.Message}",
                         CurrentCardName = ""
                     });
-
+            
                     throw;
                 }
             });
         }
+   
+        private Dictionary<string, byte[]> PreProcessAllImagesParallel(CardCollection cards, PdfGenerationOptions options, 
+    IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
+{
+    var processedImages = new ConcurrentDictionary<string, byte[]>();
+    var completedCount = 0;
+    
+    // Use ParallelOptions to control parallel execution
+    var parallelOptions = new ParallelOptions
+    {
+        MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2)
+    };
+    
+    DebugHelper.WriteDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
+    DebugHelper.WriteDebug($"System has {Environment.ProcessorCount} logical processors");
+    
+    var parallelStartTime = DateTime.Now;
+    
+    // Use Parallel.ForEach which guarantees parallel execution for CPU-bound work
+    try
+    {
+        Parallel.ForEach(cards, parallelOptions, card =>
+        {
+            var threadId = Thread.CurrentThread.ManagedThreadId;
+            
+            try
+            {
+                if (card.ImageData != null && card.ImageData.Length > 0)
+                {
+                    DebugHelper.WriteDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
+                    
+                    var cardStartTime = DateTime.Now;
+                    var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
+                    var cardProcessTime = DateTime.Now - cardStartTime;
+                    
+                    if (processedImage != null)
+                    {
+                        processedImages[card.Id] = processedImage;
+                        DebugHelper.WriteDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                    }
+                    else
+                    {
+                        DebugHelper.WriteDebug($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
+                    }
+                }
+                else
+                {
+                    DebugHelper.WriteDebug($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
+                }
+                
+                // Thread-safe progress update
+                var newCompletedCount = Interlocked.Increment(ref completedCount);
+                
+                // Update progress (this should be thread-safe)
+                var tempProgressInfo = new PdfGenerationProgress
+                {
+                    TotalSteps = progressInfo.TotalSteps,
+                    CurrentStep = newCompletedCount,
+                    CurrentCardName = card.Name,
+                    CurrentOperation = $"Pre-processed {newCompletedCount}/{cards.Count} images (Thread {threadId})",
+                    ElapsedTime = DateTime.Now - startTime
+                };
+                
+                // Estimate remaining time for parallel processing phase
+                if (newCompletedCount > 1)
+                {
+                    var averageTimePerCard = tempProgressInfo.ElapsedTime.TotalSeconds / newCompletedCount;
+                    var remainingCards = cards.Count - newCompletedCount;
+                    tempProgressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
+                }
+                
+                progress?.Report(tempProgressInfo);
+                
+                DebugHelper.WriteDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
+                
+                // Still increment counter for failed cards
+                Interlocked.Increment(ref completedCount);
+            }
+        });
+        
+        var parallelEndTime = DateTime.Now;
+        var parallelDuration = parallelEndTime - parallelStartTime;
+        
+        DebugHelper.WriteDebug($"=== PARALLEL PROCESSING COMPLETE ===");
+        DebugHelper.WriteDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
+        DebugHelper.WriteDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
+        DebugHelper.WriteDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
+        
+        if (cards.Count > 1)
+        {
+            var theoreticalSequentialTime = cards.Count * 3.7; // Based on your previous 3.7s per card
+            var speedupRatio = theoreticalSequentialTime / parallelDuration.TotalSeconds;
+            DebugHelper.WriteDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
+        }
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"ERROR: Parallel.ForEach failed: {ex.Message}");
+        DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+        throw;
+    }
+    
+    return new Dictionary<string, byte[]>(processedImages);
+}
+
+// ✅ NEW: FAST DRAWING METHOD USING PRE-PROCESSED IMAGES
+        private void DrawCardGridWithPreProcessedImages(XGraphics gfx, List<Card> pageCards, 
+            Dictionary<string, byte[]> processedImages, PdfGenerationOptions options,
+            XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
+        {
+            // Use fixed layout based on orientation
+            var actualCardsPerRow = options.IsPortrait ? 3 : 4;
+            var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
+    
+            var cardWidthPt = CARD_WIDTH_POINTS;
+            var cardHeightPt = CARD_HEIGHT_POINTS;
+    
+            var totalHorizontalSpacing = (actualCardsPerRow - 1) * options.CardSpacing;
+            var totalVerticalSpacing = (actualCardsPerColumn - 1) * options.CardSpacing;
+            var totalGridWidthPt = actualCardsPerRow * cardWidthPt + totalHorizontalSpacing;
+            var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
+    
+            var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
+            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin + 50);
+    
+            var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
+            var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
+    
+            // Draw title
+            try
+            {
+                var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
+                var title = totalPages > 1 
+                    ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)"
+                    : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)";
+            
+                gfx.DrawString(title, font, XBrushes.Black,
+                    new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+            }
+    
+            // Draw cards using pre-processed images - this is now FAST!
+            for (int row = 0; row < actualCardsPerColumn; row++)
+            {
+                for (int col = 0; col < actualCardsPerRow; col++)
+                {
+                    var cardIndex = row * actualCardsPerRow + col;
+            
+                    if (cardIndex < pageCards.Count)
+                    {
+                        var card = pageCards[cardIndex];
+                
+                        var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
+                        var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
+                
+                        var x = XUnit.FromPoint(xPt);
+                        var y = XUnit.FromPoint(yPt);
+                        var cardWidth = XUnit.FromPoint(cardWidthPt);
+                        var cardHeight = XUnit.FromPoint(cardHeightPt);
+                
+                        // ✅ FAST: Use pre-processed image (no processing during drawing!)
+                        DrawCardWithPreProcessedImage(gfx, card, processedImages, x, y, cardWidth, cardHeight);
+                    }
+                }
+            }
+    
+            // Draw cutting lines
+            if (options.ShowCuttingLines)
+            {
+                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt, 
+                    actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
+            }
+        }
+
+// ✅ NEW: DRAW CARD USING PRE-PROCESSED IMAGE (FAST!)
+        private void DrawCardWithPreProcessedImage(XGraphics gfx, Card card, Dictionary<string, byte[]> processedImages, 
+            XUnit x, XUnit y, XUnit width, XUnit height)
+        {
+            try
+            {
+                // Use pre-processed image (no processing time!)
+                if (processedImages.TryGetValue(card.Id, out var processedImageData))
+                {
+                    XImage? xImage = null;
+                    try
+                    {
+                        using var ms = new MemoryStream(processedImageData);
+                
+                        try
+                        {
+                            xImage = XImage.FromStream(ms);
+                        }
+                        catch (Exception ex)
+                        {
+                            DebugHelper.WriteDebug($"Failed to create XImage for {card.Name}: {ex.Message}, converting to PNG...");
+                    
+                            // Fallback: convert to PNG
+                            var pngData = ConvertToPng(processedImageData, card.Name);
+                            if (pngData != null)
+                            {
+                                using var pngMs = new MemoryStream(pngData);
+                                xImage = XImage.FromStream(pngMs);
+                            }
+                        }
+                
+                        if (xImage != null)
+                        {
+                            // Draw the pre-processed image - FAST!
+                            gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
+                            DebugHelper.WriteDebug($"FAST DRAW: Drew pre-processed image for {card.Name}");
+                        }
+                        else
+                        {
+                            DebugHelper.WriteDebug($"ERROR: Failed to create XImage for {card.Name}");
+                            DrawPlaceholder(gfx, card, x, y, width, height, "Image Load Error");
+                        }
+                    }
+                    finally
+                    {
+                        xImage?.Dispose();
+                    }
+                }
+                else
+                {
+                    DebugHelper.WriteDebug($"WARNING: No pre-processed image found for {card.Name}");
+                    DrawPlaceholder(gfx, card, x, y, width, height, card.EnableBleed ? "No Image (Bleed)" : "No Image");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteDebug($"ERROR: Exception in DrawCardWithPreProcessedImage for {card.Name}: {ex.Message}");
+                DrawPlaceholder(gfx, card, x, y, width, height, "Error");
+            }
+        }
+        
 
         private void DrawCardGridWithProgress(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options,
             XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages,
