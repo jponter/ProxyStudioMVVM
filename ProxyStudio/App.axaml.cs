@@ -1,9 +1,11 @@
 using System;
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using ProxyStudio.Helpers;
+
 using ProxyStudio.ViewModels;
 using ProxyStudio.Services;
 
@@ -35,11 +37,16 @@ public partial class App : Application
         services.AddTransient<MainViewModel>();
         services.AddTransient<PrintViewModel>();
         services.AddSingleton<DesignTimeConfigManager>(); // Design-time config manager for design mode
+        services.AddSingleton<HttpClient>();
+        services.AddSingleton<IMpcFillService, MpcFillService>(); // Maps interface to implementation
+        
         
         Services = services.BuildServiceProvider();
         
         var configManager = Services.GetRequiredService<IConfigManager>();
         var pdfService = Services.GetRequiredService<IPdfGenerationService>();
+        var mpcFillService = Services.GetRequiredService<IMpcFillService>();
+        
         
         configManager.LoadConfig();
         
@@ -48,7 +55,8 @@ public partial class App : Application
             var mainWindow = new MainView(configManager);
             
             // Set the DataContext AFTER the window is created
-            mainWindow.DataContext = new MainViewModel(configManager, pdfService);
+            mainWindow.DataContext = new MainViewModel(configManager, pdfService, mpcFillService);
+            
             
             desktop.MainWindow = mainWindow;
         }

@@ -270,67 +270,80 @@ namespace ProxyStudio.ViewModels
         }
         
         private void UpdateEstimatedFileSize()
-        {
-            if (_cards == null || _cards.Count == 0)
-            {
-                EstimatedFileSize = 0;
-                DebugHelper.WriteDebug($"UpdateEstimatedFileSize: No cards, setting to 0");
-                return;
-            }
-            
-            // Ultra-accurate estimation using piecewise interpolation of your actual data:
-            // 300 DPI: 0.43 MB (8 cards) = 0.054 MB per card
-            // 600 DPI: 8.5 MB (8 cards) = 1.063 MB per card  
-            // 1200 DPI: 30 MB (8 cards) = 3.75 MB per card
-            //
-            // Analysis: The relationship is steeper than exponential - use logarithmic interpolation
-            
-            var dpiValue = (double)PrintDpi;
-            var cardCount = _cards.Count;
-            
-            double mbPerCard;
-            
-            if (dpiValue <= 300)
-            {
-                // Below 300 DPI: Linear scaling from a reasonable baseline
-                var ratio = dpiValue / 300.0;
-                mbPerCard = 0.054 * Math.Pow(ratio, 2.0); // Quadratic for low DPI
-            }
-            else if (dpiValue <= 600)
-            {
-                // 300-600 DPI: Interpolate between known points
-                var t = (dpiValue - 300) / (600 - 300); // 0 to 1
-                var start = 0.054; // 300 DPI per card
-                var end = 1.063;   // 600 DPI per card
-                mbPerCard = start + t * (end - start);
-            }
-            else if (dpiValue <= 1200)
-            {
-                // 600-1200 DPI: Interpolate between known points
-                var t = (dpiValue - 600) / (1200 - 600); // 0 to 1
-                var start = 1.063; // 600 DPI per card
-                var end = 3.75;    // 1200 DPI per card
-                mbPerCard = start + t * (end - start);
-            }
-            else
-            {
-                // Above 1200 DPI: Extrapolate with steep scaling
-                var ratio = dpiValue / 1200.0;
-                mbPerCard = 3.75 * Math.Pow(ratio, 3.2); // Steep scaling for very high DPI
-            }
-            
-            var totalMB = mbPerCard * cardCount;
-            EstimatedFileSize = Math.Max(0.1, totalMB);
-            
-            DebugHelper.WriteDebug($"UpdateEstimatedFileSize: {cardCount} cards at {PrintDpi} DPI");
-            DebugHelper.WriteDebug($"  Using piecewise interpolation of actual data points");
-            DebugHelper.WriteDebug($"  Per card: {mbPerCard:F3} MB, Total: {EstimatedFileSize:F2} MB");
-            
-            // Show accuracy against known results
-            if (Math.Abs(dpiValue - 300) < 1) DebugHelper.WriteDebug($"  ✅ Expected 0.43 MB, Estimated: {totalMB:F2} MB (should be exact)");
-            else if (Math.Abs(dpiValue - 600) < 1) DebugHelper.WriteDebug($"  ✅ Expected 8.5 MB, Estimated: {totalMB:F2} MB (should be exact)");
-            else if (Math.Abs(dpiValue - 1200) < 1) DebugHelper.WriteDebug($"  ✅ Expected 30 MB, Estimated: {totalMB:F2} MB (should be exact)");
-        }
+{
+    if (_cards == null || _cards.Count == 0)
+    {
+        EstimatedFileSize = 0;
+        DebugHelper.WriteDebug($"UpdateEstimatedFileSize: No cards, setting to 0");
+        return;
+    }
+    
+    // UPDATED: Real-world data from actual PDF generation
+    // Previous estimate was based on theoretical calculations
+    // New data from actual generation:
+    // 600 DPI: 39.31 MB (9 cards) = 4.37 MB per card
+    // We need to extrapolate other DPI values based on this real data
+    
+    var dpiValue = (double)PrintDpi;
+    var cardCount = _cards.Count;
+    
+    double mbPerCard;
+    
+    // File size scales roughly with the SQUARE of DPI (pixel count)
+    // Using 600 DPI as our reference point: 4.37 MB per card
+    
+    if (dpiValue <= 150)
+    {
+        // Very low DPI: approximately 1/16th the size of 600 DPI
+        var ratio = Math.Pow(dpiValue / 600.0, 2.0);
+        mbPerCard = 4.37 * ratio; // Will be around 0.27 MB per card at 150 DPI
+    }
+    else if (dpiValue <= 300)
+    {
+        // Standard print DPI: approximately 1/4th the size of 600 DPI
+        var ratio = Math.Pow(dpiValue / 600.0, 2.0);
+        mbPerCard = 4.37 * ratio; // Will be around 1.09 MB per card at 300 DPI
+    }
+    else if (dpiValue <= 600)
+    {
+        // Linear interpolation from 300 DPI to our known 600 DPI point
+        var ratio300 = Math.Pow(300.0 / 600.0, 2.0); // 0.25
+        var size300 = 4.37 * ratio300; // ~1.09 MB
+        
+        var t = (dpiValue - 300) / (600 - 300); // 0 to 1
+        mbPerCard = size300 + t * (4.37 - size300); // Interpolate to 4.37 MB at 600 DPI
+    }
+    else if (dpiValue <= 1200)
+    {
+        // Extrapolate above 600 DPI: file size continues to scale quadratically
+        var ratio = Math.Pow(dpiValue / 600.0, 2.0);
+        mbPerCard = 4.37 * ratio; // Will be around 17.48 MB per card at 1200 DPI
+    }
+    else
+    {
+        // Very high DPI: continue quadratic scaling with slight efficiency penalty
+        var ratio = Math.Pow(dpiValue / 600.0, 2.2); // Slightly steeper curve for very high DPI
+        mbPerCard = 4.37 * ratio;
+    }
+    
+    var totalMB = mbPerCard * cardCount;
+    EstimatedFileSize = Math.Max(0.1, totalMB);
+    
+    DebugHelper.WriteDebug($"UpdateEstimatedFileSize: {cardCount} cards at {PrintDpi} DPI");
+    DebugHelper.WriteDebug($"  Using REAL data: 600 DPI = 4.37 MB per card (from 39.31 MB / 9 cards)");
+    DebugHelper.WriteDebug($"  Calculated ratio for {PrintDpi} DPI: {Math.Pow(dpiValue / 600.0, 2.0):F3}");
+    DebugHelper.WriteDebug($"  Per card: {mbPerCard:F2} MB, Total: {EstimatedFileSize:F1} MB");
+    
+    // Show accuracy predictions for common DPI values
+    if (Math.Abs(dpiValue - 150) < 1) 
+        DebugHelper.WriteDebug($"  📊 150 DPI estimate: {totalMB:F1} MB (theoretical)");
+    else if (Math.Abs(dpiValue - 300) < 1) 
+        DebugHelper.WriteDebug($"  📊 300 DPI estimate: {totalMB:F1} MB (should be ~1/4 of 600 DPI)");
+    else if (Math.Abs(dpiValue - 600) < 1) 
+        DebugHelper.WriteDebug($"  ✅ 600 DPI estimate: {totalMB:F1} MB (based on REAL data: 39.31 MB for 9 cards)");
+    else if (Math.Abs(dpiValue - 1200) < 1) 
+        DebugHelper.WriteDebug($"  📊 1200 DPI estimate: {totalMB:F1} MB (should be ~4x of 600 DPI = ~157 MB for 9 cards)");
+}
 
         // Update the existing RefreshCardInfo method to also clear preview when no cards
         public void RefreshCardInfo()

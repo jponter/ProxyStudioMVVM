@@ -32,7 +32,37 @@
 
                    <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
                        <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
-                       <Button Content="Add Cards from MPC XML" HorizontalAlignment="Stretch" />
+                      
+                       
+                       
+                       <Button Content="📥 Load MPC Fill XML" 
+                               HorizontalAlignment="Stretch"
+                               Command="{Binding LoadMpcFillXmlCommand}"
+                               IsEnabled="{Binding !IsLoadingMpcFill}">
+                           <Button.Styles>
+                               <Style Selector="Button">
+                                   <Setter Property="Background" Value="#059669"/>
+                                   <Setter Property="Foreground" Value="White"/>
+                                   <Setter Property="BorderBrush" Value="#047857"/>
+                                   <Setter Property="BorderThickness" Value="1"/>
+                               </Style>
+                               <Style Selector="Button:pointerover">
+                                   <Setter Property="Background" Value="#047857"/>
+                               </Style>
+                               <Style Selector="Button:pressed">
+                                   <Setter Property="Background" Value="#065F46"/>
+                               </Style>
+                               <Style Selector="Button:disabled">
+                                   <Setter Property="Background" Value="#9CA3AF"/>
+                                   <Setter Property="BorderBrush" Value="#6B7280"/>
+                               </Style>
+                           </Button.Styles>
+                       </Button>
+                       
+                       
+                       
+                       
+                       
                        <Button Content="Load Test Cards" 
                                HorizontalAlignment="Stretch" 
                                Command="{Binding AddTestCardsRelayCommand}"/>
@@ -62,6 +92,57 @@
                                </Style>
                            </Button.Styles>
                        </Button>
+                       
+                       <!-- NEW: MPC Fill Progress Section -->
+    <Border Background="#F0F9FF" BorderBrush="#3B82F6" BorderThickness="2" 
+            CornerRadius="8" Padding="15" Margin="0,10,0,0"
+            IsVisible="{Binding ShowMpcFillProgress}">
+        <StackPanel Spacing="10">
+            <TextBlock Text="📥 MPC Fill Import Progress" 
+                       FontWeight="Bold" FontSize="14" 
+                       Foreground="#1E40AF"/>
+            
+            <!-- Progress Bar -->
+            <ProgressBar Value="{Binding MpcFillProgress}" 
+                         Minimum="0" Maximum="100" 
+                         Height="20" 
+                         Background="#E5E7EB"
+                         Foreground="#3B82F6"/>
+            
+            <!-- Progress Text -->
+            <TextBlock Text="{Binding MpcFillStatus}" 
+                       FontWeight="SemiBold" 
+                       Foreground="#1E40AF"
+                       TextWrapping="Wrap"/>
+            
+            <!-- Current Operation -->
+            <TextBlock Text="{Binding MpcFillCurrentOperation}" 
+                       FontSize="11" 
+                       Foreground="#6B7280"
+                       TextWrapping="Wrap"/>
+            
+            <!-- Current Card -->
+            <TextBlock Text="{Binding MpcFillCurrentCard}" 
+                       FontSize="10" 
+                       FontStyle="Italic"
+                       Foreground="#059669"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding MpcFillCurrentCard, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            
+            <!-- Time Remaining -->
+            <TextBlock Text="{Binding MpcFillTimeRemaining}" 
+                       FontSize="11" 
+                       FontStyle="Italic" 
+                       Foreground="#059669"
+                       IsVisible="{Binding MpcFillTimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+    </Border>
+
+    <!-- Loading Indicator (existing) -->
+    <li:LoadingIndicator Foreground="AliceBlue" 
+                        IsActive="{Binding IsBusy}" 
+                        Mode="ThreeDots" 
+                        SpeedRatio="1.2" />
     
                        <li:LoadingIndicator Foreground="AliceBlue" 
                                             IsActive="{Binding IsBusy}" 
