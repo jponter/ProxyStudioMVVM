@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using ProxyStudio.Helpers;
@@ -93,61 +96,105 @@ namespace ProxyStudio.Services
         }
 
 
-        public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent,
-            IProgress<MpcFillProgress>? progress = null)
+        
+        
+        
+        // PARALLEL PROCESSING: Process multiple cards simultaneously
+        //var semaphore = new SemaphoreSlim(3, 3); // Process 3 cards at once (adjust as needed)
+        // Auto-detect based on CPU cores
+        //var maxConcurrency = Math.Max(2, Environment.ProcessorCount / 2);
+        //var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgress<MpcFillProgress>? progress = null)
+{
+    try
+    {
+        var cardMetadata = ParseXmlToCardMetadata(xmlContent);
+        
+        var progressInfo = new MpcFillProgress
         {
+            TotalSteps = cardMetadata.Count + 1,
+            CurrentStep = 1,
+            CurrentOperation = "Parsing XML file..."
+        };
+        progress?.Report(progressInfo);
+
+        var completedCards = new ConcurrentBag<Card>();
+        var completedCount = 0; // Keep as int
+        var processingCards = new ConcurrentDictionary<string, string>();
+
+        // Process 3 cards simultaneously
+        //var semaphore = new SemaphoreSlim(3, 3);
+        // Auto-detect based on CPU cores
+        var maxConcurrency = Math.Max(2, Environment.ProcessorCount / 2);
+        var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+        
+
+        DebugHelper.WriteDebug($"PARALLEL: Starting {cardMetadata.Count} tasks with max 3 concurrent");
+
+        var tasks = cardMetadata.Select(async metadata =>
+        {
+            await semaphore.WaitAsync();
+            
             try
             {
-                // Parse XML to get card metadata
-                var cardMetadata = ParseXmlToCardMetadata(xmlContent);
-
-                var progressInfo = new MpcFillProgress
+                // Add to processing tracker for progress display
+                processingCards.TryAdd(metadata.Id, metadata.Name);
+                
+                DebugHelper.WriteDebug($"PARALLEL: Processing {metadata.Name} on thread {Thread.CurrentThread.ManagedThreadId}");
+                
+                Card card;
+                try
                 {
-                    TotalSteps = cardMetadata.Count + 1, // +1 for parsing step
-                    CurrentStep = 1,
-                    CurrentOperation = "Parsing XML file..."
-                };
-                progress?.Report(progressInfo);
-
-                var completedCards = new List<Card>();
-
-                // Process each card with progress reporting
-                for (int i = 0; i < cardMetadata.Count; i++)
+                    var imageData = await LoadImageWithCacheAsync(metadata.Id, metadata.Name);
+                    card = CreateCardFromMetadata(metadata, imageData);
+                    DebugHelper.WriteDebug($"PARALLEL SUCCESS: {metadata.Name}");
+                }
+                catch (Exception ex)
                 {
-                    var metadata = cardMetadata[i];
-
-                    progressInfo.CurrentStep = i + 2; // +2 because step 1 was parsing
-                    progressInfo.CurrentCardName = metadata.Name;
-                    progressInfo.CurrentOperation = $"Loading image for {metadata.Name}...";
-                    progress?.Report(progressInfo);
-
-                    try
-                    {
-                        var imageData = await LoadImageWithCacheAsync(metadata.Id, metadata.Name);
-                        var card = CreateCardFromMetadata(metadata, imageData);
-                        completedCards.Add(card);
-
-                        DebugHelper.WriteDebug($"Successfully processed card: {metadata.Name}");
-                    }
-                    catch (Exception ex)
-                    {
-                        DebugHelper.WriteDebug($"Failed to process card {metadata.Name}: {ex.Message}");
-
-                        // Create card with placeholder image
-                        var placeholderImage = CreatePlaceholderImage();
-                        var card = CreateCardFromMetadata(metadata, placeholderImage);
-                        completedCards.Add(card);
-                    }
+                    DebugHelper.WriteDebug($"PARALLEL ERROR: {metadata.Name} - {ex.Message}");
+                    var placeholderImage = CreatePlaceholderImage();
+                    card = CreateCardFromMetadata(metadata, placeholderImage);
                 }
 
-                return completedCards;
+                completedCards.Add(card);
+                
+                // Remove from processing tracker
+                processingCards.TryRemove(metadata.Id, out _);
+                
+                // Update progress - Interlocked.Increment works with int and returns the new value
+                var newCompletedCount = Interlocked.Increment(ref completedCount);
+                
+                var finalProgress = new MpcFillProgress
+                {
+                    TotalSteps = cardMetadata.Count + 1,
+                    CurrentStep = newCompletedCount + 1,
+                    CurrentOperation = $"Completed {newCompletedCount}/{cardMetadata.Count} cards",
+                    CurrentCardName = metadata.Name
+                };
+                progress?.Report(finalProgress);
+
+                return card;
             }
-            catch (Exception ex)
+            finally
             {
-                DebugHelper.WriteDebug($"Error processing MPC Fill XML: {ex.Message}");
-                throw new InvalidOperationException($"Failed to process MPC Fill XML: {ex.Message}", ex);
+                semaphore.Release();
             }
-        }
+        });
+
+        // Wait for all parallel tasks to complete
+        await Task.WhenAll(tasks);
+        
+        DebugHelper.WriteDebug($"PARALLEL: All {cardMetadata.Count} tasks completed successfully");
+        
+        return completedCards.ToList();
+    }
+    catch (Exception ex)
+    {
+        DebugHelper.WriteDebug($"Error in parallel processing: {ex.Message}");
+        throw new InvalidOperationException($"Failed to process MPC Fill XML: {ex.Message}", ex);
+    }
+}
+
 
         private async Task<byte[]> LoadImageWithCacheAsync(string cardId, string cardName)
         {
