@@ -2,6 +2,11 @@
 
 A powerful desktop application for creating and managing proxy cards for tabletop games, built with Avalonia UI and C#.
 
+## 🥰 ##
+Big thanks to malacath-92 for the advice and support! Check out his proxy app https://github.com/Malacath-92/Proxy-PDF-Maker
+
+and the original og Alex Taxiera whos proxy print setup was my original goto for proxy pdf generation and inspired me to write my own!
+
 ## 🎯 Overview
 
 ProxyStudio allows users to create, organize, and print collections of proxy cards with customizable layouts and professional PDF output. Perfect for Magic: The Gathering players, board game enthusiasts, or anyone needing to create custom card collections.
