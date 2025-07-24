@@ -60,4 +60,9 @@
     <ItemGroup>
       <Folder Include="Data\" />
     </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Resources\Proxy Studio Logo.png" />
+      <AvaloniaResource Include="Resources\Proxy Studio Logo.png" />
+    </ItemGroup>
 </Project>

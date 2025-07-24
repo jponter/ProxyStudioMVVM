@@ -31,6 +31,7 @@
                     <!-- Replace the existing StackPanel in Grid.Column="0" with this: -->
 
                     <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
+
                         <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
 
 
@@ -189,6 +190,11 @@
 
                     <!-- Card Editor Panel -->
                     <StackPanel Grid.Column="2" Margin="20,0, 0, 0" VerticalAlignment="Top">
+                        <Image Source="/Resources/Proxy Studio Logo.png"
+                               Width="200"
+                               Stretch="UniformToFill"
+                               HorizontalAlignment="Center" />
+                        <Label HorizontalAlignment="Center" Padding="0,0,0,30"> ©PappaPonton 2025</Label>
                         <Image Source="{Binding SelectedCard.ImageSource}"
                                Height="480"
                                Stretch="Uniform" />
@@ -202,6 +208,8 @@
                                  IsEnabled="False"
                                  Watermark="Card Name"
                                  Margin="15" />
+
+
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -353,7 +361,8 @@
 
             <!-- Fixed TabItem for Logging Settings - Properly escaped XAML -->
 
-            <TabItem Header="Logging and Errors">
+            <TabItem Header="Logging">
+
                 <ScrollViewer>
                     <StackPanel Spacing="20" Margin="10">
 
@@ -362,48 +371,54 @@
                             <StackPanel Spacing="15" Margin="15">
                                 <!-- Log Level Selection - FIXED -->
                                 <StackPanel Spacing="8">
-                                    <Label Content="Logging Level" FontWeight="SemiBold"/>
+                                    <Label Content="Logging Level" FontWeight="SemiBold" />
                                     <ComboBox SelectedIndex="{Binding LoggingSettingsViewModel.SelectedLogLevel}"
                                               Width="250" HorizontalAlignment="Left">
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Trace" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Very detailed logging (everything)" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Trace" FontWeight="SemiBold" />
+                                                <TextBlock Text="Very detailed logging (everything)" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Debug" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Development debugging information" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Debug" FontWeight="SemiBold" />
+                                                <TextBlock Text="Development debugging information" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Info" FontWeight="SemiBold"/>
-                                                <TextBlock Text="General information (recommended)" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Info" FontWeight="SemiBold" />
+                                                <TextBlock Text="General information (recommended)" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Warning" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Warning messages only" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Warning" FontWeight="SemiBold" />
+                                                <TextBlock Text="Warning messages only" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Error" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Error messages only" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Error" FontWeight="SemiBold" />
+                                                <TextBlock Text="Error messages only" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                         <ComboBoxItem>
                                             <StackPanel>
-                                                <TextBlock Text="Critical" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Critical errors only" FontSize="10" Foreground="Gray"/>
+                                                <TextBlock Text="Critical" FontWeight="SemiBold" />
+                                                <TextBlock Text="Critical errors only" FontSize="10"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </ComboBoxItem>
                                     </ComboBox>
                                     <TextBlock Text="Select the minimum level of messages to log"
-                                               FontSize="12" Foreground="Gray" Margin="0,5,0,0"/>
+                                               FontSize="12" Foreground="Gray" Margin="0,5,0,0" />
                                 </StackPanel>
 
                                 <!-- Log Retention - FIXED -->
@@ -471,12 +486,14 @@
                                                Text="{Binding LoggingSettingsViewModel.CurrentLogLevelName}"
                                                Foreground="Blue" />
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Log File Size:" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Log File Size:"
+                                               FontWeight="SemiBold" />
                                     <TextBlock Grid.Row="1" Grid.Column="1"
                                                Text="{Binding LoggingSettingsViewModel.CurrentLogFileSizeFormatted}"
                                                Foreground="DarkGreen" />
 
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Log Directory:" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Log Directory:"
+                                               FontWeight="SemiBold" />
                                     <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="10">
                                         <TextBlock Text="{Binding LoggingSettingsViewModel.CurrentLogDirectory}"
                                                    Foreground="Gray" TextWrapping="Wrap" MaxWidth="400" />
@@ -485,7 +502,8 @@
                                                 Height="25" Padding="8,2" />
                                     </StackPanel>
 
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Recent Errors:" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Recent Errors:"
+                                               FontWeight="SemiBold" />
                                     <!-- <TextBlock Grid.Row="3" Grid.Column="1"  -->
                                     <!--            Text="{Binding LoggingSettingsViewModel.RecentErrors.Count, StringFormat='{0} errors logged'}"  -->
                                     <!--            Foreground="Red"/> -->
@@ -510,7 +528,8 @@
                                     <ItemsControl ItemsSource="{Binding LoggingSettingsViewModel.RecentErrors}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Margin="2" Padding="8" CornerRadius="4" Background="LightGray">
+                                                <Border Margin="2" Padding="8" CornerRadius="4"
+                                                        Background="LightGray">
                                                     <StackPanel Spacing="4">
                                                         <StackPanel Orientation="Horizontal" Spacing="10">
                                                             <TextBlock Text="{Binding Severity}"
@@ -525,7 +544,8 @@
                                                                    TextWrapping="Wrap" Foreground="DarkGray"
                                                                    MaxWidth="600" />
                                                         <TextBlock Text="{Binding OperationContext}"
-                                                                   FontSize="10" FontStyle="Italic" Foreground="Gray"
+                                                                   FontSize="10" FontStyle="Italic"
+                                                                   Foreground="Gray"
                                                                    IsVisible="{Binding OperationContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                     </StackPanel>
                                                 </Border>
@@ -555,7 +575,8 @@
 
                                 <TextBlock FontWeight="SemiBold" Text="Performance Tips:" Margin="0,15,0,0" />
                                 <StackPanel Spacing="6" Margin="10,0,0,0">
-                                    <TextBlock Text="• Lower log levels improve performance but provide less detail" />
+                                    <TextBlock
+                                        Text="• Lower log levels improve performance but provide less detail" />
                                     <TextBlock
                                         Text="• Performance logging adds overhead but helps identify bottlenecks" />
                                     <TextBlock Text="• Console output can slow down the application" />
@@ -575,6 +596,7 @@
 
 
                 </ScrollViewer>
+
             </TabItem>
 
 
