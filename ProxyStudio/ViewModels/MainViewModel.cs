@@ -119,7 +119,8 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
-            PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, logger, _errorHandler);
+            var printViewModelLogger = loggerFactory.CreateLogger<PrintViewModel>();
+            PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, printViewModelLogger, _errorHandler);
             var loggingSettingsLogger = loggerFactory.CreateLogger<LoggingSettingsViewModel>();
             LoggingSettingsViewModel = new LoggingSettingsViewModel(_configManager, loggingSettingsLogger, _errorHandler);
 

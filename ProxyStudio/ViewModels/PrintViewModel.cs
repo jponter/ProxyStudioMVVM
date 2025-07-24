@@ -1,17 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
+
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform.Storage;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
+
+
+//description: ViewModel for handling PDF generation and preview functionality in ProxyStudio.
+// debug has been changed to using Microsoft.Extensions.Logging for better performance and flexibility.
+
 
 namespace ProxyStudio.ViewModels
 {
@@ -20,6 +25,8 @@ namespace ProxyStudio.ViewModels
         private readonly IPdfGenerationService _pdfService;
         private readonly IConfigManager _configManager;
         private readonly CardCollection _cards;
+        private readonly ILogger<PrintViewModel> _logger;
+        private readonly IErrorHandlingService _errorHandler;
 
         // NEW: Flag to prevent saving during initialization
         private bool _isInitializing = true;
@@ -82,13 +89,15 @@ namespace ProxyStudio.ViewModels
             150, 300, 600, 1200
         };
 
-        public PrintViewModel(IPdfGenerationService pdfService, IConfigManager configManager, CardCollection cards, ILogger logger, IErrorHandlingService errorHandlingService)
+        public PrintViewModel(IPdfGenerationService pdfService, IConfigManager configManager, CardCollection cards, ILogger<PrintViewModel> logger, IErrorHandlingService errorHandlingService)
         {
             _pdfService = pdfService;
             _configManager = configManager;
             _cards = cards;
+            _logger = logger;
+            _errorHandler = errorHandlingService;
 
-            DebugHelper.WriteDebug($"PrintViewModel constructor: Received {cards?.Count ?? 0} cards");
+            _logger.LogDebug($"PrintViewModel constructor: Received {cards?.Count ?? 0} cards");
 
             // Set minimal defaults (will be overridden by LoadSettings)
             CardsPerRow = 3;
@@ -112,14 +121,14 @@ namespace ProxyStudio.ViewModels
             CardCount = 0;
             EstimatedFileSize = 0.0;
 
-            DebugHelper.WriteDebug("PrintViewModel constructor: Set default values, about to load settings...");
+            _logger.LogDebug("PrintViewModel constructor: Set default values, about to load settings...");
 
             // Load actual settings from config (this will override the defaults above)
             LoadSettings();
             
             // IMPORTANT: Enable saving after initialization is complete
             _isInitializing = false;
-            DebugHelper.WriteDebug("PrintViewModel initialization complete - config saving now enabled");
+            _logger.LogDebug("PrintViewModel initialization complete - config saving now enabled");
         }
 
         // Constructor for design-time support
@@ -158,11 +167,11 @@ namespace ProxyStudio.ViewModels
         {
             var settings = _configManager.Config.PdfSettings;
             
-            DebugHelper.WriteDebug($"LoadSettings: Loading from config file...");
-            DebugHelper.WriteDebug($"Config values - PrintDpi={settings.PrintDpi}, EnsureMinimum={settings.EnsureMinimumPrintDpi}");
-            DebugHelper.WriteDebug($"Config values - CardsPerRow={settings.CardsPerRow}, CardsPerColumn={settings.CardsPerColumn}");
-            DebugHelper.WriteDebug($"Config values - CardSpacing={settings.CardSpacing}, ShowCuttingLines={settings.ShowCuttingLines}");
-            DebugHelper.WriteDebug($"Config values - IsPortrait={settings.IsPortrait}, PageSize={settings.PageSize}");
+            _logger.LogDebug($"LoadSettings: Loading from config file...");
+            _logger.LogDebug($"Config values - PrintDpi={settings.PrintDpi}, EnsureMinimum={settings.EnsureMinimumPrintDpi}");
+            _logger.LogDebug($"Config values - CardsPerRow={settings.CardsPerRow}, CardsPerColumn={settings.CardsPerColumn}");
+            _logger.LogDebug($"Config values - CardSpacing={settings.CardSpacing}, ShowCuttingLines={settings.ShowCuttingLines}");
+            _logger.LogDebug($"Config values - IsPortrait={settings.IsPortrait}, PageSize={settings.PageSize}");
             
             // Load ALL settings from config (not just some)
             CardsPerRow = Math.Max(1, Math.Min(settings.CardsPerRow, 5));
@@ -186,13 +195,13 @@ namespace ProxyStudio.ViewModels
             UpdateCardCount();
             UpdateEstimatedFileSize();
             
-            DebugHelper.WriteDebug($"LoadSettings completed:");
-            DebugHelper.WriteDebug($"  Layout: {CardsPerRow}x{CardsPerColumn}, Spacing: {CardSpacing}");
-            DebugHelper.WriteDebug($"  Print: {PrintDpi} DPI, MinEnforced: {EnsureMinimumPrintDpi}");
-            DebugHelper.WriteDebug($"  Cutting: {ShowCuttingLines}, Color: {CuttingLineColor}, Extension: {CuttingLineExtension}");
-            DebugHelper.WriteDebug($"  Page: {SelectedPageSize} {(IsPortrait ? "Portrait" : "Landscape")}");
-            DebugHelper.WriteDebug($"  Preview: {PreviewDpi} DPI, Quality: {PreviewQuality}");
-            DebugHelper.WriteDebug($"  Cards: {CardCount}, EstimatedSize: {EstimatedFileSize:F2} MB");
+            _logger.LogDebug($"LoadSettings completed:");
+            _logger.LogDebug($"  Layout: {CardsPerRow}x{CardsPerColumn}, Spacing: {CardSpacing}");
+            _logger.LogDebug($"  Print: {PrintDpi} DPI, MinEnforced: {EnsureMinimumPrintDpi}");
+            _logger.LogDebug($"  Cutting: {ShowCuttingLines}, Color: {CuttingLineColor}, Extension: {CuttingLineExtension}");
+            _logger.LogDebug($"  Page: {SelectedPageSize} {(IsPortrait ? "Portrait" : "Landscape")}");
+            _logger.LogDebug($"  Preview: {PreviewDpi} DPI, Quality: {PreviewQuality}");
+            _logger.LogDebug($"  Cards: {CardCount}, EstimatedSize: {EstimatedFileSize:F2} MB");
             
             // Auto-generate preview on startup
             _ = GeneratePreviewAsync();
@@ -203,7 +212,7 @@ namespace ProxyStudio.ViewModels
             // Don't save during initialization
             if (_isInitializing)
             {
-                DebugHelper.WriteDebug("SaveSettings: Skipped during initialization");
+                _logger.LogDebug("SaveSettings: Skipped during initialization");
                 return;
             }
             
@@ -229,7 +238,7 @@ namespace ProxyStudio.ViewModels
             
             _configManager.SaveConfig();
             
-            DebugHelper.WriteDebug($"SaveSettings: Saved to config - PrintDpi={settings.PrintDpi}, IsPortrait={settings.IsPortrait}, CardSpacing={settings.CardSpacing}");
+            _logger.LogDebug($"SaveSettings: Saved to config - PrintDpi={settings.PrintDpi}, IsPortrait={settings.IsPortrait}, CardSpacing={settings.CardSpacing}");
         }
 
         private PdfGenerationOptions CreateOptions()
@@ -239,7 +248,7 @@ namespace ProxyStudio.ViewModels
                 Math.Max((int)PrintDpi, _configManager.Config.PdfSettings.MinimumPrintDpi) : 
                 (int)PrintDpi;
         
-            DebugHelper.WriteDebug($"Creating PDF options with PrintDpi={actualPrintDpi} (requested: {PrintDpi}, minimum enforced: {EnsureMinimumPrintDpi})");
+            _logger.LogDebug($"Creating PDF options with PrintDpi={actualPrintDpi} (requested: {PrintDpi}, minimum enforced: {EnsureMinimumPrintDpi})");
     
             // Use fixed layout based on orientation
             var actualCardsPerRow = IsPortrait ? 3 : 4;
@@ -267,7 +276,7 @@ namespace ProxyStudio.ViewModels
         {
             var newCount = _cards?.Count ?? 0;
             CardCount = newCount;
-            DebugHelper.WriteDebug($"UpdateCardCount: Set to {newCount} cards");
+            _logger.LogDebug($"UpdateCardCount: Set to {newCount} cards");
         }
         
         private void UpdateEstimatedFileSize()
@@ -275,7 +284,7 @@ namespace ProxyStudio.ViewModels
     if (_cards == null || _cards.Count == 0)
     {
         EstimatedFileSize = 0;
-        DebugHelper.WriteDebug($"UpdateEstimatedFileSize: No cards, setting to 0");
+        _logger.LogDebug($"UpdateEstimatedFileSize: No cards, setting to 0");
         return;
     }
     
@@ -330,26 +339,26 @@ namespace ProxyStudio.ViewModels
     var totalMB = mbPerCard * cardCount;
     EstimatedFileSize = Math.Max(0.1, totalMB);
     
-    DebugHelper.WriteDebug($"UpdateEstimatedFileSize: {cardCount} cards at {PrintDpi} DPI");
-    DebugHelper.WriteDebug($"  Using REAL data: 600 DPI = 4.37 MB per card (from 39.31 MB / 9 cards)");
-    DebugHelper.WriteDebug($"  Calculated ratio for {PrintDpi} DPI: {Math.Pow(dpiValue / 600.0, 2.0):F3}");
-    DebugHelper.WriteDebug($"  Per card: {mbPerCard:F2} MB, Total: {EstimatedFileSize:F1} MB");
+    _logger.LogDebug($"UpdateEstimatedFileSize: {cardCount} cards at {PrintDpi} DPI");
+    _logger.LogDebug($"  Using REAL data: 600 DPI = 4.37 MB per card (from 39.31 MB / 9 cards)");
+    _logger.LogDebug($"  Calculated ratio for {PrintDpi} DPI: {Math.Pow(dpiValue / 600.0, 2.0):F3}");
+    _logger.LogDebug($"  Per card: {mbPerCard:F2} MB, Total: {EstimatedFileSize:F1} MB");
     
     // Show accuracy predictions for common DPI values
     if (Math.Abs(dpiValue - 150) < 1) 
-        DebugHelper.WriteDebug($"  📊 150 DPI estimate: {totalMB:F1} MB (theoretical)");
+        _logger.LogDebug($"  📊 150 DPI estimate: {totalMB:F1} MB (theoretical)");
     else if (Math.Abs(dpiValue - 300) < 1) 
-        DebugHelper.WriteDebug($"  📊 300 DPI estimate: {totalMB:F1} MB (should be ~1/4 of 600 DPI)");
+        _logger.LogDebug($"  📊 300 DPI estimate: {totalMB:F1} MB (should be ~1/4 of 600 DPI)");
     else if (Math.Abs(dpiValue - 600) < 1) 
-        DebugHelper.WriteDebug($"  ✅ 600 DPI estimate: {totalMB:F1} MB (based on REAL data: 39.31 MB for 9 cards)");
+        _logger.LogDebug($"  ✅ 600 DPI estimate: {totalMB:F1} MB (based on REAL data: 39.31 MB for 9 cards)");
     else if (Math.Abs(dpiValue - 1200) < 1) 
-        DebugHelper.WriteDebug($"  📊 1200 DPI estimate: {totalMB:F1} MB (should be ~4x of 600 DPI = ~157 MB for 9 cards)");
+        _logger.LogDebug($"  📊 1200 DPI estimate: {totalMB:F1} MB (should be ~4x of 600 DPI = ~157 MB for 9 cards)");
 }
 
         // Update the existing RefreshCardInfo method to also clear preview when no cards
         public void RefreshCardInfo()
         {
-            DebugHelper.WriteDebug($"RefreshCardInfo called - cards collection has {_cards?.Count ?? 0} cards");
+            _logger.LogDebug($"RefreshCardInfo called - cards collection has {_cards?.Count ?? 0} cards");
             UpdateCardCount();
             UpdateEstimatedFileSize();
     
@@ -357,18 +366,19 @@ namespace ProxyStudio.ViewModels
             if (CardCount == 0)
             {
                 ClearPreview();
-                DebugHelper.WriteDebug("RefreshCardInfo: No cards found, cleared preview");
+                _logger.LogDebug("RefreshCardInfo: No cards found, cleared preview");
             }
     
-            DebugHelper.WriteDebug($"RefreshCardInfo completed - CardCount={CardCount}, EstimatedFileSize={EstimatedFileSize:F2} MB");
+            _logger.LogDebug($"RefreshCardInfo completed - CardCount={CardCount}, EstimatedFileSize={EstimatedFileSize:F2} MB");
         }
 
         [RelayCommand]
         private async Task GeneratePreviewAsync()
         {
+            using var scope = _logger.BeginScope("Generate Preview Async");
             if (IsGeneratingPreview || _cards.Count == 0) 
             {
-                DebugHelper.WriteDebug($"Cannot generate preview - IsGeneratingPreview: {IsGeneratingPreview}, Cards count: {_cards.Count}");
+                _logger.LogDebug($"Cannot generate preview - IsGeneratingPreview: {IsGeneratingPreview}, Cards count: {_cards.Count}");
                 return;
             }
 
@@ -377,9 +387,9 @@ namespace ProxyStudio.ViewModels
             {
                 UpdatePageInfo();
         
-                DebugHelper.WriteDebug($"Starting preview generation with {_cards.Count} cards (Page {CurrentPreviewPage} of {TotalPreviewPages})");
+                _logger.LogDebug($"Starting preview generation with {_cards.Count} cards (Page {CurrentPreviewPage} of {TotalPreviewPages})");
                 var options = CreateOptions();
-                DebugHelper.WriteDebug($"Created options - PrintDpi: {options.PrintDpi}, PreviewDpi: {options.PreviewDpi}, Layout: {options.CardsPerRow}x{options.CardsPerColumn}");
+                _logger.LogDebug($"Created options - PrintDpi: {options.PrintDpi}, PreviewDpi: {options.PreviewDpi}, Layout: {options.CardsPerRow}x{options.CardsPerColumn}");
         
                 // Get cards for current preview page using FIXED layout
                 var cardsPerPage = options.CardsPerRow * options.CardsPerColumn; // Use options layout
@@ -388,14 +398,15 @@ namespace ProxyStudio.ViewModels
                 pageCards.AddRange(_cards.Skip(startIndex).Take(cardsPerPage));
         
                 PreviewImage = await _pdfService.GeneratePreviewImageAsync(pageCards, options);
-                DebugHelper.WriteDebug($"Preview generation completed. Image is null: {PreviewImage == null}");
+                _logger.LogDebug($"Preview generation completed. Image is null: {PreviewImage == null}");
         
                 SaveSettings();
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error generating preview: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                await _errorHandler.HandleExceptionAsync(ex, "Error generating preview", "An error occurred while generating the preview image.");
+                _logger.LogError($"Error generating preview: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
             }
             finally
             {
@@ -406,9 +417,11 @@ namespace ProxyStudio.ViewModels
         [RelayCommand]
         private async Task GeneratePdfAsync()
         {
+            using var scope = _logger.BeginScope("Generate PDF Async");
+            
             if (IsGeneratingPdf || _cards.Count == 0) 
             {
-                DebugHelper.WriteDebug($"Cannot generate PDF - IsGeneratingPdf: {IsGeneratingPdf}, Cards count: {_cards.Count}");
+                _logger.LogDebug($"Cannot generate PDF - IsGeneratingPdf: {IsGeneratingPdf}, Cards count: {_cards.Count}");
                 return;
             }
 
@@ -422,7 +435,7 @@ namespace ProxyStudio.ViewModels
             try
             {
                 var options = CreateOptions();
-                DebugHelper.WriteDebug($"Starting PDF generation with {_cards.Count} cards at {options.PrintDpi} DPI");
+                _logger.LogDebug($"Starting PDF generation with {_cards.Count} cards at {options.PrintDpi} DPI");
                 
                 // Create progress reporter
                 var progress = new Progress<PdfGenerationProgress>(progressInfo =>
@@ -449,7 +462,7 @@ namespace ProxyStudio.ViewModels
                         TimeRemaining = "Almost done...";
                     }
                     
-                    DebugHelper.WriteDebug($"Progress: {progressInfo.PercentageComplete:F1}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
+                    _logger.LogDebug($"Progress: {progressInfo.PercentageComplete:F1}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
                 });
                 
                 var pdfBytes = await _pdfService.GeneratePdfAsync(_cards, options, progress);
@@ -459,7 +472,7 @@ namespace ProxyStudio.ViewModels
                 CurrentOperation = "Saving file...";
                 TimeRemaining = "";
                 
-                DebugHelper.WriteDebug($"PDF generation completed at {options.PrintDpi} DPI. Size: {pdfBytes.Length} bytes");
+                _logger.LogDebug($"PDF generation completed at {options.PrintDpi} DPI. Size: {pdfBytes.Length} bytes");
                 
                 var settings = _configManager.Config.PdfSettings;
                 var fileName = $"{settings.DefaultFileName}_{DateTime.Now:yyyyMMdd_HHmmss}_{options.PrintDpi}DPI.pdf";
@@ -470,7 +483,7 @@ namespace ProxyStudio.ViewModels
                 PdfGenerationStatus = $"PDF saved successfully! ({pdfBytes.Length / (1024.0 * 1024.0):F2} MB)";
                 CurrentOperation = $"Saved to: {Path.GetFileName(filePath)}";
                 
-                DebugHelper.WriteDebug($"PDF saved to: {filePath}");
+                _logger.LogDebug($"PDF saved to: {filePath}");
                 SaveSettings();
                 
                 // Hide progress after a delay
@@ -479,8 +492,9 @@ namespace ProxyStudio.ViewModels
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                await _errorHandler.HandleExceptionAsync(ex, "Error generating PDF", "An error occurred while generating the PDF file.");
+                _logger.LogCritical($"Error generating PDF: {ex.Message}");
+                _logger.LogCritical($"Stack trace: {ex.StackTrace}");
                 
                 PdfGenerationStatus = $"Error: {ex.Message}";
                 PdfGenerationProgress = 0;
@@ -500,10 +514,10 @@ namespace ProxyStudio.ViewModels
         [RelayCommand]
         private async Task ZoomInAsync()
         {
-            if (PreviewZoom < 200m)
+            if (PreviewZoom < 300m)
             {
                 PreviewZoom = Math.Min(200m, PreviewZoom + 25m);
-                DebugHelper.WriteDebug($"Zoomed in to {PreviewZoom}%");
+                _logger.LogDebug($"Zoomed in to {PreviewZoom}%");
             }
         }
 
@@ -513,7 +527,7 @@ namespace ProxyStudio.ViewModels
             if (PreviewZoom > 25m)
             {
                 PreviewZoom = Math.Max(25m, PreviewZoom - 25m);
-                DebugHelper.WriteDebug($"Zoomed out to {PreviewZoom}%");
+                _logger.LogDebug($"Zoomed out to {PreviewZoom}%");
             }
         }
 
@@ -521,7 +535,7 @@ namespace ProxyStudio.ViewModels
         private async Task ResetZoomAsync()
         {
             PreviewZoom = 100m;
-            DebugHelper.WriteDebug("Reset zoom to 100%");
+            _logger.LogDebug("Reset zoom to 100%");
         }
 
         [RelayCommand]
@@ -566,7 +580,7 @@ namespace ProxyStudio.ViewModels
             if (CurrentPreviewPage > TotalPreviewPages)
                 CurrentPreviewPage = Math.Max(1, TotalPreviewPages);
         
-            DebugHelper.WriteDebug($"Updated page info: Page {CurrentPreviewPage} of {TotalPreviewPages} (Fixed layout: {actualCardsPerRow}x{actualCardsPerColumn})");
+            _logger.LogDebug($"Updated page info: Page {CurrentPreviewPage} of {TotalPreviewPages} (Fixed layout: {actualCardsPerRow}x{actualCardsPerColumn})");
         }
 
         // Command for cancellation (future enhancement)
@@ -575,13 +589,13 @@ namespace ProxyStudio.ViewModels
         [RelayCommand(CanExecute = nameof(CanCancelPdfGeneration))]
         private void CancelPdfGeneration()
         {
-            DebugHelper.WriteDebug("PDF generation cancellation requested (not yet implemented)");
+            _logger.LogDebug("PDF generation cancellation requested (not yet implemented)");
         }
 
         // Update property change handlers to not affect layout
         partial void OnCardsPerRowChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCardsPerRowChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
+            _logger.LogDebug($"OnCardsPerRowChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
             // Remove preview regeneration since layout is fixed
             if (!_isInitializing)
             {
@@ -591,7 +605,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnCardsPerColumnChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCardsPerColumnChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
+            _logger.LogDebug($"OnCardsPerColumnChanged: {value} (initializing: {_isInitializing}) - NOTE: Using fixed layout, this setting has no effect");
             // Remove preview regeneration since layout is fixed
             if (!_isInitializing)
             {
@@ -601,7 +615,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnCardSpacingChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCardSpacingChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnCardSpacingChanged: {value} (initializing: {_isInitializing})");
             if (value >= 0 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -611,7 +625,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnShowCuttingLinesChanged(bool value)
         {
-            DebugHelper.WriteDebug($"OnShowCuttingLinesChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnShowCuttingLinesChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -621,7 +635,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnCuttingLineColorChanged(string value)
         {
-            DebugHelper.WriteDebug($"OnCuttingLineColorChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnCuttingLineColorChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -631,7 +645,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnIsCuttingLineDashedChanged(bool value)
         {
-            DebugHelper.WriteDebug($"OnIsCuttingLineDashedChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnIsCuttingLineDashedChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -641,7 +655,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnCuttingLineExtensionChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCuttingLineExtensionChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnCuttingLineExtensionChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -651,7 +665,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnCuttingLineThicknessChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnCuttingLineThicknessChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnCuttingLineThicknessChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -661,7 +675,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnPreviewDpiChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnPreviewDpiChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnPreviewDpiChanged: {value} (initializing: {_isInitializing})");
             if (value >= 72 && value <= 300 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -671,7 +685,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnPreviewQualityChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnPreviewQualityChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnPreviewQualityChanged: {value} (initializing: {_isInitializing})");
             if (value >= 1 && value <= 100 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -681,7 +695,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnSelectedPageSizeChanged(string value)
         {
-            DebugHelper.WriteDebug($"OnSelectedPageSizeChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnSelectedPageSizeChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
@@ -691,7 +705,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnIsPortraitChanged(bool value)
         {
-            DebugHelper.WriteDebug($"OnIsPortraitChanged: {value} (initializing: {_isInitializing}) - This affects fixed layout");
+            _logger.LogDebug($"OnIsPortraitChanged: {value} (initializing: {_isInitializing}) - This affects fixed layout");
             if (!_isInitializing)
             {
                 CurrentPreviewPage = 1; // Reset to page 1 when layout changes
@@ -702,7 +716,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnPrintDpiChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnPrintDpiChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnPrintDpiChanged: {value} (initializing: {_isInitializing})");
             UpdateEstimatedFileSize(); // Always update estimate
             
             if (value >= 150m && value <= 1200m && !_isInitializing)
@@ -713,7 +727,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnEnsureMinimumPrintDpiChanged(bool value)
         {
-            DebugHelper.WriteDebug($"OnEnsureMinimumPrintDpiChanged: {value} (initializing: {_isInitializing})");
+            _logger.LogDebug($"OnEnsureMinimumPrintDpiChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
                 SaveSettings();
@@ -722,7 +736,7 @@ namespace ProxyStudio.ViewModels
 
         partial void OnPreviewZoomChanged(decimal value)
         {
-            DebugHelper.WriteDebug($"OnPreviewZoomChanged: {value}%");
+            _logger.LogDebug($"OnPreviewZoomChanged: {value}%");
             OnPropertyChanged(nameof(PreviewScale));
             OnPropertyChanged(nameof(ActualPreviewWidth));   // Updated property name
             OnPropertyChanged(nameof(ActualPreviewHeight));  // Updated property name
@@ -733,7 +747,7 @@ namespace ProxyStudio.ViewModels
         {
             OnPropertyChanged(nameof(ActualPreviewWidth));   // Updated property name
             OnPropertyChanged(nameof(ActualPreviewHeight));  // Updated property name
-            DebugHelper.WriteDebug($"PreviewImage changed. New size: {value?.PixelSize.Width}x{value?.PixelSize.Height}");
+            _logger.LogDebug($"PreviewImage changed. New size: {value?.PixelSize.Width}x{value?.PixelSize.Height}");
         }
         
         
@@ -744,7 +758,7 @@ namespace ProxyStudio.ViewModels
         /// </summary>
         public void ClearPreview()
         {
-            DebugHelper.WriteDebug("ClearPreview: Clearing preview image and resetting preview state");
+            _logger.LogDebug("ClearPreview: Clearing preview image and resetting preview state");
     
             PreviewImage = null;
             CurrentPreviewPage = 1;
@@ -757,7 +771,7 @@ namespace ProxyStudio.ViewModels
             TimeRemaining = "";
             ShowProgressDetails = false;
     
-            DebugHelper.WriteDebug("ClearPreview: Preview cleared successfully");
+            _logger.LogDebug("ClearPreview: Preview cleared successfully");
         }
         
         
