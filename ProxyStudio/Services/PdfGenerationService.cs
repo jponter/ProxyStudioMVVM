@@ -73,10 +73,17 @@ namespace ProxyStudio.Services
     public class PdfGenerationService : IPdfGenerationService
     {
         // Card dimensions in points (72 DPI standard) - FIXED at exactly 2.5" x 3.5"
-        private const double CARD_WIDTH_INCHES = 2.5;
-        private const double CARD_HEIGHT_INCHES = 3.5;
-        private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72; // 180 points
-        private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 252 points
+        // UPDATED: Card dimensions in points (72 DPI standard) - FIXED at exactly 63mm × 88mm
+        private const double CARD_WIDTH_MM = 63.0;
+        private const double CARD_HEIGHT_MM = 88.0;
+    
+        // Convert mm to inches, then to points (1 inch = 25.4mm, 1 inch = 72 points)
+        private const double CARD_WIDTH_INCHES = CARD_WIDTH_MM / 25.4;    // 2.480 inches
+        private const double CARD_HEIGHT_INCHES = CARD_HEIGHT_MM / 25.4;  // 3.465 inches
+    
+        private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72;   // 178.583 points
+        private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
+
 
         static PdfGenerationService()
         {

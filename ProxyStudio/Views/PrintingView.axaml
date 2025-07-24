@@ -99,7 +99,7 @@
                 <!-- Print Quality Settings - Insert this BEFORE Preview Settings -->
                 <Expander Header="Print Quality Settings" IsExpanded="True">
                     <StackPanel Spacing="8" Margin="10">
-                        <TextBlock Text="Card Size: Fixed 2.5″ × 3.5″ (Professional Standard)" 
+                        <TextBlock Text="Card Size: Fixed 63mm × 88mm (Professional Standard)" 
                                    FontWeight="SemiBold" Foreground="DarkBlue" FontSize="12"/>
         
                         <StackPanel Orientation="Horizontal" Spacing="10">
@@ -124,7 +124,7 @@
                                 <TextBlock Text="• 300 DPI: Professional printing quality" FontSize="10"/>
                                 <TextBlock Text="• 600 DPI: Ultra-high quality (large files)" FontSize="10"/>
                                 <TextBlock Text="• 150 DPI: Draft quality only" FontSize="10"/>
-                                <TextBlock Text="Card dimensions are FIXED at exactly 2.5″ × 3.5″" 
+                                <TextBlock Text="Card Size: Fixed 63mm × 88mm (Professional Standard)″" 
                                            FontSize="10" FontWeight="SemiBold" Foreground="DarkBlue"/>
                             </StackPanel>
                         </Border>
@@ -279,7 +279,7 @@
                 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Card Size:" 
                            FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="2.5″ × 3.5″ (Fixed)" 
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="Card Size: Fixed 63mm × 88mm (Professional Standard)" 
                            FontSize="11" Foreground="#059669"/>
                 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Est. File Size:" 

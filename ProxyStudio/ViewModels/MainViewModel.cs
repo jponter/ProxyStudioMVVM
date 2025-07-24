@@ -28,6 +28,18 @@ namespace ProxyStudio.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
+    // UPDATED: Card dimensions in points (72 DPI standard) - FIXED at exactly 63mm × 88mm
+    private const double CARD_WIDTH_MM = 63.0;
+    private const double CARD_HEIGHT_MM = 88.0;
+    
+    // Convert mm to inches, then to points (1 inch = 25.4mm, 1 inch = 72 points)
+    private const double CARD_WIDTH_INCHES = CARD_WIDTH_MM / 25.4;    // 2.480 inches
+    private const double CARD_HEIGHT_INCHES = CARD_HEIGHT_MM / 25.4;  // 3.465 inches
+    
+    private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72;   // 178.583 points
+    private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
+    
+    
     //di configmanager interface
     private readonly IConfigManager _configManager;
     private readonly IPdfGenerationService _pdfService;
@@ -193,7 +205,7 @@ public partial class MainViewModel : ViewModelBase
         SelectedCard = card;
     }
 
-    // Fix 1: Update AddTestCards() in MainViewModel.cs to store high-resolution images
+    
 
     private List<Card> AddTestCards()
     {
@@ -210,8 +222,8 @@ public partial class MainViewModel : ViewModelBase
         // IMPORTANT: Store images at a high base resolution instead of scaling at startup
         // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
         const int baseDpi = 600;
-        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
-        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+        var baseWidth = (int)(CARD_WIDTH_INCHES * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(CARD_HEIGHT_INCHES * baseDpi);  // 2100 pixels
 
         // Resize to high base resolution for maximum quality
         image.Mutate(x => x.Resize(new ResizeOptions

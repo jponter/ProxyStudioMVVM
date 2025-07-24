@@ -240,7 +240,7 @@
                                     <StackPanel>
                                         <TextBlock Text="📏 Card Dimensions" FontWeight="Bold" FontSize="13" 
                                                    Foreground="#2C5282"/>
-                                        <TextBlock Text="Fixed at exactly 2.5″ × 3.5″ (63mm × 88mm)" 
+                                        <TextBlock Text="Fixed at exactly 63mm × 88mm (2.48″ × 3.46″)" 
                                                    FontWeight="SemiBold" Foreground="#2C5282" Margin="0,2,0,0"/>
                                         <TextBlock Text="Professional trading card standard - dimensions never change" 
                                                    FontSize="11" Foreground="#4A5568" Margin="0,4,0,0"/>
