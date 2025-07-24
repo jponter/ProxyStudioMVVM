@@ -16,6 +16,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Metsys.Bson;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
@@ -40,17 +41,22 @@ public partial class MainViewModel : ViewModelBase
     private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
     
     
-    //di configmanager interface
+    //di interfaces
     private readonly IConfigManager _configManager;
     private readonly IPdfGenerationService _pdfService;
     private readonly IMpcFillService _mpcFillService;
-    //private static readonly HttpClient httpClient = new HttpClient();
-
+    private readonly ILogger<MainViewModel> _logger;
+    private readonly IErrorHandlingService _errorHandler;
+    
+    
+    
+    
     //public ObservableCollection<Card> Cards { get; } = new();
     public CardCollection Cards { get; private set; } = new();
 
     // Print ViewModel
     [ObservableProperty] private PrintViewModel? _printViewModel;
+    [ObservableProperty] private LoggingSettingsViewModel? _loggingSettingsViewModel; // ADD THIS
 
     // configuration properties
     [ObservableProperty] private bool _globalBleedEnabled;
@@ -83,47 +89,60 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _isBusy;
 
     //constructor with design time check as some of the DI stuff breaks it
-    public MainViewModel(IConfigManager configManager, IPdfGenerationService pdfService, IMpcFillService mpcFillService)
+    public MainViewModel(IConfigManager configManager, IPdfGenerationService pdfService, 
+        IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory)
     {
         _mpcFillService = mpcFillService;
         _configManager = configManager;
         _pdfService = pdfService;
+        _logger = logger;
+        _errorHandler = errorHandler;
+        
+        // Add this to your MainViewModel constructor
+        App.LoggingDiagnostics.CheckLogFiles();
+        
+        // Add instance ID to help track multiple instances
+        var instanceId = Guid.NewGuid().ToString("N")[..8];
+        _logger.LogInformation("MainViewModel initializing (Instance: {InstanceId})", instanceId);
 
         if (Design.IsDesignMode)
         {
+            _logger.LogDebug("Running in design mode - using minimal initialization");
             // Only set up minimal data for design-time
             // Don't load config, don't load images, etc.
             Cards.AddRange(AddTestCards());
             // Create a simple PrintViewModel for design time
-            PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards);
+            //PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards);
             return;
         }
 
-#if DEBUG
-        DebugHelper.WriteDebug("Creating new MainViewModel.");
-#endif
+        try
+        {
+            GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
+            PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, logger, _errorHandler);
+            var loggingSettingsLogger = loggerFactory.CreateLogger<LoggingSettingsViewModel>();
+            LoggingSettingsViewModel = new LoggingSettingsViewModel(_configManager, loggingSettingsLogger, _errorHandler);
 
-#if DEBUG
-        DebugHelper.WriteDebug("Set the _configManager in Mainviewmodel");
-        DebugHelper.WriteDebug($"Before load: GlobalBleedEnabled = {GlobalBleedEnabled}");
-#endif
-
-        GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
-        // Cards.AddRange(AddTestCards());
-        // PrintViewModel?.RefreshCardInfo();
         
-        DebugHelper.WriteDebug($"Cards loaded: {Cards.Count} cards");
-        
-        // Initialize PrintViewModel
-        PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards);
-        
-        DebugHelper.WriteDebug($"PrintViewModel initialized with {Cards.Count} cards");
-        DebugHelper.WriteDebug($"PrintViewModel.CardsPerRow = {PrintViewModel.CardsPerRow}");
-        DebugHelper.WriteDebug($"PrintViewModel.ShowCuttingLines = {PrintViewModel.ShowCuttingLines}");
+            _logger.LogInformation("MainViewModel initialized successfully (Instance: {InstanceId})", instanceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize MainViewModel (Instance: {InstanceId})", instanceId);
+            _ = _errorHandler.HandleExceptionAsync(ex, "Failed to initialize the main application", "MainViewModel Constructor");
+        }
     }
 
     // Constructor for design-time support - UPDATED
-    public MainViewModel(IConfigManager configManager) : this(configManager, new DesignTimePdfService(), new DesignTimeMpcFillService())
+    // Design-time constructor (simpler)
+    // DESIGN-TIME CONSTRUCTOR: Super simple, no complex dependencies
+    public MainViewModel(IConfigManager configManager) : this(
+        configManager, 
+        new DesignTimePdfService(), 
+        new DesignTimeMpcFillService(), 
+        Microsoft.Extensions.Logging.Abstractions.NullLogger<MainViewModel>.Instance, // Use built-in null logger
+        new DesignTimeErrorHandlingService(),
+        Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance) // Use built-in null factory
     {
         // Design-time constructor
     }
@@ -146,6 +165,8 @@ public partial class MainViewModel : ViewModelBase
             return Task.FromResult(new List<Card>());
         }
     }
+    
+    
 
     // Simple design-time PDF service
     // Simple design-time PDF service
@@ -174,27 +195,111 @@ public partial class MainViewModel : ViewModelBase
             return Task.FromResult<Bitmap>(null!);
         }
     }
+    
+    private class DesignTimeErrorHandlingService : IErrorHandlingService
+    {
+        public void HandleError(Exception ex)
+        {
+            // Do nothing in design time
+        }
 
+        public Task ShowErrorDialogAsync(string message, string title = "Error")
+        {
+            // Do nothing in design time
+            return Task.CompletedTask;
+        }
+
+        public Task ShowErrorAsync(string title, string message, ErrorSeverity severity = ErrorSeverity.Error,
+            Exception? exception = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ShowErrorAsync(UserError error)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task HandleExceptionAsync(Exception exception, string userFriendlyMessage, string operationContext = "")
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ValidateAndShowError(bool condition, string errorMessage, string title = "Validation Error")
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ShowRecoverableErrorAsync(string title, string message, string recoveryAction, Func<Task> recoveryCallback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReportErrorAsync(Exception exception, string additionalContext = "")
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<UserError> GetRecentErrors(int count = 10)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    
+    private class DesignTimeLogger : ILogger<MainViewModel>
+    {
+        public IDisposable BeginScope<TState>(TState state) => null!;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            // Do nothing in design time
+        }
+    }
+    
+    
     // Update the AddTestCardsRelayAsync method in MainViewModel:
 
     [RelayCommand(CanExecute = nameof(CanAddTestCards))]
     private async Task AddTestCardsRelayAsync()
     {
-        IsBusy = true;
+        using var scope = _logger.BeginScope("AddTestCards");
+        
+        try
+        {
+            if (!_errorHandler.ValidateAndShowError(!IsBusy, "Cannot add test cards while another operation is in progress"))
+                return;
 
-        // do the heavy lifting off the UI thread
-        var newCards = await Task.Run(() => { return AddTestCards(); });
+            IsBusy = true;
+            _logger.LogInformation("Starting to add test cards");
 
-        Cards.AddRange(newCards);
-    
-        // IMPORTANT: Refresh PrintViewModel after adding cards
-        PrintViewModel?.RefreshCardInfo();
-        //this will ensure the PrintViewModel has the latest cards
-        PrintViewModel?.GeneratePreviewCommand.Execute(null);
-    
-        DebugHelper.WriteDebug($"Added {newCards.Count} cards, total now: {Cards.Count}");
-
-        IsBusy = false;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var newCards = await Task.Run(() => AddTestCards());
+            stopwatch.Stop();
+            
+            if (newCards != null && newCards.Count > 0)
+            {
+                Cards.AddRange(newCards);
+                PrintViewModel?.RefreshCardInfo();
+                PrintViewModel?.GeneratePreviewCommand.Execute(null);
+                
+                _logger.LogInformation("Successfully added {CardCount} test cards in {ElapsedMs}ms. Total cards: {TotalCards}", 
+                    newCards.Count, stopwatch.ElapsedMilliseconds, Cards.Count);
+                    
+                await _errorHandler.ShowErrorAsync("Test Cards Added", 
+                    $"Successfully added {newCards.Count} test cards to your collection.", 
+                    ErrorSeverity.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add test cards");
+            await _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]

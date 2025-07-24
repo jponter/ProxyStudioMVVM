@@ -8,6 +8,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
@@ -81,7 +82,7 @@ namespace ProxyStudio.ViewModels
             150, 300, 600, 1200
         };
 
-        public PrintViewModel(IPdfGenerationService pdfService, IConfigManager configManager, CardCollection cards)
+        public PrintViewModel(IPdfGenerationService pdfService, IConfigManager configManager, CardCollection cards, ILogger logger, IErrorHandlingService errorHandlingService)
         {
             _pdfService = pdfService;
             _configManager = configManager;
@@ -122,7 +123,7 @@ namespace ProxyStudio.ViewModels
         }
 
         // Constructor for design-time support
-        public PrintViewModel(IConfigManager configManager) : this(new DesignTimePdfService(), configManager, new CardCollection())
+        public PrintViewModel(IConfigManager configManager) : this(new DesignTimePdfService(), configManager, new CardCollection(), null!, null!)
         {
             // Design-time constructor that creates a mock PDF service
         }

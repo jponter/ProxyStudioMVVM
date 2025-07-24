@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using System.Collections.Concurrent;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace ProxyStudio.Services
 {
@@ -72,6 +73,8 @@ namespace ProxyStudio.Services
 
     public class PdfGenerationService : IPdfGenerationService
     {
+        
+        
         // Card dimensions in points (72 DPI standard) - FIXED at exactly 2.5" x 3.5"
         // UPDATED: Card dimensions in points (72 DPI standard) - FIXED at exactly 63mm × 88mm
         private const double CARD_WIDTH_MM = 63.0;
@@ -84,18 +87,24 @@ namespace ProxyStudio.Services
         private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72;   // 178.583 points
         private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
 
+        private readonly ILogger<PdfGenerationService> _logger;
+        private readonly IErrorHandlingService _errorHandler;
+            
 
-        static PdfGenerationService()
+        public PdfGenerationService(ILogger<PdfGenerationService> logger, IErrorHandlingService errorHandler)
         {
+            _logger = logger;
+            _errorHandler = errorHandler;
+            
             // Set up PDFsharp with better font handling
             try
             {
                 PdfSharp.Fonts.GlobalFontSettings.FontResolver = new SafeFontResolver();
-                DebugHelper.WriteDebug("PDFsharp font resolver set up successfully");
+                _logger.LogInformation("PDFsharp font resolver set up successfully");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error setting up font resolver: {ex.Message}");
+                _logger.LogError(ex, "Error setting up PDFsharp font resolver");
             }
         }
         
@@ -104,7 +113,7 @@ namespace ProxyStudio.Services
         {
             try
             {
-                DebugHelper.WriteDebug($"Converting {cardName} to PNG for PDFsharp compatibility...");
+                _logger.LogDebug($"Converting {cardName} to PNG for PDFsharp compatibility...");
 
                 using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
 
@@ -118,19 +127,24 @@ namespace ProxyStudio.Services
                 image.Save(outputStream, pngEncoder);
 
                 var pngData = outputStream.ToArray();
-                DebugHelper.WriteDebug($"Successfully converted {cardName} to PNG: {pngData.Length} bytes");
+                _logger.LogDebug($"Successfully converted {cardName} to PNG: {pngData.Length} bytes");
 
                 return pngData;
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: Failed to convert {cardName} to PNG: {ex.Message}");
+                _logger.LogError(ex, "Failed to add test cards");
+                 _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
+                //DebugHelper.WriteDebug($"ERROR: Failed to convert {cardName} to PNG: {ex.Message}");
                 return null;
             }
         }
 
         public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
         {
+            using var scope = _logger.BeginScope("Generate PDF Async");
+            _logger.LogInformation("Starting PDF generation: {CardCount} cards at {PrintDpi} DPI", cards.Count, options.PrintDpi);
+            
             return await Task.Run(() =>
             {
                 try
@@ -150,9 +164,9 @@ namespace ProxyStudio.Services
             
                     progress?.Report(progressInfo);
             
-                    DebugHelper.WriteDebug($"=== PDF GENERATION START (PARALLEL) ===");
-                    DebugHelper.WriteDebug($"Target DPI: {options.PrintDpi}");
-                    DebugHelper.WriteDebug($"Cards: {cards.Count}, Pages: {totalPages}");
+                    _logger.LogDebug($"=== PDF GENERATION START (PARALLEL) ===");
+                    _logger.LogDebug($"Target DPI: {options.PrintDpi}");
+                    _logger.LogDebug($"Cards: {cards.Count}, Pages: {totalPages}");
             
                     // ✅ NEW: PRE-PROCESS ALL IMAGES IN PARALLEL
                     var processedImages = PreProcessAllImagesParallel(cards, options, progress, progressInfo, startTime);
@@ -165,8 +179,8 @@ namespace ProxyStudio.Services
                     var document = new PdfDocument();
                     ApplyHighDpiSettings(document, options.PrintDpi);
             
-                    DebugHelper.WriteDebug($"Parallel pre-processing complete, now drawing {totalPages} pages sequentially");
-                    DebugHelper.WriteDebug($"Successfully processed {processedImages.Count} images in parallel");
+                    _logger.LogDebug($"Parallel pre-processing complete, now drawing {totalPages} pages sequentially");
+                    _logger.LogDebug($"Successfully processed {processedImages.Count} images in parallel");
             
                     // Process each page (sequential due to PDFsharp thread-safety)
                     for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
@@ -198,7 +212,7 @@ namespace ProxyStudio.Services
                         var startCardIndex = pageIndex * cardsPerPage;
                         var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
                 
-                        DebugHelper.WriteDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards using pre-processed images");
+                        _logger.LogDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards using pre-processed images");
                 
                         // ✅ FAST DRAWING: Use pre-processed images (no processing during drawing!)
                         DrawCardGridWithPreProcessedImages(gfx, pageCards, processedImages, options, 
@@ -230,17 +244,17 @@ namespace ProxyStudio.Services
                     progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
                     progress?.Report(progressInfo);
             
-                    DebugHelper.WriteDebug($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
-                    DebugHelper.WriteDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
-                    DebugHelper.WriteDebug($"Total generation time: {duration.TotalSeconds:F1} seconds");
-                    DebugHelper.WriteDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
-                    DebugHelper.WriteDebug($"Parallel processing saved significant time during image processing phase");
+                    _logger.LogDebug($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
+                    _logger.LogDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
+                    _logger.LogDebug($"Total generation time: {duration.TotalSeconds:F1} seconds");
+                    _logger.LogDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
+                    _logger.LogDebug("Parallel processing saved significant time during image processing phase");
             
                     return pdfBytes;
                 }
                 catch (Exception ex)
                 {
-                    DebugHelper.WriteDebug($"Error generating PDF: {ex.Message}");
+                    _logger.LogError($"Error generating PDF: {ex.Message}");
             
                     // Report error
                     progress?.Report(new PdfGenerationProgress
@@ -250,7 +264,7 @@ namespace ProxyStudio.Services
                         CurrentOperation = $"Error: {ex.Message}",
                         CurrentCardName = ""
                     });
-            
+                    _errorHandler.HandleExceptionAsync(ex, "PDF Generation Error", "GeneratePdfAsync");
                     throw;
                 }
             });

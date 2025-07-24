@@ -17,6 +17,16 @@ namespace ProxyStudio.Helpers
         
         // PDF Generation Settings
         public PdfSettings PdfSettings { get; set; } = new PdfSettings();
+        
+        // NEW: Logging Settings
+        public LoggingSettings LoggingSettings { get; set; } = new LoggingSettings();
+        
+        // Backward compatibility - map to new LoggingSettings
+        public int? LogLevel 
+        { 
+            get => LoggingSettings.MinimumLogLevel;
+            set => LoggingSettings.MinimumLogLevel = value ?? 2;
+        }
     }
 
     public class PdfSettings
@@ -55,5 +65,29 @@ namespace ProxyStudio.Helpers
         // Output settings
         public string DefaultOutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         public string DefaultFileName { get; set; } = "ProxyCards";
+    }
+    
+    public class LoggingSettings
+    {
+        // Log level (0=Trace, 1=Debug, 2=Info, 3=Warning, 4=Error, 5=Critical)
+        public int MinimumLogLevel { get; set; } = 2; // Default to Info
+        
+        // How many days to keep log files
+        public int LogRetentionDays { get; set; } = 7;
+        
+        // Maximum log file size in MB before rotation
+        public int MaxLogFileSizeMB { get; set; } = 10;
+        
+        // Whether to log performance metrics
+        public bool EnablePerformanceLogging { get; set; } = true;
+        
+        // Whether to show debug output in console (development)
+        public bool EnableConsoleOutput { get; set; } = false;
+        
+        // Whether to include stack traces in log files
+        public bool IncludeStackTraces { get; set; } = true;
+        
+        // Custom log directory (optional - defaults to AppData)
+        public string? CustomLogDirectory { get; set; }
     }
 }
