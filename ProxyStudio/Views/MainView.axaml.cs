@@ -86,7 +86,7 @@ public partial class MainView : Window
         
         DebugHelper.WriteDebug("Saving configuration settings on window close.");
         
-        //todo fix the config saving
+        
        _configManager.SaveConfig();
     }
 
