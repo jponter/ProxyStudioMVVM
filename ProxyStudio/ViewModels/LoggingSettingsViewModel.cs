@@ -284,7 +284,7 @@ namespace ProxyStudio.ViewModels
         // Property change handlers to provide immediate feedback
         partial void OnSelectedLogLevelChanged(int value)
         {
-            _logger.LogDebug("Log level changed to: {LogLevel}", (LogLevel)value);
+            _logger.LogInformation("Log level changed to: {LogLevel}", (LogLevel)value);
         }
 
         partial void OnLogRetentionDaysChanged(int value)

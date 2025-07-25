@@ -57,8 +57,12 @@
       </Content>
     </ItemGroup>
 
+   
+
     <ItemGroup>
       <Folder Include="Data\" />
+        <AvaloniaResource Include="Themes\DarkProfessional.axaml" />
+        <AvaloniaResource Include="Themes\*.axaml" />
     </ItemGroup>
 
     <ItemGroup>

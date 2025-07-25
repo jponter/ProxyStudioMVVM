@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia.Controls;
+using ProxyStudio.Services;
 
 namespace ProxyStudio.Helpers
 {
@@ -20,6 +21,8 @@ namespace ProxyStudio.Helpers
         
         // NEW: Logging Settings
         public LoggingSettings LoggingSettings { get; set; } = new LoggingSettings();
+        
+        public ThemeType SelectedTheme { get; set; } = ThemeType.DarkProfessional;
         
         // Backward compatibility - map to new LoggingSettings
         public int? LogLevel 

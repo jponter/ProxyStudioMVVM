@@ -516,7 +516,7 @@ namespace ProxyStudio.ViewModels
         {
             if (PreviewZoom < 300m)
             {
-                PreviewZoom = Math.Min(200m, PreviewZoom + 25m);
+                PreviewZoom = Math.Min(300m, PreviewZoom + 25m);
                 _logger.LogDebug($"Zoomed in to {PreviewZoom}%");
             }
         }

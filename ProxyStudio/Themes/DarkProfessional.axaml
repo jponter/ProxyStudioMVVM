@@ -1,0 +1,183 @@
+﻿<!-- ProxyStudio/Themes/DarkProfessional.axaml -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <!-- Primary Colors -->
+    <Color x:Key="PrimaryColor">#2563EB</Color>
+    <Color x:Key="PrimaryHoverColor">#1D4ED8</Color>
+    <Color x:Key="PrimaryPressedColor">#1E40AF</Color>
+    
+    <!-- Background Colors -->
+    <Color x:Key="BackgroundColor">#1F2937</Color>
+    <Color x:Key="SurfaceColor">#374151</Color>
+    <Color x:Key="CardColor">#4B5563</Color>
+    
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimaryColor">#F9FAFB</Color>
+    <Color x:Key="TextSecondaryColor">#D1D5DB</Color>
+    <Color x:Key="TextDisabledColor">#9CA3AF</Color>
+    
+    <!-- Accent Colors -->
+    <Color x:Key="SuccessColor">#10B981</Color>
+    <Color x:Key="WarningColor">#F59E0B</Color>
+    <Color x:Key="ErrorColor">#EF4444</Color>
+    
+    <!-- Border Colors -->
+    <Color x:Key="BorderColor">#6B7280</Color>
+    <Color x:Key="FocusBorderColor">#3B82F6</Color>
+  </Styles.Resources>
+
+  <!-- Window Styles -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <!-- Button Styles -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource PrimaryColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="12,8"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverColor}"/>
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="Background" Value="{DynamicResource PrimaryPressedColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryPressedColor}"/>
+  </Style>
+
+  <Style Selector="Button:disabled">
+    <Setter Property="Background" Value="{DynamicResource TextDisabledColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource TextDisabledColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource BackgroundColor}"/>
+    <Setter Property="Opacity" Value="0.6"/>
+  </Style>
+
+  <!-- Secondary Button Style -->
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <Style Selector="Button.secondary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderColor}"/>
+  </Style>
+
+  <!-- Danger Button Style -->
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{DynamicResource ErrorColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}"/>
+  </Style>
+
+  <!-- Success Button Style -->
+  <Style Selector="Button.success">
+    <Setter Property="Background" Value="{DynamicResource SuccessColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessColor}"/>
+  </Style>
+
+  <!-- TextBox Styles -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Padding" Value="8"/>
+    <Setter Property="MinHeight" Value="32"/>
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderColor}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
+  <!-- ComboBox Styles -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="MinHeight" Value="32"/>
+  </Style>
+
+  <!-- CheckBox Styles -->
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <!-- TabControl Styles -->
+  <Style Selector="TabControl">
+    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
+  </Style>
+
+  <Style Selector="TabItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryColor}"/>
+    <Setter Property="Padding" Value="16,8"/>
+    <Setter Property="Margin" Value="0,0,2,0"/>
+  </Style>
+
+  <Style Selector="TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CardColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <!-- Expander Styles -->
+  <Style Selector="Expander">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Margin" Value="0,4"/>
+  </Style>
+
+  <!-- ProgressBar Styles -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="CornerRadius" Value="4"/>
+  </Style>
+
+  <!-- ScrollViewer Styles -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
+  </Style>
+
+  <!-- Custom Card Style -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="16"/>
+    <Setter Property="Margin" Value="8"/>
+  </Style>
+
+  <!-- Progress Section Style -->
+  <Style Selector="Border.progress-section">
+    <Setter Property="Background" Value="#1E3A8A"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+
+</Styles>

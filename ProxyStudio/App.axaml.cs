@@ -24,6 +24,8 @@ public partial class App : Application
     private static readonly object InitializationLock = new object();
     private static volatile bool _isInitialized = false;
     private static int _initializationCount = 0;
+    public ThemeType SelectedTheme { get; set; } = ThemeType.DarkProfessional;
+   
     public static IServiceProvider? Services { get; private set; }
     
     public override void Initialize()
@@ -103,6 +105,7 @@ public partial class App : Application
         services.AddSingleton<IPdfGenerationService, PdfGenerationService>();
         services.AddSingleton<HttpClient>();
         services.AddSingleton<IMpcFillService, MpcFillService>();
+        services.AddSingleton<IThemeService, ThemeService>();
         
         // Register ViewModels
         services.AddTransient<MainViewModel>();
@@ -121,6 +124,18 @@ public partial class App : Application
         {
             var configManager = Services.GetRequiredService<IConfigManager>();
             var errorHandler = Services.GetRequiredService<IErrorHandlingService>();
+            
+            // try
+            // {
+            //     var themeService = Services.GetRequiredService<IThemeService>();
+            //     var savedTheme = await themeService.LoadThemePreferenceAsync();
+            //     await themeService.ApplyThemeAsync(savedTheme);
+            // }
+            // catch (Exception ex)
+            // {
+            //     // Log the error but don't crash
+            //     logger.LogError(ex, "Failed to apply theme, continuing without custom theme");
+            // }
             
             configManager.LoadConfig();
             logger.LogInformation("Configuration loaded");

@@ -47,6 +47,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly IMpcFillService _mpcFillService;
     private readonly ILogger<MainViewModel> _logger;
     private readonly IErrorHandlingService _errorHandler;
+    private readonly IThemeService _themeService;
+    public ThemeSettingsViewModel? ThemeSettingsViewModel { get; private set; }
     
     
     
@@ -90,13 +92,14 @@ public partial class MainViewModel : ViewModelBase
 
     //constructor with design time check as some of the DI stuff breaks it
     public MainViewModel(IConfigManager configManager, IPdfGenerationService pdfService, 
-        IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory)
+        IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory, IThemeService themeService )
     {
         _mpcFillService = mpcFillService;
         _configManager = configManager;
         _pdfService = pdfService;
         _logger = logger;
         _errorHandler = errorHandler;
+        _themeService = themeService;
         
         // Add this to your MainViewModel constructor
         App.LoggingDiagnostics.CheckLogFiles();
@@ -104,6 +107,9 @@ public partial class MainViewModel : ViewModelBase
         // Add instance ID to help track multiple instances
         var instanceId = Guid.NewGuid().ToString("N")[..8];
         _logger.LogInformation("MainViewModel initializing (Instance: {InstanceId})", instanceId);
+        
+       
+        ThemeSettingsViewModel = new ThemeSettingsViewModel(themeService);
 
         if (Design.IsDesignMode)
         {
@@ -143,9 +149,43 @@ public partial class MainViewModel : ViewModelBase
         new DesignTimeMpcFillService(), 
         Microsoft.Extensions.Logging.Abstractions.NullLogger<MainViewModel>.Instance, // Use built-in null logger
         new DesignTimeErrorHandlingService(),
-        Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance) // Use built-in null factory
+        Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance,  // Use built-in null factory
+        new DesignTimeThemeService())
     {
         // Design-time constructor
+    }
+    
+    private class DesignTimeThemeService : IThemeService
+    {
+        public ThemeType CurrentTheme => ThemeType.DarkProfessional;
+
+        public IReadOnlyList<ThemeDefinition> AvailableThemes { get; } = new List<ThemeDefinition>
+        {
+            new() {
+                Type = ThemeType.DarkProfessional,
+                Name = "Dark Professional",
+                Description = "Design-time theme",
+                ResourcePath = "",
+                IsDark = true
+            }
+        };
+
+        public event EventHandler<ThemeType>? ThemeChanged;
+
+        public Task ApplyThemeAsync(ThemeType theme)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> SaveThemePreferenceAsync(ThemeType theme)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task<ThemeType> LoadThemePreferenceAsync()
+        {
+            return Task.FromResult(ThemeType.DarkProfessional);
+        }
     }
     
     // ADD DESIGN-TIME MPC FILL SERVICE

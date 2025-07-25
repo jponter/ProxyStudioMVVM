@@ -359,7 +359,7 @@
                     </StackPanel>
                     
                     <!-- Title (Center) -->
-                    <TextBlock Grid.Column="1" Text="PDF Preview" 
+                    <TextBlock Grid.Column="1" Text="PDF Preview"
                               FontSize="16" FontWeight="Bold" Foreground="Black"
                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     
