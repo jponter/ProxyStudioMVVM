@@ -94,11 +94,17 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel(IConfigManager configManager, IPdfGenerationService pdfService, 
         IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory, IThemeService themeService )
     {
+        
+        _logger = logger;
+        _logger.LogInformation("MainViewModel constructor starting...");
+        
         _mpcFillService = mpcFillService;
+        _logger.LogInformation("MpcFillService assigned");
         _configManager = configManager;
         _pdfService = pdfService;
-        _logger = logger;
+        
         _errorHandler = errorHandler;
+        _logger.LogInformation("ErrorHandler assigned");
         _themeService = themeService;
         
         // Add this to your MainViewModel constructor
@@ -125,8 +131,11 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
+            _logger.LogInformation("GlobalBleedEnabled set");
             var printViewModelLogger = loggerFactory.CreateLogger<PrintViewModel>();
+            
             PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, printViewModelLogger, _errorHandler);
+            _logger.LogInformation("PrintViewModel created");
             var loggingSettingsLogger = loggerFactory.CreateLogger<LoggingSettingsViewModel>();
             LoggingSettingsViewModel = new LoggingSettingsViewModel(_configManager, loggingSettingsLogger, _errorHandler);
 
@@ -150,7 +159,8 @@ public partial class MainViewModel : ViewModelBase
         Microsoft.Extensions.Logging.Abstractions.NullLogger<MainViewModel>.Instance, // Use built-in null logger
         new DesignTimeErrorHandlingService(),
         Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance,  // Use built-in null factory
-        new DesignTimeThemeService())
+       new DesignTimeThemeService()
+        )
     {
         // Design-time constructor
     }
@@ -170,6 +180,11 @@ public partial class MainViewModel : ViewModelBase
             }
         };
 
+        public ThemeType LoadThemePreference()
+        {
+            throw new NotImplementedException();
+        }
+
         public event EventHandler<ThemeType>? ThemeChanged;
 
         public Task ApplyThemeAsync(ThemeType theme)
@@ -177,15 +192,12 @@ public partial class MainViewModel : ViewModelBase
             return Task.CompletedTask;
         }
 
-        public Task<bool> SaveThemePreferenceAsync(ThemeType theme)
+        public bool SaveThemePreference(ThemeType theme)
         {
-            return Task.FromResult(true);
+            throw new NotImplementedException();
         }
 
-        public Task<ThemeType> LoadThemePreferenceAsync()
-        {
-            return Task.FromResult(ThemeType.DarkProfessional);
-        }
+       
     }
     
     // ADD DESIGN-TIME MPC FILL SERVICE

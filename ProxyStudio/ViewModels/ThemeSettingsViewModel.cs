@@ -34,7 +34,7 @@ namespace ProxyStudio.ViewModels
             {
                 IsApplyingTheme = true;
                 await _themeService.ApplyThemeAsync(theme.Type);
-                await _themeService.SaveThemePreferenceAsync(theme.Type);
+                _themeService.SaveThemePreference(theme.Type);
                 SelectedTheme = theme;
             }
             finally
@@ -55,7 +55,7 @@ namespace ProxyStudio.ViewModels
         [RelayCommand]
         private async Task ResetToSavedThemeAsync()
         {
-            var savedTheme = await _themeService.LoadThemePreferenceAsync();
+            var savedTheme =  _themeService.LoadThemePreference();
             await _themeService.ApplyThemeAsync(savedTheme);
             SelectedTheme = AvailableThemes.FirstOrDefault(t => t.Type == savedTheme);
         }

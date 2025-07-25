@@ -1,0 +1,167 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  
+  <Styles.Resources>
+    <!-- Gaming RGB Colors -->
+    <Color x:Key="PrimaryColor">#FF00FF</Color> <!-- Magenta -->
+    <Color x:Key="PrimaryHoverColor">#E600E6</Color>
+    <Color x:Key="PrimaryPressedColor">#CC00CC</Color>
+    
+    <!-- Neon Accents -->
+    <Color x:Key="AccentCyan">#00FFFF</Color>
+    <Color x:Key="AccentGreen">#00FF00</Color>
+    <Color x:Key="AccentOrange">#FF6600</Color>
+    
+    <!-- Dark Gaming Background -->
+    <Color x:Key="BackgroundColor">#0A0A0A</Color>
+    <Color x:Key="SurfaceColor">#1A1A1A</Color>
+    <Color x:Key="CardColor">#2A2A2A</Color>
+    
+    <!-- Neon Text -->
+    <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
+    <Color x:Key="TextSecondaryColor">#CCCCCC</Color>
+    <Color x:Key="TextDisabledColor">#666666</Color>
+    
+    <!-- Status Colors -->
+    <Color x:Key="SuccessColor">#00FF00</Color>
+    <Color x:Key="WarningColor">#FFFF00</Color>
+    <Color x:Key="ErrorColor">#FF0040</Color>
+    
+    <!-- Glowing Borders -->
+    <Color x:Key="BorderColor">#333333</Color>
+    <Color x:Key="FocusBorderColor">#00FFFF</Color>
+    
+    <!-- Gradients -->
+    <LinearGradientBrush x:Key="GamingGradient" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#FF00FF" Offset="0"/>
+      <GradientStop Color="#00FFFF" Offset="0.5"/>
+      <GradientStop Color="#00FF00" Offset="1"/>
+    </LinearGradientBrush>
+    
+    <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#2A2A2A" Offset="0"/>
+      <GradientStop Color="#1A1A1A" Offset="1"/>
+    </LinearGradientBrush>
+  </Styles.Resources>
+
+  <!-- Gaming Window -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+  </Style>
+
+  <!-- Neon Buttons -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource GamingGradient}"/>
+    <Setter Property="Foreground" Value="{DynamicResource BackgroundColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="16,8"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentGreen}"/>
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentOrange}"/>
+  </Style>
+
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{DynamicResource ErrorColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}"/>
+  </Style>
+
+  <Style Selector="Button.success">
+    <Setter Property="Background" Value="{DynamicResource SuccessColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessColor}"/>
+  </Style>
+
+  <!-- Cyberpunk TextBoxes -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Padding" Value="8"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentGreen}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
+  <!-- ComboBox Styles -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+  </Style>
+
+  <!-- CheckBox Styles -->
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+  </Style>
+
+  <!-- Gaming Cards -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardGradient}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="12"/>
+  </Style>
+
+  <!-- Progress Bars with RGB -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource GamingGradient}"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Height" Value="8"/>
+  </Style>
+
+  <!-- Animated Tab Headers -->
+  <Style Selector="TabItem">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryColor}"/>
+    <Setter Property="Padding" Value="20,10"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+
+  <Style Selector="TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource CardGradient}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentCyan}"/>
+  </Style>
+
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource AccentGreen}"/>
+  </Style>
+
+  <!-- Expander Styles -->
+  <Style Selector="Expander">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+  </Style>
+
+  <!-- Progress Section Style -->
+  <Style Selector="Border.progress-section">
+    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource GamingGradient}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="CornerRadius" Value="12"/>
+  </Style>
+
+</Styles>

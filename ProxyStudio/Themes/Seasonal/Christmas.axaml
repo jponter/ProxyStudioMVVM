@@ -1,0 +1,160 @@
+﻿<!-- ProxyStudio/Themes/Seasonal/Christmas.axaml -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  
+  <Styles.Resources>
+    <!-- Christmas Colors -->
+    <Color x:Key="ChristmasRed">#DC143C</Color>
+    <Color x:Key="ChristmasGreen">#228B22</Color>
+    <Color x:Key="ChristmasGold">#FFD700</Color>
+    <Color x:Key="ChristmasWhite">#FFFAFA</Color>
+    <Color x:Key="ChristmasSilver">#C0C0C0</Color>
+    
+    <!-- Christmas Gradients -->
+    <LinearGradientBrush x:Key="ChristmasGradient" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="{StaticResource ChristmasRed}" Offset="0"/>
+      <GradientStop Color="{StaticResource ChristmasGreen}" Offset="1"/>
+    </LinearGradientBrush>
+    
+    <LinearGradientBrush x:Key="HollyGradient" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="{StaticResource ChristmasGreen}" Offset="0"/>
+      <GradientStop Color="#006400" Offset="1"/>
+    </LinearGradientBrush>
+    
+    <!-- Avalonia-compatible Snowflake Pattern -->
+    <DrawingBrush x:Key="SnowflakePattern" 
+                  TileMode="Tile" 
+                  DestinationRect="0,0,60,60">
+      <DrawingBrush.Drawing>
+        <DrawingGroup>
+          <!-- Main snowflake -->
+          <GeometryDrawing Brush="#20FFFFFF">
+            <GeometryDrawing.Geometry>
+              <EllipseGeometry RadiusX="1" RadiusY="1" Center="30,30"/>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+          <!-- Smaller snowflake -->
+          <GeometryDrawing Brush="#15C0C0C0">
+            <GeometryDrawing.Geometry>
+              <EllipseGeometry RadiusX="0.5" RadiusY="0.5" Center="15,15"/>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+          <!-- Another small snowflake -->
+          <GeometryDrawing Brush="#10FFFFFF">
+            <GeometryDrawing.Geometry>
+              <EllipseGeometry RadiusX="0.8" RadiusY="0.8" Center="45,10"/>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+        </DrawingGroup>
+      </DrawingBrush.Drawing>
+    </DrawingBrush>
+    
+    <!-- Simple Christmas background pattern -->
+    <SolidColorBrush x:Key="ChristmasBackground" Color="#0F1A0F"/>
+  </Styles.Resources>
+
+  <!-- Christmas Button Overlays -->
+  <Style Selector="Button.christmas">
+    <Setter Property="Background" Value="{StaticResource ChristmasGradient}"/>
+    <Setter Property="Foreground" Value="{StaticResource ChristmasWhite}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+
+  <Style Selector="Button.holly">
+    <Setter Property="Background" Value="{StaticResource HollyGradient}"/>
+    <Setter Property="Foreground" Value="{StaticResource ChristmasWhite}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
+  <Style Selector="Button.gold">
+    <Setter Property="Background" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="Foreground" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+
+  <!-- Festive Progress Bars -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasGradient}"/>
+    <Setter Property="Background" Value="{StaticResource ChristmasWhite}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+  </Style>
+
+  <!-- Christmas Cards -->
+  <Style Selector="Border.card">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+
+  <Style Selector="Border.christmas-card">
+    <Setter Property="Background" Value="{StaticResource SnowflakePattern}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="3"/>
+    <Setter Property="CornerRadius" Value="8"/>
+  </Style>
+
+  <!-- Festive Tab Items -->
+  <Style Selector="TabItem:selected">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="Foreground" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+
+  <Style Selector="TabItem:pointerover">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasGreen}"/>
+  </Style>
+
+  <!-- Holiday Text Blocks -->
+  <Style Selector="TextBlock.festive">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+
+  <Style Selector="TextBlock.holly">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasGreen}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <Style Selector="TextBlock.gold">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+  </Style>
+
+  <!-- Christmas TextBox -->
+  <Style Selector="TextBox.christmas">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasRed}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="CornerRadius" Value="6"/>
+  </Style>
+
+  <Style Selector="TextBox.christmas:focus">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="3"/>
+  </Style>
+
+  <!-- Christmas CheckBox -->
+  <Style Selector="CheckBox.christmas">
+    <Setter Property="Foreground" Value="{StaticResource ChristmasGreen}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <!-- Christmas Expander -->
+  <Style Selector="Expander.christmas">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGold}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="Background" Value="{StaticResource ChristmasBackground}"/>
+  </Style>
+
+  <!-- Progress Section Style -->
+  <Style Selector="Border.progress-section">
+    <Setter Property="BorderBrush" Value="{StaticResource ChristmasGradient}"/>
+    <Setter Property="Background" Value="{StaticResource ChristmasBackground}"/>
+  </Style>
+
+</Styles>

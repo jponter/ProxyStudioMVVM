@@ -13,7 +13,7 @@
         <!-- Then your theme -->
         <!-- <StyleInclude Source="avares://ProxyStudio/Themes/Common/ResponsiveClasses.axaml"/> -->
         <!-- <StyleInclude Source="avares://ProxyStudio/Themes/DarkProfessional.axaml"/> -->
-        <StyleInclude Source="avares://ProxyStudio/Themes/DarkProfessional.axaml"/>
+        <!-- <StyleInclude Source="avares://ProxyStudio/Themes/DarkProfessional.axaml"/> -->
     </Application.Styles>
              
              <Application.Resources>

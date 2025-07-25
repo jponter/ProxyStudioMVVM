@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -119,26 +120,44 @@ public partial class App : Application
         logger.LogInformation("=== PROXYSTUDIO SINGLE STARTUP {StartTime} (PID: {ProcessId}) ===", 
             DateTime.Now, Environment.ProcessId);
         
+        try 
+        {
+            var themeService = Services.GetRequiredService<IThemeService>();
+            logger.LogInformation("Theme service found: {ServiceType}", themeService.GetType().Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Theme service not found in DI container");
+    
+            // List all registered services for debugging
+            var registeredServices = services.Select(s => s.ServiceType.Name).ToList();
+            logger.LogInformation("Registered services: {Services}", string.Join(", ", registeredServices));
+        }
+        
+        
+        
         // Initialize application
         try
         {
             var configManager = Services.GetRequiredService<IConfigManager>();
             var errorHandler = Services.GetRequiredService<IErrorHandlingService>();
-            
-            // try
-            // {
-            //     var themeService = Services.GetRequiredService<IThemeService>();
-            //     var savedTheme = await themeService.LoadThemePreferenceAsync();
-            //     await themeService.ApplyThemeAsync(savedTheme);
-            // }
-            // catch (Exception ex)
-            // {
-            //     // Log the error but don't crash
-            //     logger.LogError(ex, "Failed to apply theme, continuing without custom theme");
-            // }
-            
             configManager.LoadConfig();
             logger.LogInformation("Configuration loaded");
+            
+            
+            try
+            {
+                var themeService = Services.GetRequiredService<IThemeService>();
+                var savedTheme =  themeService.LoadThemePreference();
+                await themeService.ApplyThemeAsync(savedTheme);
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't crash
+                logger.LogError(ex, "Failed to apply theme, continuing without custom theme");
+            }
+            
+            
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {

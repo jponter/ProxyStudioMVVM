@@ -70,6 +70,30 @@ namespace ProxyStudio.Services
             _logger = logger;
         }
 
+        
+        // public async Task ApplyThemeAsync(ThemeType theme)
+        // {
+        //     try
+        //     {
+        //         _logger.LogInformation("TEST: Would apply theme: {ThemeName}", theme);
+        //         _currentTheme = theme;
+        //         ThemeChanged?.Invoke(this, theme);
+        //         _logger.LogInformation("TEST: Theme application completed");
+        //         return; // Skip actual theme application for testing
+        //
+        //         // Comment out the actual theme application temporarily
+        //         /*
+        //         var themeDefinition = AvailableThemes.FirstOrDefault(t => t.Type == theme);
+        //         // ... rest of method
+        //         */
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Failed to apply theme: {ThemeName}", theme);
+        //         throw;
+        //     }
+        // }
+        
         public async Task ApplyThemeAsync(ThemeType theme)
         {
             try
@@ -119,12 +143,12 @@ namespace ProxyStudio.Services
             }
         }
 
-        public async Task<bool> SaveThemePreferenceAsync(ThemeType theme)
+        public bool SaveThemePreference(ThemeType theme)
         {
             try
             {
                 _configManager.Config.SelectedTheme = theme;
-                await _configManager.SaveConfigAsync();
+                _configManager.SaveConfig();
                 return true;
             }
             catch (Exception ex)
@@ -134,11 +158,11 @@ namespace ProxyStudio.Services
             }
         }
 
-        public async Task<ThemeType> LoadThemePreferenceAsync()
+        public ThemeType LoadThemePreference()
         {
             try
             {
-                var config = await _configManager.LoadConfigAsync();
+                var config = _configManager.LoadConfig();
                 return config.SelectedTheme;
             }
             catch (Exception ex)

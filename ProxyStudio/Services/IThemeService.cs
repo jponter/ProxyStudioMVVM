@@ -27,11 +27,11 @@ namespace ProxyStudio.Services
     {
         ThemeType CurrentTheme { get; }
         IReadOnlyList<ThemeDefinition> AvailableThemes { get; }
-        
+    
         Task ApplyThemeAsync(ThemeType theme);
-        Task<bool> SaveThemePreferenceAsync(ThemeType theme);
-        Task<ThemeType> LoadThemePreferenceAsync();
-        
+        bool SaveThemePreference(ThemeType theme); // Remove async
+        ThemeType LoadThemePreference(); // Remove async
+    
         event EventHandler<ThemeType> ThemeChanged;
     }
 }
