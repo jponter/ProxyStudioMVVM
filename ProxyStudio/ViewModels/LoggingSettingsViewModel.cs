@@ -1,4 +1,4 @@
-﻿// ProxyStudio/ViewModels/LoggingSettingsViewModel.cs - Updated for Microsoft.Extensions.Logging
+﻿// ProxyStudio/ViewModels/LoggingSettingsViewModel.cs - Updated for Dynamic Log Level Changes
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -68,7 +68,8 @@ namespace ProxyStudio.ViewModels
                 EnableConsoleOutput = settings.EnableConsoleOutput;
                 IncludeStackTraces = settings.IncludeStackTraces;
                 
-                _logger.LogDebug("Loaded logging settings from configuration");
+                _logger.LogDebug("Loaded logging settings from configuration - Current level: {LogLevel}", 
+                    (LogEventLevel)SelectedLogLevel);
             }
             catch (Exception ex)
             {
@@ -131,7 +132,7 @@ namespace ProxyStudio.ViewModels
         {
             try
             {
-                _logger.LogInformation("Saving logging settings");
+                _logger.LogInformation("Saving logging settings - New level: {LogLevel}", (LogEventLevel)SelectedLogLevel);
                 
                 var settings = _configManager.Config.LoggingSettings;
                 settings.MinimumLogLevel = SelectedLogLevel;
@@ -143,14 +144,14 @@ namespace ProxyStudio.ViewModels
                 
                 _configManager.SaveConfig();
                 
-                // Update Serilog minimum level
-                UpdateSerilogLevel((LogEventLevel)SelectedLogLevel);
+                // CRITICAL: Update Serilog level dynamically
+                App.UpdateLogLevel((LogEventLevel)SelectedLogLevel);
                 
-                _logger.LogInformation("Logging settings saved successfully - New log level: {LogLevel}", 
-                    (LogLevel)SelectedLogLevel);
+                _logger.LogInformation("Logging settings saved and applied successfully - Active log level: {LogLevel}", 
+                    (LogEventLevel)SelectedLogLevel);
                     
                 await _errorHandler.ShowErrorAsync("Settings Saved", 
-                    "Logging settings have been saved successfully. Some changes may require an application restart to take full effect.", 
+                    $"Logging settings have been saved and applied immediately. Current log level: {CurrentLogLevelName}", 
                     ErrorSeverity.Information);
             }
             catch (Exception ex)
@@ -243,18 +244,25 @@ namespace ProxyStudio.ViewModels
         {
             try
             {
-                _logger.LogTrace("Test trace message from logging settings");
-                _logger.LogDebug("Test debug message from logging settings");
-                _logger.LogInformation("Test info message from logging settings");
-                _logger.LogWarning("Test warning message from logging settings");
-                _logger.LogError("Test error message from logging settings");
+                // Test all log levels to verify the current setting is working
+                _logger.LogTrace("🔍 TEST TRACE: This should only appear if log level is Trace");
+                _logger.LogDebug("🐛 TEST DEBUG: This should only appear if log level is Debug or lower");
+                _logger.LogInformation("ℹ️ TEST INFO: This should appear if log level is Info or lower");
+                _logger.LogWarning("⚠️ TEST WARNING: This should appear if log level is Warning or lower");
+                _logger.LogError("❌ TEST ERROR: This should appear if log level is Error or lower");
+                _logger.LogCritical("🚨 TEST CRITICAL: This should always appear");
                 
                 // Test scope logging
                 using var scope = _logger.BeginScope("TestLoggingScope");
-                _logger.LogInformation("Test operation completed within scope");
+                _logger.LogInformation("✅ TEST SCOPE: Operation completed within scope");
                 
-                await _errorHandler.ShowErrorAsync("Logging Test", 
-                    "Test messages have been written to the log file at all levels. Check the log file to verify they appear correctly.", 
+                // Force a flush to ensure messages are written immediately
+                Log.CloseAndFlush();
+                
+                await _errorHandler.ShowErrorAsync("Logging Test Complete", 
+                    $"Test messages have been written at all levels. Current active level: {CurrentLogLevelName}\n\n" +
+                    $"Check the log file to see which messages appear based on your current setting. " +
+                    $"Only messages at or above the '{CurrentLogLevelName}' level should be visible.", 
                     ErrorSeverity.Information);
                 
                 LoadRecentErrors(); // Refresh recent errors
@@ -265,26 +273,14 @@ namespace ProxyStudio.ViewModels
             }
         }
 
-        // Update Serilog level dynamically
-        private void UpdateSerilogLevel(LogEventLevel level)
-        {
-            try
-            {
-                // Note: This is a simplified approach. For full dynamic reconfiguration,
-                // you might want to use Serilog.Settings.Configuration with IOptionsMonitor
-                Log.Logger = Log.Logger.ForContext("MinimumLevel", level);
-                _logger.LogDebug("Updated Serilog minimum level to: {LogLevel}", level);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to update Serilog level dynamically");
-            }
-        }
-
-        // Property change handlers to provide immediate feedback
+        // UPDATED: Property change handler to immediately apply log level changes
         partial void OnSelectedLogLevelChanged(int value)
         {
-            _logger.LogInformation("Log level changed to: {LogLevel}", (LogLevel)value);
+            var newLevel = (LogEventLevel)value;
+            _logger.LogInformation("Log level selection changed to: {LogLevel} - Use 'Save Settings' to apply", newLevel);
+            
+            // Optionally apply immediately without saving (uncomment if you want instant changes):
+            // App.UpdateLogLevel(newLevel);
         }
 
         partial void OnLogRetentionDaysChanged(int value)

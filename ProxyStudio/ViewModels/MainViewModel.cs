@@ -251,51 +251,48 @@ public partial class MainViewModel : ViewModelBase
     
     private class DesignTimeErrorHandlingService : IErrorHandlingService
     {
-        public void HandleError(Exception ex)
+        public Task ShowErrorAsync(string title, string message, ErrorSeverity severity = ErrorSeverity.Error, Exception? exception = null)
         {
-            // Do nothing in design time
-        }
-
-        public Task ShowErrorDialogAsync(string message, string title = "Error")
-        {
-            // Do nothing in design time
+            // In design time, just return completed task
             return Task.CompletedTask;
-        }
-
-        public Task ShowErrorAsync(string title, string message, ErrorSeverity severity = ErrorSeverity.Error,
-            Exception? exception = null)
-        {
-            throw new NotImplementedException();
         }
 
         public Task ShowErrorAsync(UserError error)
         {
-            throw new NotImplementedException();
+            // In design time, just return completed task
+            return Task.CompletedTask;
         }
 
         public Task HandleExceptionAsync(Exception exception, string userFriendlyMessage, string operationContext = "")
         {
-            throw new NotImplementedException();
+            // In design time, just log to debug and return completed task
+            System.Diagnostics.Debug.WriteLine($"Design-time error: {userFriendlyMessage} - {exception?.Message}");
+            return Task.CompletedTask;
         }
 
         public bool ValidateAndShowError(bool condition, string errorMessage, string title = "Validation Error")
         {
-            throw new NotImplementedException();
+            // In design time, always return the condition as-is
+            return condition;
         }
 
         public Task ShowRecoverableErrorAsync(string title, string message, string recoveryAction, Func<Task> recoveryCallback)
         {
-            throw new NotImplementedException();
+            // In design time, just return completed task
+            return Task.CompletedTask;
         }
 
         public Task ReportErrorAsync(Exception exception, string additionalContext = "")
         {
-            throw new NotImplementedException();
+            // In design time, just log to debug and return completed task
+            System.Diagnostics.Debug.WriteLine($"Design-time error report: {additionalContext} - {exception?.Message}");
+            return Task.CompletedTask;
         }
 
         public List<UserError> GetRecentErrors(int count = 10)
         {
-            throw new NotImplementedException();
+            // In design time, return empty list
+            return new List<UserError>();
         }
     }
 

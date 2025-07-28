@@ -1,8 +1,10 @@
+// Corrected App.axaml.cs with proper Serilog dynamic level switching
 using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,12 +12,11 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
-
 using ProxyStudio.ViewModels;
 using ProxyStudio.Services;
 using Serilog;
 using Serilog.Events;
-
+using Serilog.Core;
 
 namespace ProxyStudio;
 
@@ -25,19 +26,21 @@ public partial class App : Application
     private static readonly object InitializationLock = new object();
     private static volatile bool _isInitialized = false;
     private static int _initializationCount = 0;
-    public ThemeType SelectedTheme { get; set; } = ThemeType.DarkProfessional;
-   
+    
+    // ✅ CRITICAL: Use the SAME LoggingLevelSwitch for both console and file
+    private static LoggingLevelSwitch _loggingLevelSwitch = new LoggingLevelSwitch();
+    
     public static IServiceProvider? Services { get; private set; }
     
     public override void Initialize()
     {
-        //edit for sync
-        
         AvaloniaXamlLoader.Load(this);
     }
 
     public override async void OnFrameworkInitializationCompleted()
     {
+        Console.WriteLine("=== OnFrameworkInitializationCompleted CALLED ===");
+        
         // CRITICAL: Prevent multiple initializations
         lock (InitializationLock)
         {
@@ -45,29 +48,32 @@ public partial class App : Application
             
             if (_isInitialized)
             {
-                System.Diagnostics.Debug.WriteLine($"WARNING: OnFrameworkInitializationCompleted called multiple times (#{currentCount}). Ignoring duplicate call.");
+                Console.WriteLine($"WARNING: OnFrameworkInitializationCompleted called multiple times (#{currentCount}). Ignoring duplicate call.");
                 base.OnFrameworkInitializationCompleted();
                 return;
             }
 
             if (Design.IsDesignMode)
             {
-                System.Diagnostics.Debug.WriteLine($"Skipping initialization in design mode (call #{currentCount})");
+                Console.WriteLine($"Skipping initialization in design mode (call #{currentCount})");
                 base.OnFrameworkInitializationCompleted();
                 return;
             }
 
             _isInitialized = true;
-            System.Diagnostics.Debug.WriteLine($"Starting SINGLE initialization (call #{currentCount})");
+            Console.WriteLine($"Starting SINGLE initialization (call #{currentCount})");
         }
 
         try
         {
+            Console.WriteLine("About to call InitializeApplicationAsync...");
             await InitializeApplicationAsync();
+            Console.WriteLine("InitializeApplicationAsync completed successfully");
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"CRITICAL: Application initialization failed: {ex}");
+            Console.WriteLine($"CRITICAL: Application initialization failed: {ex}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             
             // Reset flag so we can try again if needed
             lock (InitializationLock)
@@ -79,19 +85,30 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-        
-        
     }
     
     private async System.Threading.Tasks.Task InitializeApplicationAsync()
     {
+        Console.WriteLine("=== InitializeApplicationAsync STARTING ===");
+        
         var services = new ServiceCollection();
 
         // Register configuration first
         services.AddSingleton<IConfigManager, ConfigManager>();
-
-        // Initialize logging ONCE
-        InitializeLogging();
+        var tempServiceProvider = services.BuildServiceProvider();
+        var configManager = tempServiceProvider.GetRequiredService<IConfigManager>();
+        
+        Console.WriteLine("Loading config...");
+        configManager.LoadConfig();
+        var configLogLevel = configManager.Config.LoggingSettings.MinimumLogLevel;
+        var initialLogLevel = (LogEventLevel)configLogLevel;
+        
+        Console.WriteLine($"Config loaded - MinimumLogLevel: {configLogLevel} -> {initialLogLevel}");
+        
+        // Initialize logging FIRST
+        Console.WriteLine("Calling InitializeLogging...");
+        InitializeLogging(initialLogLevel);
+        Console.WriteLine("InitializeLogging completed");
 
         // Add Microsoft.Extensions.Logging
         services.AddLogging(builder =>
@@ -115,49 +132,29 @@ public partial class App : Application
         
         Services = services.BuildServiceProvider();
         
-        // Single startup log entry
+        // Get logger and log startup
         var logger = Services.GetRequiredService<ILogger<App>>();
         logger.LogInformation("=== PROXYSTUDIO SINGLE STARTUP {StartTime} (PID: {ProcessId}) ===", 
             DateTime.Now, Environment.ProcessId);
-        
-        try 
-        {
-            var themeService = Services.GetRequiredService<IThemeService>();
-            logger.LogInformation("Theme service found: {ServiceType}", themeService.GetType().Name);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Theme service not found in DI container");
-    
-            // List all registered services for debugging
-            var registeredServices = services.Select(s => s.ServiceType.Name).ToList();
-            logger.LogInformation("Registered services: {Services}", string.Join(", ", registeredServices));
-        }
-        
-        
+        logger.LogInformation("Initial log level set to: {LogLevel}", initialLogLevel);
         
         // Initialize application
         try
         {
-            var configManager = Services.GetRequiredService<IConfigManager>();
             var errorHandler = Services.GetRequiredService<IErrorHandlingService>();
-            configManager.LoadConfig();
             logger.LogInformation("Configuration loaded");
             
-            
+            // Apply theme
             try
             {
                 var themeService = Services.GetRequiredService<IThemeService>();
-                var savedTheme =  themeService.LoadThemePreference();
+                var savedTheme = themeService.LoadThemePreference();
                 await themeService.ApplyThemeAsync(savedTheme);
             }
             catch (Exception ex)
             {
-                // Log the error but don't crash
                 logger.LogError(ex, "Failed to apply theme, continuing without custom theme");
             }
-            
-            
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -171,55 +168,163 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            //var logger = Services.GetRequiredService<ILogger<App>>();
-            logger.LogCritical(ex, "Critical startup failure");
+            Console.WriteLine($"Error in application initialization: {ex}");
             throw;
         }
         
-        // Register shutdown handler ONCE
+        // Register shutdown handler
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
             desktopLifetime.ShutdownRequested += OnShutdownRequested;
         }
+        
+        Console.WriteLine("=== InitializeApplicationAsync COMPLETED ===");
     }
     
-    private static void InitializeLogging()
+    // ✅ CLEAN APPROACH: Use only global level switch (no sink-specific switches)
+private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel.Information)
+{
+    Console.WriteLine("=== INITIALIZING SERILOG (CLEAN APPROACH) ===");
+    
+    var logDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "ProxyStudio", "Logs");
+    
+    Directory.CreateDirectory(logDirectory);
+    var logFilePath = Path.Combine(logDirectory, "proxystudio.log");
+
+    Console.WriteLine($"Log file path: {logFilePath}");
+    Console.WriteLine($"Initial level: {initialLevel}");
+
+    // Close any existing logger
+    try
     {
-        // Only initialize logging if not already done
-        if (Log.Logger != Serilog.Core.Logger.None)
+        if (Log.Logger != null && Log.Logger != Serilog.Core.Logger.None)
         {
-            System.Diagnostics.Debug.WriteLine("Logging already initialized, skipping...");
-            return;
+            Console.WriteLine("Closing existing logger...");
+            Log.CloseAndFlush();
         }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error closing existing logger: {ex.Message}");
+    }
 
-        var logDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ProxyStudio", "Logs");
-        
-        Directory.CreateDirectory(logDirectory);
+    // Set the level switch
+    _loggingLevelSwitch.MinimumLevel = initialLevel;
+    Console.WriteLine($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
 
-        var logFilePath = Path.Combine(logDirectory, "proxystudio.log");
-
+    try
+    {
+        // ✅ SIMPLEST APPROACH: Only use global MinimumLevel.ControlledBy()
+        // Let the global level switch control EVERYTHING
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Override("System", LogEventLevel.Warning)
+            .MinimumLevel.ControlledBy(_loggingLevelSwitch)
             .Enrich.FromLogContext()
-            .WriteTo.File(
+            .WriteTo.Async(a => a.File(
                 path: logFilePath,
+                levelSwitch: _loggingLevelSwitch,
                 rollingInterval: RollingInterval.Day,
                 rollOnFileSizeLimit: true,
-                fileSizeLimitBytes: 10 * 1024 * 1024, // 10MB max
+                fileSizeLimitBytes: 10 * 1024 * 1024,
                 retainedFileCountLimit: 5,
-                shared: true,
+                shared: false,
                 buffered: false,
-                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                flushToDiskInterval: TimeSpan.FromMilliseconds(100),
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+            ))
             .WriteTo.Console(
-                restrictedToMinimumLevel: LogEventLevel.Information,
+                // ❌ NO levelSwitch parameter - let global control it
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}")
             .CreateLogger();
 
-        System.Diagnostics.Debug.WriteLine($"Logging initialized to: {logFilePath}");
+        Console.WriteLine("Serilog logger created successfully with GLOBAL level switch only");
+        
+        // Test immediately
+        Log.Information("=== SERILOG TEST: Initialization complete at level {Level} ===", initialLevel);
+        Log.Debug("TEST DEBUG: This should appear if level is Debug or lower");
+        Log.Information("TEST INFO: This should appear if level is Info or lower");
+        Log.Warning("TEST WARNING: This should appear if level is Warning or lower");
+        Log.Error("TEST ERROR: This should appear if level is Error or lower");
+        
+        Console.WriteLine("Test messages sent");
+        
+        // Check file creation
+        Thread.Sleep(200); // Give file more time to be created
+        if (File.Exists(logFilePath))
+        {
+            var fileInfo = new FileInfo(logFilePath);
+            Console.WriteLine($"SUCCESS: Log file exists: {fileInfo.Length} bytes");
+        }
+        else
+        {
+            Console.WriteLine($"WARNING: Log file not found immediately - checking again...");
+            Thread.Sleep(500);
+            if (File.Exists(logFilePath))
+            {
+                var fileInfo = new FileInfo(logFilePath);
+                Console.WriteLine($"SUCCESS: Log file created: {fileInfo.Length} bytes");
+            }
+            else
+            {
+                Console.WriteLine($"ERROR: Log file still not created");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"ERROR initializing Serilog: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    }
+    
+    Console.WriteLine("=== SERILOG INITIALIZATION COMPLETE ===");
+}
+
+    // ✅ CORRECTED: UpdateLogLevel method that properly updates both sinks
+    public static void UpdateLogLevel(LogEventLevel newLevel)
+    {
+        try
+        {
+            lock (LoggerLock)
+            {
+                Console.WriteLine($"=== REBUILDING LOGGER WITH NEW LEVEL: {newLevel} ===");
+
+                _loggingLevelSwitch.MinimumLevel = newLevel;
+
+                //_logging.CloseAndFlush();
+
+                var logDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "ProxyStudio", "Logs");
+                Directory.CreateDirectory(logDirectory);
+                var logFilePath = Path.Combine(logDirectory, "proxystudio.log");
+
+                Log.Logger = new LoggerConfiguration()
+                    .MinimumLevel.ControlledBy(_loggingLevelSwitch)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Async(a => a.File(
+                        path: logFilePath,
+                        levelSwitch: _loggingLevelSwitch,
+                        rollingInterval: RollingInterval.Day,
+                        rollOnFileSizeLimit: true,
+                        fileSizeLimitBytes: 10 * 1024 * 1024,
+                        retainedFileCountLimit: 5,
+                        shared: true,
+                        buffered: false,
+                        flushToDiskInterval: TimeSpan.FromMilliseconds(100),
+                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+                    ))
+                    .WriteTo.Console(
+                        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}")
+                    .CreateLogger();
+                // Thread.Sleep(500);
+                // Log.Information("Logger rebuilt with new level: {NewLevel}", newLevel);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR rebuilding logger: {ex}");
+        }
     }
 
     private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
@@ -233,10 +338,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error during shutdown: {ex}");
+            Console.WriteLine($"Error during shutdown: {ex}");
         }
     }
-    
     
     public static class LoggingDiagnostics
     {
@@ -249,12 +353,7 @@ public partial class App : Application
             if (Directory.Exists(logDirectory))
             {
                 var files = Directory.GetFiles(logDirectory, "*.log");
-                System.Diagnostics.Debug.WriteLine($"Found {files.Length} log files:");
-                foreach (var file in files)
-                {
-                    var info = new FileInfo(file);
-                    System.Diagnostics.Debug.WriteLine($"  {Path.GetFileName(file)} - {info.Length} bytes - {info.CreationTime}");
-                }
+                Console.WriteLine($"Found {files.Length} log files");
             }
         }
     }
