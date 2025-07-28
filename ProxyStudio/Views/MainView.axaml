@@ -491,22 +491,44 @@
                                 </StackPanel>
 
                                 <!-- Log Retention - FIXED -->
+                                <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
+                                <!--     <Label Content="Keep logs for:" Width="120" VerticalAlignment="Center" /> -->
+                                <!--     <NumericUpDown Value="{Binding LoggingSettingsViewModel.LogRetentionDays}" -->
+                                <!--                    Minimum="1" Maximum="365" Width="80" -->
+                                <!--                    ShowButtonSpinner="True" -->
+                                <!--                    FormatString="N0" /> -->
+                                <!--     <TextBlock Text="days" VerticalAlignment="Center" /> -->
+                                <!-- </StackPanel> -->
+                                
+                                <!-- Log Retention - FIXED with proper styling -->
+                                <!-- Log Retention - Dark Theme Compatible -->
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <Label Content="Keep logs for:" Width="120" VerticalAlignment="Center" />
-                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.LogRetentionDays}"
-                                                   Minimum="1" Maximum="365" Width="80"
+                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.LogRetentionDays, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="365" Width="100" Height="32"
                                                    ShowButtonSpinner="True"
-                                                   FormatString="N0" />
+                                                   FormatString="0"
+                                                   Increment="1"
+                                                   Padding="8,4"
+                                                   Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                   BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   BorderThickness="1" />
                                     <TextBlock Text="days" VerticalAlignment="Center" />
                                 </StackPanel>
 
-                                <!-- Max File Size - FIXED -->
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <Label Content="Max file size:" Width="120" VerticalAlignment="Center" />
-                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.MaxLogFileSizeMB}"
-                                                   Minimum="1" Maximum="100" Width="80"
+                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.MaxLogFileSizeMB, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="100" Width="100" Height="32"
                                                    ShowButtonSpinner="True"
-                                                   FormatString="N0" />
+                                                   FormatString="0"
+                                                   Increment="1"
+                                                   Padding="8,4"
+                                                   Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                   BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   BorderThickness="1" />
                                     <TextBlock Text="MB" VerticalAlignment="Center" />
                                 </StackPanel>
 
