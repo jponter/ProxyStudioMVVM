@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Models;
 using ProxyStudio.Services;
+using Serilog;
 
 
 //description: ViewModel for handling PDF generation and preview functionality in ProxyStudio.
@@ -129,6 +130,10 @@ namespace ProxyStudio.ViewModels
             // IMPORTANT: Enable saving after initialization is complete
             _isInitializing = false;
             _logger.LogDebug("PrintViewModel initialization complete - config saving now enabled");
+            
+            _logger.LogDebug($"Loading Config");
+            LoadSettings();
+            _logger.LogDebug("Config loaded successfully");
         }
 
         // Constructor for design-time support
@@ -202,6 +207,7 @@ namespace ProxyStudio.ViewModels
             _logger.LogDebug($"  Page: {SelectedPageSize} {(IsPortrait ? "Portrait" : "Landscape")}");
             _logger.LogDebug($"  Preview: {PreviewDpi} DPI, Quality: {PreviewQuality}");
             _logger.LogDebug($"  Cards: {CardCount}, EstimatedSize: {EstimatedFileSize:F2} MB");
+            _logger.LogDebug($"  PrintDpi: {PrintDpi}, EnsureMinPrintDpi: {EnsureMinimumPrintDpi}");
             
             // Auto-generate preview on startup
             _ = GeneratePreviewAsync();

@@ -84,10 +84,10 @@ public partial class MainView : Window
      
         base.OnClosed(e);
         
-        DebugHelper.WriteDebug("Saving configuration settings on window close.");
+        //DebugHelper.WriteDebug("Saving configuration settings on window close.");
         
         
-       _configManager.SaveConfig();
+       //_configManager.SaveConfig();
     }
 
     

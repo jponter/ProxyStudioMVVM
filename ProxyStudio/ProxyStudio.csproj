@@ -77,6 +77,8 @@
         <DependentUpon>PrintingView.axaml</DependentUpon>
         <SubType>Code</SubType>
       </None>
+      <AvaloniaXaml Remove="Backups\ModernDesignSystem.axaml" />
+      <None Include="Backups\ModernDesignSystem.axaml" />
     </ItemGroup>
 
    
@@ -86,7 +88,9 @@
         
         <AvaloniaResource Include="Themes\*.axaml" />
         
-        <AvaloniaResource Include="Styles\ModernDesignSystem.axaml" />
+        
+        
+        <Folder Include="Styles\" />
         
     </ItemGroup>
 

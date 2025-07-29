@@ -1,183 +1,270 @@
-﻿<!-- ProxyStudio/Themes/DarkProfessional.axaml -->
+﻿<!-- Themes/DarkProfessional.axaml - Unified Theme with Modern Design -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <Styles.Resources>
-    <!-- Primary Colors -->
-    <Color x:Key="PrimaryColor">#2563EB</Color>
-    <Color x:Key="PrimaryHoverColor">#1D4ED8</Color>
-    <Color x:Key="PrimaryPressedColor">#1E40AF</Color>
-    
-    <!-- Background Colors -->
-    <Color x:Key="BackgroundColor">#1F2937</Color>
-    <Color x:Key="SurfaceColor">#374151</Color>
-    <Color x:Key="CardColor">#4B5563</Color>
-    
-    <!-- Text Colors -->
-    <Color x:Key="TextPrimaryColor">#F9FAFB</Color>
-    <Color x:Key="TextSecondaryColor">#D1D5DB</Color>
-    <Color x:Key="TextDisabledColor">#9CA3AF</Color>
-    
-    <!-- Accent Colors -->
-    <Color x:Key="SuccessColor">#10B981</Color>
-    <Color x:Key="WarningColor">#F59E0B</Color>
-    <Color x:Key="ErrorColor">#EF4444</Color>
-    
-    <!-- Border Colors -->
-    <Color x:Key="BorderColor">#6B7280</Color>
-    <Color x:Key="FocusBorderColor">#3B82F6</Color>
-  </Styles.Resources>
+    <!-- DARK PROFESSIONAL COLOR PALETTE -->
+    <Styles.Resources>
+        <!-- Primary Colors -->
+        <Color x:Key="PrimaryColor">#6366F1</Color>        <!-- Indigo -->
+        <Color x:Key="PrimaryHover">#4F46E5</Color>        <!-- Darker Indigo -->
+        <Color x:Key="PrimaryPressed">#4338CA</Color>      <!-- Even Darker -->
+        <Color x:Key="SecondaryColor">#10B981</Color>      <!-- Emerald -->
+        
+        <!-- Dark Theme Backgrounds -->
+        <Color x:Key="BackgroundPrimary">#1F2937</Color>   <!-- Dark Gray -->
+        <Color x:Key="BackgroundSecondary">#374151</Color> <!-- Medium Gray -->
+        <Color x:Key="SurfaceColor">#4B5563</Color>        <!-- Light Gray Surface -->
+        <Color x:Key="SurfaceElevated">#6B7280</Color>     <!-- Elevated Surface -->
+        
+        <!-- Dark Theme Text -->
+        <Color x:Key="TextPrimary">#F9FAFB</Color>         <!-- Near White -->
+        <Color x:Key="TextSecondary">#D1D5DB</Color>       <!-- Light Gray -->
+        <Color x:Key="TextTertiary">#9CA3AF</Color>        <!-- Medium Gray -->
+        
+        <!-- Dark Theme Borders -->
+        <Color x:Key="BorderColor">#6B7280</Color>         <!-- Gray -->
+        <Color x:Key="BorderHover">#9CA3AF</Color>         <!-- Lighter Gray -->
+        
+        <!-- Status Colors (same across themes) -->
+        <Color x:Key="SuccessColor">#059669</Color>        <!-- Green -->
+        <Color x:Key="WarningColor">#D97706</Color>        <!-- Amber -->
+        <Color x:Key="ErrorColor">#DC2626</Color>          <!-- Red -->
+        <Color x:Key="InfoColor">#0EA5E9</Color>           <!-- Sky -->
 
-  <!-- Window Styles -->
-  <Style Selector="Window">
-    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-  </Style>
+        <!-- Convert to Brushes -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{StaticResource PrimaryHover}"/>
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}"/>
+        <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="{StaticResource BackgroundPrimary}"/>
+        <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="{StaticResource BackgroundSecondary}"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+    </Styles.Resources>
 
-  <!-- Button Styles -->
-  <Style Selector="Button">
-    <Setter Property="Background" Value="{DynamicResource PrimaryColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="6"/>
-    <Setter Property="Padding" Value="12,8"/>
-    <Setter Property="FontWeight" Value="SemiBold"/>
-  </Style>
+    <!-- MODERN TYPOGRAPHY CLASSES (using dark theme colors) -->
+    <Style Selector="TextBlock.heading-large">
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
 
-  <Style Selector="Button:pointerover">
-    <Setter Property="Background" Value="{DynamicResource PrimaryHoverColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverColor}"/>
-  </Style>
+    <Style Selector="TextBlock.heading-medium">
+        <Setter Property="FontSize" Value="24"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
 
-  <Style Selector="Button:pressed">
-    <Setter Property="Background" Value="{DynamicResource PrimaryPressedColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryPressedColor}"/>
-  </Style>
+    <Style Selector="TextBlock.heading-small">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
 
-  <Style Selector="Button:disabled">
-    <Setter Property="Background" Value="{DynamicResource TextDisabledColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource TextDisabledColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource BackgroundColor}"/>
-    <Setter Property="Opacity" Value="0.6"/>
-  </Style>
+    <Style Selector="TextBlock.body-large">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+    </Style>
 
-  <!-- Secondary Button Style -->
-  <Style Selector="Button.secondary">
-    <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-  </Style>
+    <Style Selector="TextBlock.body-medium">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+    </Style>
 
-  <Style Selector="Button.secondary:pointerover">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderColor}"/>
-  </Style>
+    <Style Selector="TextBlock.body-small">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+    </Style>
 
-  <!-- Danger Button Style -->
-  <Style Selector="Button.danger">
-    <Setter Property="Background" Value="{DynamicResource ErrorColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}"/>
-  </Style>
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Foreground" Value="{StaticResource TextTertiary}"/>
+    </Style>
 
-  <!-- Success Button Style -->
-  <Style Selector="Button.success">
-    <Setter Property="Background" Value="{DynamicResource SuccessColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource SuccessColor}"/>
-  </Style>
+    <!-- MODERN BUTTON CLASSES (using dark theme colors) -->
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
 
-  <!-- TextBox Styles -->
-  <Style Selector="TextBox">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="4"/>
-    <Setter Property="Padding" Value="8"/>
-    <Setter Property="MinHeight" Value="32"/>
-  </Style>
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+    </Style>
 
-  <Style Selector="TextBox:focus">
-    <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderColor}"/>
-    <Setter Property="BorderThickness" Value="2"/>
-  </Style>
+    <Style Selector="Button.secondary">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
 
-  <!-- ComboBox Styles -->
-  <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="4"/>
-    <Setter Property="MinHeight" Value="32"/>
-  </Style>
+    <Style Selector="Button.secondary:pointerover">
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderHover}"/>
+    </Style>
 
-  <!-- CheckBox Styles -->
-  <Style Selector="CheckBox">
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-  </Style>
+    <Style Selector="Button.icon">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
 
-  <!-- TabControl Styles -->
-  <Style Selector="TabControl">
-    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
-  </Style>
+    <Style Selector="Button.icon:pointerover">
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+    </Style>
 
-  <Style Selector="TabItem">
-    <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryColor}"/>
-    <Setter Property="Padding" Value="16,8"/>
-    <Setter Property="Margin" Value="0,0,2,0"/>
-  </Style>
+    <Style Selector="Button.success">
+        <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
 
-  <Style Selector="TabItem:selected">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-  </Style>
+    <!-- MODERN CARD CLASSES (using dark theme colors) -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="BoxShadow" Value="0 1 3 0 #19000000, 0 1 2 0 #1A000000"/>
+    </Style>
 
-  <Style Selector="TabItem:pointerover">
-    <Setter Property="Background" Value="{DynamicResource CardColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-  </Style>
+    <Style Selector="Border.card-elevated">
+        <Setter Property="Background" Value="{StaticResource SurfaceElevated}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="24"/>
+        <Setter Property="BoxShadow" Value="0 4 6 0 #1A000000, 0 2 4 0 #0F000000"/>
+    </Style>
 
-  <!-- Expander Styles -->
-  <Style Selector="Expander">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="6"/>
-    <Setter Property="Margin" Value="0,4"/>
-  </Style>
+    <Style Selector="Border.card-compact">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="BoxShadow" Value="0 1 2 0 #0D000000"/>
+    </Style>
 
-  <!-- ProgressBar Styles -->
-  <Style Selector="ProgressBar">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource PrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="CornerRadius" Value="4"/>
-  </Style>
+    <!-- SIDEBAR CLASSES -->
+    <Style Selector="Border.sidebar">
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="MinWidth" Value="280"/>
+    </Style>
 
-  <!-- ScrollViewer Styles -->
-  <Style Selector="ScrollViewer">
-    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
-  </Style>
+    <!-- INPUT CLASSES (using dark theme colors) -->
+    <Style Selector="TextBox.modern">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="MinHeight" Value="40"/>
+    </Style>
 
-  <!-- Custom Card Style -->
-  <Style Selector="Border.card">
-    <Setter Property="Background" Value="{DynamicResource CardColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="Padding" Value="16"/>
-    <Setter Property="Margin" Value="8"/>
-  </Style>
+    <Style Selector="TextBox.modern:focus">
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+    </Style>
 
-  <!-- Progress Section Style -->
-  <Style Selector="Border.progress-section">
-    <Setter Property="Background" Value="#1E3A8A"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
-    <Setter Property="BorderThickness" Value="2"/>
-    <Setter Property="CornerRadius" Value="8"/>
-  </Style>
+    <Style Selector="ComboBox.modern">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="MinHeight" Value="40"/>
+    </Style>
+
+    <!-- PROGRESS CLASSES -->
+    <Style Selector="ProgressBar.modern">
+        <Setter Property="Height" Value="8"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style Selector="ProgressBar.modern-thick">
+        <Setter Property="Height" Value="12"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- BADGE CLASSES -->
+    <Style Selector="Border.badge-success">
+        <Setter Property="Background" Value="#064E3B"/> <!-- Dark Green -->
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="8,4"/>
+    </Style>
+
+    <Style Selector="Border.badge-error">
+        <Setter Property="Background" Value="#7F1D1D"/> <!-- Dark Red -->
+        <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="8,4"/>
+    </Style>
+
+    <!-- HIGHLIGHT CLASSES -->
+    <Style Selector="Border.highlight-primary">
+        <Setter Property="Background" Value="#1E3A8A"/>  <!-- Dark Blue -->
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style Selector="Border.highlight-success">
+        <Setter Property="Background" Value="#064E3B"/>  <!-- Dark Green -->
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- SLIDER CLASSES -->
+    <Style Selector="Slider.modern">
+        <Setter Property="Background" Value="{StaticResource BackgroundSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        <Setter Property="Height" Value="20"/>
+    </Style>
 
 </Styles>

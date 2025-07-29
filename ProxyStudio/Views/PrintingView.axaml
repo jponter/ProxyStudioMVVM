@@ -11,303 +11,103 @@
     
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="340"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="450"/>
         </Grid.ColumnDefinitions>
         
         <!-- Modern Settings Panel -->
-        <Border Grid.Column="0" Classes="sidebar" Margin="0,0,24,0">
+        <Border Grid.Column="0" Classes="sidebar" >
             
-            <ScrollViewer>
-                <StackPanel Spacing="24">
-                    
-                    <!-- Header -->
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="heading-medium" Text="Print Settings"/>
-                        <TextBlock Classes="body-medium" Text="Configure your PDF generation options"/>
-                    </StackPanel>
-                    
-                    <!-- Page Settings -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-small" Text="Page Layout"/>
+            <StackPanel Spacing="8">
+                <!-- Header -->
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="heading-medium" Text="Print Actions"/>
+                    <TextBlock Classes="body-small" Text="Manage Print Actions"/>
+                </StackPanel>
+            
+                <!-- Action Buttons -->
+                <StackPanel Spacing="12">
+                    <Button Classes="secondary" 
+                            Content="🔍 Generate Preview" 
+                            Command="{Binding GeneratePreviewCommand}"
+                            IsEnabled="{Binding !IsGeneratingPreview}"
+                            HorizontalAlignment="Stretch"/>
+                        
+                    <!-- PDF Generation Button -->
+                    <Button Command="{Binding GeneratePdfCommand}"
+                            IsEnabled="{Binding !IsGeneratingPdf}"
+                            Classes="success"
+                            HorizontalAlignment="Stretch"
+                            Height="48"
+                            FontSize="16">
                             
-                            <StackPanel Spacing="12">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="PAGE SIZE"/>
-                                    <ComboBox Classes="modern"
-                                              ItemsSource="{Binding PageSizes}" 
-                                              SelectedItem="{Binding SelectedPageSize}"/>
-                                </StackPanel>
-                                
-                                <CheckBox IsChecked="{Binding IsPortrait}" 
-                                         Content="Portrait Orientation"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock Text="🖨️" FontSize="20"/>
+                            <StackPanel>
+                                <TextBlock Text="Generate PDF" FontWeight="SemiBold"/>
+                                <TextBlock FontSize="12" Opacity="0.8"
+                                           Text="{Binding PrintDpi, StringFormat='{}{0} DPI Quality'}"/>
                             </StackPanel>
                         </StackPanel>
-                    </Border>
-                    
-                    <!-- Layout Settings -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-small" Text="Card Layout"/>
-                            
-                            <StackPanel Spacing="12">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="CARD SPACING (PT)"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="60"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Slider Grid.Column="0" 
-                                               Classes="modern"
-                                               Value="{Binding CardSpacing, Mode=TwoWay}" 
-                                               Minimum="0" Maximum="50" 
-                                               VerticalAlignment="Center"/>
-                                        <TextBox Grid.Column="1" 
-                                                Classes="modern"
-                                                Text="{Binding CardSpacing, Mode=TwoWay}"
-                                                Margin="8,0,0,0"/>
-                                    </Grid>
-                                </StackPanel>
-                                
-                                <!-- Layout Info -->
-                                <Border Classes="card-compact highlight-primary">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="body-small" Text="Fixed Layout:"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock Classes="body-small" FontWeight="SemiBold" 
-                                                      Text="{Binding IsPortrait, Converter={x:Static converters:BoolToStringConverter.Instance}, ConverterParameter='Portrait:Landscape'}"/>
-                                            <TextBlock Classes="body-small" Text="orientation"/>
-                                        </StackPanel>
-                                        <TextBlock Classes="body-small" Text="Portrait: 3×3 cards • Landscape: 4×2 cards"/>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Print Quality Settings -->
-                    <Border Classes="card-elevated highlight-primary">
+                    </Button>
+                        
+                    <!-- Progress Section -->
+                    <Border Classes="card highlight-success"
+                            IsVisible="{Binding ShowProgressDetails}">
                         <StackPanel Spacing="16">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="🎯" FontSize="16"/>
-                                <TextBlock Classes="heading-small" Text="Print Quality"/>
+                                <TextBlock Text="📊" FontSize="16"/>
+                                <TextBlock Classes="heading-small" Text="Generation Progress"/>
                             </StackPanel>
-                            
-                            <!-- Card Size Info -->
-                            <Border Classes="card-compact">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Classes="body-medium" 
-                                              Text="Card Size: Fixed 63mm × 88mm" 
-                                              FontWeight="SemiBold"/>
-                                    <TextBlock Classes="body-small" 
-                                              Text="Professional standard - dimensions never change"/>
-                                </StackPanel>
-                            </Border>
-                            
-                            <StackPanel Spacing="12">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="PRINT RESOLUTION"/>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <ComboBox Grid.Column="0" 
-                                                 Classes="modern"
-                                                 ItemsSource="{Binding CommonPrintDpiOptions}" 
-                                                 SelectedItem="{Binding PrintDpi}"/>
-                                                 
-                                        <TextBox Grid.Column="1" 
-                                                Classes="modern"
-                                                Text="{Binding PrintDpi, Mode=TwoWay}"
-                                                Margin="8,0,0,0"/>
-                                                
-                                        <TextBlock Grid.Column="2" 
-                                                  Classes="body-medium" 
-                                                  Text="DPI" 
-                                                  VerticalAlignment="Center"
-                                                  Margin="8,0,0,0"/>
-                                    </Grid>
-                                </StackPanel>
                                 
-                                <CheckBox Content="🛡️ Enforce minimum 300 DPI" 
-                                         IsChecked="{Binding EnsureMinimumPrintDpi}"/>
+                            <!-- Modern Progress Bar -->
+                            <ProgressBar Classes="modern-thick"
+                                         Value="{Binding PdfGenerationProgress}" 
+                                         Minimum="0" Maximum="100"/>
                                 
-                                <!-- File Size Estimate -->
-                                <Border Classes="card-compact">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Classes="body-small" Text="Estimated file size:"/>
-                                        <TextBlock Grid.Column="1" Classes="body-small" FontWeight="SemiBold"
-                                                  Text="{Binding EstimatedFileSize, StringFormat='~{0:F1} MB'}"/>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Cutting Lines Settings -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-small" Text="Cutting Lines"/>
-                            
-                            <StackPanel Spacing="12">
-                                <CheckBox Content="Show cutting lines" 
-                                         IsChecked="{Binding ShowCuttingLines}"/>
-                                         
-                                <StackPanel Spacing="8" IsEnabled="{Binding ShowCuttingLines}">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Classes="caption" Text="COLOR"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <ComboBox Grid.Column="0"
-                                                     Classes="modern"
-                                                     ItemsSource="{Binding PredefinedColors}" 
-                                                     SelectedItem="{Binding CuttingLineColor}"/>
-                                            <TextBox Grid.Column="1" 
-                                                    Classes="modern"
-                                                    Text="{Binding CuttingLineColor}"
-                                                    Margin="8,0,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                    
-                                    <CheckBox Content="Dashed lines" 
-                                             IsChecked="{Binding IsCuttingLineDashed}"/>
-                                    
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Classes="caption" Text="EXTENSION (PT)"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="60"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Slider Grid.Column="0" 
-                                                   Classes="modern"
-                                                   Value="{Binding CuttingLineExtension, Mode=TwoWay}" 
-                                                   Minimum="0" Maximum="50"/>
-                                            <TextBox Grid.Column="1" 
-                                                    Classes="modern"
-                                                    Text="{Binding CuttingLineExtension, Mode=TwoWay}"
-                                                    Margin="8,0,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                    
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Classes="caption" Text="THICKNESS (PT)"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="60"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Slider Grid.Column="0" 
-                                                   Classes="modern"
-                                                   Value="{Binding CuttingLineThickness, Mode=TwoWay}" 
-                                                   Minimum="0.1" Maximum="5"/>
-                                            <TextBox Grid.Column="1" 
-                                                    Classes="modern"
-                                                    Text="{Binding CuttingLineThickness, Mode=TwoWay}"
-                                                    Margin="8,0,0,0"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Action Buttons -->
-                    <StackPanel Spacing="12">
-                        <Button Classes="secondary" 
-                                Content="🔍 Generate Preview" 
-                                Command="{Binding GeneratePreviewCommand}"
-                                IsEnabled="{Binding !IsGeneratingPreview}"
-                                HorizontalAlignment="Stretch"/>
-                        
-                        <!-- PDF Generation Button -->
-                        <Button Command="{Binding GeneratePdfCommand}"
-                                IsEnabled="{Binding !IsGeneratingPdf}"
-                                Classes="success"
-                                HorizontalAlignment="Stretch"
-                                Height="48"
-                                FontSize="16">
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <TextBlock Text="🖨️" FontSize="20"/>
-                                <StackPanel>
-                                    <TextBlock Text="Generate PDF" FontWeight="SemiBold"/>
-                                    <TextBlock FontSize="12" Opacity="0.8"
-                                              Text="{Binding PrintDpi, StringFormat='{}{0} DPI Quality'}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Button>
-                        
-                        <!-- Progress Section -->
-                        <Border Classes="card highlight-success"
-                                IsVisible="{Binding ShowProgressDetails}">
-                            <StackPanel Spacing="16">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="📊" FontSize="16"/>
-                                    <TextBlock Classes="heading-small" Text="Generation Progress"/>
-                                </StackPanel>
-                                
-                                <!-- Modern Progress Bar -->
-                                <ProgressBar Classes="modern-thick"
-                                            Value="{Binding PdfGenerationProgress}" 
-                                            Minimum="0" Maximum="100"/>
-                                
-                                <StackPanel Spacing="8">
-                                    <TextBlock Classes="body-medium" 
-                                              Text="{Binding PdfGenerationStatus}" 
-                                              TextWrapping="Wrap"/>
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-medium" 
+                                           Text="{Binding PdfGenerationStatus}" 
+                                           TextWrapping="Wrap"/>
                                               
-                                    <TextBlock Classes="body-small" 
-                                              Text="{Binding CurrentOperation}" 
-                                              TextWrapping="Wrap"/>
-                                              
-                                    <TextBlock Classes="body-small" 
-                                              Text="{Binding TimeRemaining}" 
-                                              Foreground="{StaticResource SuccessBrush}"
-                                              IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                        
-                        <Button Classes="secondary" 
-                                Content="💾 Save PDF As..." 
-                                Command="{Binding SavePdfAsCommand}"
-                                IsEnabled="{Binding !IsGeneratingPdf}"
-                                HorizontalAlignment="Stretch"/>
-                        
-                        <!-- Loading Indicator -->
-                        <Border Classes="card highlight-primary" 
-                                IsVisible="{Binding IsGeneratingPreview}">
-                            <StackPanel Spacing="12" HorizontalAlignment="Center">
-                                <li:LoadingIndicator Foreground="{StaticResource PrimaryBrush}" 
-                                                   IsActive="{Binding IsGeneratingPreview}" 
-                                                   Mode="ThreeDots" 
-                                                   SpeedRatio="1.2"/>
                                 <TextBlock Classes="body-small" 
-                                          Text="Generating preview..." 
-                                          HorizontalAlignment="Center"/>
+                                           Text="{Binding CurrentOperation}" 
+                                           TextWrapping="Wrap"/>
+                                              
+                                <TextBlock Classes="body-small" 
+                                           Text="{Binding TimeRemaining}" 
+                                           Foreground="{StaticResource SuccessBrush}"
+                                           IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-                    
+                        </StackPanel>
+                    </Border>
+                        
+                    <Button Classes="secondary" 
+                            Content="💾 Save PDF As..." 
+                            Command="{Binding SavePdfAsCommand}"
+                            IsEnabled="{Binding !IsGeneratingPdf}"
+                            HorizontalAlignment="Stretch"/>
+                        
+                    <!-- Loading Indicator -->
+                    <Border Classes="card highlight-primary" 
+                            IsVisible="{Binding IsGeneratingPreview}">
+                        <StackPanel Spacing="12" HorizontalAlignment="Center">
+                            <li:LoadingIndicator Foreground="{StaticResource PrimaryBrush}" 
+                                                 IsActive="{Binding IsGeneratingPreview}" 
+                                                 Mode="ThreeDots" 
+                                                 SpeedRatio="1.2"/>
+                            <TextBlock Classes="body-small" 
+                                       Text="Generating preview..." 
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </ScrollViewer>
+           </StackPanel>
         </Border>
         
         <!-- Modern Preview Panel -->
-        <Border Grid.Column="1" Classes="card">
+        <Border Grid.Column="1" Classes="card" Margin="24,20,24,20">
             <DockPanel>
                 
                 <!-- Preview Header -->
@@ -358,8 +158,8 @@
                                     
                             <Border Classes="card-compact" MinWidth="60">
                                 <TextBlock Classes="body-medium" 
-                                          HorizontalAlignment="Center"
-                                          Text="{Binding PreviewZoom, StringFormat='{}{0}%'}"/>
+                                           HorizontalAlignment="Center"
+                                           Text="{Binding PreviewZoom, StringFormat='{}{0}%'}"/>
                             </Border>
                             
                             <Button Classes="icon" 
@@ -376,9 +176,9 @@
                 
                 <!-- Preview Content -->
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                             VerticalScrollBarVisibility="Auto"
-                             Background="{StaticResource BackgroundSecondaryBrush}" 
-                             Padding="40">
+                              VerticalScrollBarVisibility="Auto"
+                              Background="{StaticResource BackgroundSecondaryBrush}" 
+                              Padding="40">
                     <Panel>
                         
                         <!-- Preview Image -->
@@ -408,15 +208,15 @@
                                 IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}">
                             <StackPanel Spacing="16" HorizontalAlignment="Center">
                                 <TextBlock Text="🖼️" FontSize="64" 
-                                          HorizontalAlignment="Center" 
-                                          Opacity="0.3"/>
+                                           HorizontalAlignment="Center" 
+                                           Opacity="0.3"/>
                                 <TextBlock Classes="heading-small" 
-                                          Text="No preview available" 
-                                          HorizontalAlignment="Center"/>
+                                           Text="No preview available" 
+                                           HorizontalAlignment="Center"/>
                                 <TextBlock Classes="body-medium" 
-                                          Text="Click 'Generate Preview' to create a preview of your cards"
-                                          HorizontalAlignment="Center"
-                                          TextAlignment="Center"/>
+                                           Text="Click 'Generate Preview' to create a preview of your cards"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"/>
                                 <Button Classes="primary" 
                                         Content="Generate Preview"
                                         Command="{Binding GeneratePreviewCommand}"
@@ -428,6 +228,239 @@
                 </ScrollViewer>
                 
             </DockPanel>
+        </Border>
+        
+        
+        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0">
+            <ScrollViewer>
+                <StackPanel Spacing="20">
+                                
+                    <!-- ProxyStudio Branding -->
+                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        <Image Source="/Resources/Proxy Studio Logo.png"
+                               Width="120"
+                               Stretch="UniformToFill"/>
+                        <TextBlock Classes="caption" 
+                                   Text="©PappaPonton 2025" 
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <ScrollViewer>
+                        <StackPanel Spacing="24">
+                    
+                            <!-- Header -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="heading-medium" Text="Print Settings"/>
+                                <TextBlock Classes="body-medium" Text="Configure your PDF generation options"/>
+                            </StackPanel>
+                    
+                            <!-- Page Settings -->
+                            <Border Classes="card-elevated">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Classes="heading-small" Text="Page Layout"/>
+                            
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="caption" Text="PAGE SIZE"/>
+                                            <ComboBox Classes="modern"
+                                                      ItemsSource="{Binding PageSizes}" 
+                                                      SelectedItem="{Binding SelectedPageSize}"/>
+                                        </StackPanel>
+                                
+                                        <CheckBox IsChecked="{Binding IsPortrait}" 
+                                                  Content="Portrait Orientation"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                    
+                            <!-- Layout Settings -->
+                            <Border Classes="card-elevated">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Classes="heading-small" Text="Card Layout"/>
+                            
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="caption" Text="CARD SPACING (PT)"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Slider Grid.Column="0" 
+                                                        Classes="modern"
+                                                        Value="{Binding CardSpacing, Mode=TwoWay}" 
+                                                        Minimum="0" Maximum="50" 
+                                                        VerticalAlignment="Center"/>
+                                                <TextBox Grid.Column="1" 
+                                                         Classes="modern"
+                                                         Text="{Binding CardSpacing, Mode=TwoWay}"
+                                                         Margin="8,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                
+                                        <!-- Layout Info -->
+                                        <Border Classes="card-elevated">
+                                            <StackPanel Spacing="6">
+                                                <TextBlock Classes="body-small" Text="Fixed Layout:"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Classes="body-small" FontWeight="SemiBold" 
+                                                               Text="{Binding IsPortrait, Converter={x:Static converters:BoolToStringConverter.Instance}, ConverterParameter='Portrait:Landscape'}"/>
+                                                    <TextBlock Classes="body-small" Text="orientation"/>
+                                                </StackPanel>
+                                                <TextBlock Classes="body-small" Text="Portrait: 3×3 cards • Landscape: 4×2 cards"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                    
+                            <!-- Print Quality Settings -->
+                            <Border Classes="card-elevated ">
+                                <StackPanel Spacing="16">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="🎯" FontSize="16"/>
+                                        <TextBlock Classes="heading-small" Text="Print Quality"/>
+                                    </StackPanel>
+                            
+                                    <!-- Card Size Info -->
+                                    <Border Classes="card-compact">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Classes="body-medium" 
+                                                       Text="Card Size: Fixed 63mm × 88mm" 
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Classes="body-small" 
+                                                       Text="Professional standard - dimensions never change"/>
+                                        </StackPanel>
+                                    </Border>
+                            
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="caption" Text="PRINT RESOLUTION"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                        
+                                                <ComboBox Grid.Column="0" 
+                                                          Classes="modern"
+                                                          ItemsSource="{Binding CommonPrintDpiOptions}" 
+                                                          SelectedItem="{Binding PrintDpi}"/>
+                                                 
+                                                <TextBox Grid.Column="1" 
+                                                         Classes="modern"
+                                                         Text="{Binding PrintDpi, Mode=TwoWay}"
+                                                         Margin="8,0,0,0"/>
+                                                
+                                                <TextBlock Grid.Column="2" 
+                                                           Classes="body-medium" 
+                                                           Text="DPI" 
+                                                           VerticalAlignment="Center"
+                                                           Margin="8,0,0,0"/>
+                                            </Grid>
+                                        </StackPanel>
+                                
+                                        <CheckBox Content="🛡️ Enforce minimum 300 DPI" 
+                                                  IsChecked="{Binding EnsureMinimumPrintDpi}"/>
+                                
+                                        <!-- File Size Estimate -->
+                                        <Border Classes="card-compact">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Classes="body-small" Text="Estimated file size:"/>
+                                                <TextBlock Grid.Column="1" Classes="body-small" FontWeight="SemiBold"
+                                                           Text="{Binding EstimatedFileSize, StringFormat='~{0:F1} MB'}"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                    
+                            <!-- Cutting Lines Settings -->
+                            <Border Classes="card-elevated">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Classes="heading-small" Text="Cutting Lines"/>
+                            
+                                    <StackPanel Spacing="12">
+                                        <CheckBox Content="Show cutting lines" 
+                                                  IsChecked="{Binding ShowCuttingLines}"/>
+                                         
+                                        <StackPanel Spacing="8" IsEnabled="{Binding ShowCuttingLines}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="caption" Text="COLOR"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="120"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ComboBox Grid.Column="0"
+                                                              Classes="modern"
+                                                              ItemsSource="{Binding PredefinedColors}" 
+                                                              SelectedItem="{Binding CuttingLineColor}"/>
+                                                    <TextBox Grid.Column="1" 
+                                                             Classes="modern"
+                                                             Text="{Binding CuttingLineColor}"
+                                                             Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                    
+                                            <CheckBox Content="Dashed lines" 
+                                                      IsChecked="{Binding IsCuttingLineDashed}"/>
+                                    
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="caption" Text="EXTENSION (PT)"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider Grid.Column="0" 
+                                                            Classes="modern"
+                                                            Value="{Binding CuttingLineExtension, Mode=TwoWay}" 
+                                                            Minimum="0" Maximum="50"/>
+                                                    <TextBox Grid.Column="1" 
+                                                             Classes="modern"
+                                                             Text="{Binding CuttingLineExtension, Mode=TwoWay}"
+                                                             Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                    
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="caption" Text="THICKNESS (PT)"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider Grid.Column="0" 
+                                                            Classes="modern"
+                                                            Value="{Binding CuttingLineThickness, Mode=TwoWay}" 
+                                                            Minimum="0.1" Maximum="5"/>
+                                                    <TextBox Grid.Column="1" 
+                                                             Classes="modern"
+                                                             Text="{Binding CuttingLineThickness, Mode=TwoWay}"
+                                                             Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                    
+                    
+                    
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                                
+                   
+                                
+                </StackPanel>
+            </ScrollViewer>
         </Border>
         
     </Grid>
