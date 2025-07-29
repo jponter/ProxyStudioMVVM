@@ -84,6 +84,7 @@
    
 
     <ItemGroup>
+      <Folder Include="Assets\Previews\" />
       <Folder Include="Data\" />
         
         <AvaloniaResource Include="Themes\*.axaml" />
@@ -91,6 +92,10 @@
         
         
         <Folder Include="Styles\" />
+        
+        
+        
+        <None Remove="Assets\Previews\DarkProfessional.png" />
         
     </ItemGroup>
 
