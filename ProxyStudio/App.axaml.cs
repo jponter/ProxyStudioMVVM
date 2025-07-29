@@ -123,7 +123,7 @@ public partial class App : Application
         services.AddSingleton<IPdfGenerationService, PdfGenerationService>();
         services.AddSingleton<HttpClient>();
         services.AddSingleton<IMpcFillService, MpcFillService>();
-        services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IThemeService,ThemeService>();
         
         // Register ViewModels
         services.AddTransient<MainViewModel>();

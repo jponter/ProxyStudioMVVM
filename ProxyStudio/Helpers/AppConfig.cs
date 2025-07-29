@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Avalonia.Controls;
 using ProxyStudio.Services;
 
@@ -23,6 +24,14 @@ namespace ProxyStudio.Helpers
         public LoggingSettings LoggingSettings { get; set; } = new LoggingSettings();
         
         public ThemeType SelectedTheme { get; set; } = ThemeType.DarkProfessional;
+        
+        public SeasonalTheme SeasonalTheme { get; set; } = SeasonalTheme.None;
+        public bool AutoSeasonalThemes { get; set; } = true;
+        public bool UseSystemAccentColor { get; set; } = false;
+        public bool FollowSystemTheme { get; set; } = false;
+        public bool EnableThemeAnimations { get; set; } = true;
+        public double AnimationSpeed { get; set; } = 1.0;
+        public List<string> CustomThemes { get; set; } = new();
         
         // Backward compatibility - map to new LoggingSettings
         public int? LogLevel 

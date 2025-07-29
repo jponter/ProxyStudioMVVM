@@ -1,0 +1,696 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:li="using:LoadingIndicators.Avalonia"
+        xmlns:views="clr-namespace:ProxyStudio.Views"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        Width="1400"
+        Height="900"
+        Background="#303030"
+        Foreground="Yellow"
+
+        x:Class="ProxyStudio.MainView"
+        xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+        xmlns:behaviors="clr-namespace:ProxyStudio.Behaviors"
+        x:DataType="vm:MainViewModel"
+        Title="ProxyStudio">
+
+    <!-- Revert to original design-time DataContext -->
+    <Design.DataContext>
+        <vm:DesignTimeMainViewModel />
+    </Design.DataContext>
+
+    <Grid>
+        <TabControl>
+            <TabItem Header="Cards">
+                <!-- Card Management Page -->
+                <Grid ShowGridLines="False">
+                    <Grid.ColumnDefinitions>250,*,550</Grid.ColumnDefinitions>
+                    <!-- Update the Card Management Actions section in your MainView.axaml -->
+                    <!-- Replace the existing StackPanel in Grid.Column="0" with this: -->
+
+                    <StackPanel Grid.Column="0" Spacing="10" Margin="0,10,20,0">
+
+                        <Button Content="Add Single Card" HorizontalAlignment="Stretch" />
+
+
+                        <Button Content="📥 Load MPC Fill XML"
+                                HorizontalAlignment="Stretch"
+                                Command="{Binding LoadMpcFillXmlCommand}"
+                                IsEnabled="{Binding !IsLoadingMpcFill}">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="#059669" />
+                                    <Setter Property="Foreground" Value="White" />
+                                    <Setter Property="BorderBrush" Value="#047857" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#047857" />
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#065F46" />
+                                </Style>
+                                <Style Selector="Button:disabled">
+                                    <Setter Property="Background" Value="#9CA3AF" />
+                                    <Setter Property="BorderBrush" Value="#6B7280" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+
+                        <Button Content="Load Test Cards"
+                                HorizontalAlignment="Stretch"
+                                Command="{Binding AddTestCardsRelayCommand}" />
+
+                        <!-- Add the Delete All Cards button -->
+                        <Button Content="🗑️ Delete All Cards"
+                                HorizontalAlignment="Stretch"
+                                Command="{Binding DeleteAllCardsCommand}"
+                                IsEnabled="{Binding !IsBusy}"
+                                ToolTip.Tip="Remove all cards from the collection and clear preview">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="#DC2626" />
+                                    <Setter Property="Foreground" Value="White" />
+                                    <Setter Property="BorderBrush" Value="#B91C1C" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                </Style>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#B91C1C" />
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#991B1B" />
+                                </Style>
+                                <Style Selector="Button:disabled">
+                                    <Setter Property="Background" Value="#9CA3AF" />
+                                    <Setter Property="BorderBrush" Value="#6B7280" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+                        <!-- NEW: MPC Fill Progress Section -->
+                        <Border Background="#F0F9FF" BorderBrush="#3B82F6" BorderThickness="2"
+                                CornerRadius="8" Padding="15" Margin="0,10,0,0"
+                                IsVisible="{Binding ShowMpcFillProgress}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="📥 MPC Fill Import Progress"
+                                           FontWeight="Bold" FontSize="14"
+                                           Foreground="#1E40AF" />
+
+                                <!-- Progress Bar -->
+                                <ProgressBar Value="{Binding MpcFillProgress}"
+                                             Minimum="0" Maximum="100"
+                                             Height="20"
+                                             Background="#E5E7EB"
+                                             Foreground="#3B82F6" />
+
+                                <!-- Progress Text -->
+                                <TextBlock Text="{Binding MpcFillStatus}"
+                                           FontWeight="SemiBold"
+                                           Foreground="#1E40AF"
+                                           TextWrapping="Wrap" />
+
+                                <!-- Current Operation -->
+                                <TextBlock Text="{Binding MpcFillCurrentOperation}"
+                                           FontSize="11"
+                                           Foreground="#6B7280"
+                                           TextWrapping="Wrap" />
+
+                                <!-- Current Card -->
+                                <TextBlock Text="{Binding MpcFillCurrentCard}"
+                                           FontSize="10"
+                                           FontStyle="Italic"
+                                           Foreground="#059669"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding MpcFillCurrentCard, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                <!-- Time Remaining -->
+                                <TextBlock Text="{Binding MpcFillTimeRemaining}"
+                                           FontSize="11"
+                                           FontStyle="Italic"
+                                           Foreground="#059669"
+                                           IsVisible="{Binding MpcFillTimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Loading Indicator (existing) -->
+                        <li:LoadingIndicator Foreground="AliceBlue"
+                                             IsActive="{Binding IsBusy}"
+                                             Mode="ThreeDots"
+                                             SpeedRatio="1.2" />
+
+                        <li:LoadingIndicator Foreground="AliceBlue"
+                                             IsActive="{Binding IsBusy}"
+                                             Mode="ThreeDots"
+                                             SpeedRatio="1.2" />
+                    </StackPanel>
+
+                    <!-- Main Card Grid View -->
+                    <ScrollViewer Grid.Column="1" Margin="0,0,0,0">
+                        <!-- use a List box -->
+                        <ListBox x:Name="CardGrid"
+
+                                 ItemsSource="{Binding Cards}"
+                                 SelectedItem="{Binding SelectedCard, Mode=TwoWay}"
+                                 behaviors:ReorderableListBoxBehavior.IsReorderEnabled="True"
+                                 behaviors:ReorderableListBoxBehavior.AcceptXmlFiles="True"
+                                 DragDrop.AllowDrop="True"
+                                 BorderBrush="Gray" BorderThickness="1"
+                                 Background="Transparent">
+
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="4" Background="Transparent">
+                                        <Label Content="{Binding Name}" FontSize="10" />
+
+                                        <Image Source="{Binding ImageSource}" Stretch="UniformToFill" />
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                                            <!-- <Button Content="&lt;" Width="30" Height="25" /> -->
+                                            <!-- <Button Content="&gt;" Width="30" Height="25" /> -->
+                                            <Button Content="🗑️" Width="30" Height="25"
+                                                    Background="#FF4444" Foreground="White"
+                                                    Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).DeleteCardCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="Delete this card" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
+
+                    <!-- Card Editor Panel -->
+                    <StackPanel Grid.Column="2" Margin="20,0, 0, 0" VerticalAlignment="Top">
+                        <Image Source="/Resources/Proxy Studio Logo.png"
+                               Width="200"
+                               Stretch="UniformToFill"
+                               HorizontalAlignment="Center" />
+                        <Label HorizontalAlignment="Center" Padding="0,0,0,30"> ©PappaPonton 2025</Label>
+                        <Image Source="{Binding SelectedCard.ImageSource}"
+                               Height="480"
+                               Stretch="Uniform" />
+
+                        <CheckBox Content="Enable Bleed"
+                                  IsChecked="{Binding SelectedCard.EnableBleed}"
+                                  Margin="15" />
+
+                        <!-- Add other card editing controls here -->
+                        <TextBox Text="{Binding SelectedCard.Name}"
+                                 IsEnabled="False"
+                                 Watermark="Card Name"
+                                 Margin="15" />
+
+
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Printing Tab -->
+            <TabItem Header="Printing">
+                <views:PrintingView DataContext="{Binding PrintViewModel}" />
+            </TabItem>
+
+            <!-- Replace your current Settings TabItem with this minimal, working version -->
+            <TabItem Header="Settings">
+                <ScrollViewer>
+                    <StackPanel Spacing="15" Margin="20">
+                        <!-- Global Card Settings -->
+                        <Expander Header="Global Card Settings" IsExpanded="True">
+                            <StackPanel Spacing="10" Margin="15">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Global Bleed Enable" Width="150" />
+                                    <CheckBox IsChecked="{Binding GlobalBleedEnabled}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Print Quality Settings -->
+                        <Expander Header="Print Quality Settings" IsExpanded="True">
+                            <StackPanel Spacing="12" Margin="15">
+                                <!-- Card Size Info -->
+                                <Border Background="#E8F4FD" BorderBrush="#4A90E2" BorderThickness="2"
+                                        CornerRadius="6" Padding="12">
+                                    <StackPanel>
+                                        <TextBlock Text="📏 Card Dimensions" FontWeight="Bold" FontSize="13"
+                                                   Foreground="#2C5282" />
+                                        <TextBlock Text="Fixed at exactly 63mm × 88mm (2.48″ × 3.46″)"
+                                                   FontWeight="SemiBold" Foreground="#2C5282" Margin="0,2,0,0" />
+                                        <TextBlock Text="Professional trading card standard - dimensions never change"
+                                                   FontSize="11" Foreground="#4A5568" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Print DPI Setting via PrintViewModel -->
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Print Resolution:" Width="120" VerticalAlignment="Center"
+                                           FontWeight="SemiBold" />
+                                    <ComboBox ItemsSource="{Binding PrintViewModel.CommonPrintDpiOptions}"
+                                              SelectedItem="{Binding PrintViewModel.PrintDpi}"
+                                              Width="80" Height="32" />
+                                    <TextBox Text="{Binding PrintViewModel.PrintDpi, Mode=TwoWay}"
+                                             Width="70" Height="32" Watermark="300" />
+                                    <TextBlock Text="DPI" VerticalAlignment="Center" FontWeight="Bold" />
+                                </StackPanel>
+
+                                <!-- Minimum DPI Enforcement -->
+                                <CheckBox Content="🛡️ Enforce minimum 300 DPI for print quality"
+                                          IsChecked="{Binding PrintViewModel.EnsureMinimumPrintDpi}"
+                                          FontWeight="SemiBold"
+                                          ToolTip.Tip="Prevents accidentally generating low-quality PDFs below 300 DPI" />
+
+                                <!-- Quality Guide -->
+                                <Border Background="#FFFBEB" BorderBrush="#F59E0B" BorderThickness="1"
+                                        CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="🎯 Print Quality Guide" FontWeight="Bold" FontSize="12"
+                                                   Foreground="#92400E" />
+                                        <StackPanel Margin="0,6,0,0" Spacing="4">
+                                            <TextBlock Text="• 150 DPI: Draft quality - For internal use only"
+                                                       FontSize="10" />
+                                            <TextBlock Text="• 300 DPI: Professional printing - Recommended standard"
+                                                       FontSize="10" Foreground="Green" FontWeight="SemiBold" />
+                                            <TextBlock
+                                                Text="• 600 DPI: Ultra-high quality - Large files, slow generation"
+                                                FontSize="10" />
+                                            <TextBlock Text="• 1200 DPI: Maximum quality - Very large files"
+                                                       FontSize="10" />
+                                        </StackPanel>
+
+                                        <TextBlock
+                                            Text="💡 Higher DPI = Better print quality but larger file size and slower generation"
+                                            FontSize="11" FontStyle="Italic" Foreground="#92400E"
+                                            Margin="0,8,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Preview Settings -->
+                        <Expander Header="Preview Settings" IsExpanded="False">
+                            <StackPanel Spacing="10" Margin="15">
+                                <TextBlock
+                                    Text="ℹ️ Preview settings are separate from print settings to maintain UI performance"
+                                    FontSize="12" FontStyle="Italic" Foreground="Gray" />
+
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Preview DPI:" Width="100" VerticalAlignment="Center" />
+                                    <Slider Value="{Binding PrintViewModel.PreviewDpi, Mode=TwoWay}"
+                                            Minimum="72" Maximum="300" Width="150"
+                                            VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding PrintViewModel.PreviewDpi}" Width="40"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="DPI" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Preview Quality:" Width="100" VerticalAlignment="Center" />
+                                    <Slider Value="{Binding PrintViewModel.PreviewQuality, Mode=TwoWay}"
+                                            Minimum="1" Maximum="100" Width="150"
+                                            VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding PrintViewModel.PreviewQuality}" Width="40"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="%" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Current Status Display -->
+                        <Expander Header="Current Print Configuration" IsExpanded="False">
+                            <StackPanel Spacing="8" Margin="15">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Card Size:" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="2.5″ × 3.5″ (FIXED)"
+                                               Foreground="Green" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Print Resolution:"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{Binding PrintViewModel.PrintDpi, StringFormat='{}{0} DPI'}"
+                                               Foreground="Blue" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Preview Resolution:"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1"
+                                               Text="{Binding PrintViewModel.PreviewDpi, StringFormat='{}{0} DPI'}"
+                                               Foreground="Gray" />
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <!-- Add to your Settings TabItem in MainView.axaml -->
+<Expander Header="Theme Settings" IsExpanded="True">
+    <StackPanel Spacing="15" Margin="15">
+        <TextBlock Text="Choose your preferred theme:" FontWeight="SemiBold"/>
+        
+        <ItemsControl ItemsSource="{Binding ThemeSettingsViewModel.AvailableThemes}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="2"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Classes="card" Margin="8">
+                        <StackPanel Spacing="8">
+                            <!-- Theme Preview Image -->
+                            <Border Height="100" CornerRadius="4" 
+                                    Background="LightGray"
+                                    ClipToBounds="True">
+                                <Image Source="{Binding PreviewImagePath}" 
+                                       Stretch="UniformToFill"/>
+                            </Border>
+                            
+                            <!-- Theme Info -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding Name}" 
+                                           FontWeight="Bold" FontSize="14"/>
+                                <TextBlock Text="{Binding Description}" 
+                                           FontSize="12" 
+                                           Foreground="{DynamicResource TextSecondaryColor}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            
+                            <!-- Action Buttons -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Preview" 
+                                        Classes="secondary"
+                                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ThemeSettingsViewModel.PreviewThemeCommand}"
+                                        CommandParameter="{Binding}"/>
+                                        
+                                <Button Content="Apply" 
+                                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ThemeSettingsViewModel.ApplyThemeCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+        <!-- Current Theme Display -->
+        <Border Classes="card">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Current Theme:" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding ThemeSettingsViewModel.SelectedTheme.Name}"
+                           FontSize="16" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ThemeSettingsViewModel.SelectedTheme.Description}"
+                           Foreground="{DynamicResource TextSecondaryColor}"/>
+                           
+                <Button Content="Reset to Saved Theme"
+                        Classes="secondary"
+                        Command="{Binding ThemeSettingsViewModel.ResetToSavedThemeCommand}"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</Expander>
+                        
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Fixed TabItem for Logging Settings - Properly escaped XAML -->
+
+            <TabItem Header="Logging">
+
+                <ScrollViewer>
+                    <StackPanel Spacing="20" Margin="10">
+
+                        <!-- Logging Configuration -->
+                        <Expander Header="Logging Configuration" IsExpanded="True">
+                            <StackPanel Spacing="15" Margin="15">
+                                <!-- Log Level Selection - FIXED -->
+                                <StackPanel Spacing="8">
+                                    <Label Content="Logging Level" FontWeight="SemiBold" />
+                                    <ComboBox SelectedIndex="{Binding LoggingSettingsViewModel.SelectedLogLevel}"
+                                              Width="250" HorizontalAlignment="Left">
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Trace" FontWeight="SemiBold" />
+                                                <TextBlock Text="Very detailed logging (everything)" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Debug" FontWeight="SemiBold" />
+                                                <TextBlock Text="Development debugging information" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Info" FontWeight="SemiBold" />
+                                                <TextBlock Text="General information (recommended)" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Warning" FontWeight="SemiBold" />
+                                                <TextBlock Text="Warning messages only" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Error" FontWeight="SemiBold" />
+                                                <TextBlock Text="Error messages only" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                        <ComboBoxItem>
+                                            <StackPanel>
+                                                <TextBlock Text="Critical" FontWeight="SemiBold" />
+                                                <TextBlock Text="Critical errors only" FontSize="10"
+                                                           Foreground="Gray" />
+                                            </StackPanel>
+                                        </ComboBoxItem>
+                                    </ComboBox>
+                                    <TextBlock Text="Select the minimum level of messages to log"
+                                               FontSize="12" Foreground="Gray" Margin="0,5,0,0" />
+                                </StackPanel>
+
+                                <!-- Log Retention - FIXED -->
+                                <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
+                                <!--     <Label Content="Keep logs for:" Width="120" VerticalAlignment="Center" /> -->
+                                <!--     <NumericUpDown Value="{Binding LoggingSettingsViewModel.LogRetentionDays}" -->
+                                <!--                    Minimum="1" Maximum="365" Width="80" -->
+                                <!--                    ShowButtonSpinner="True" -->
+                                <!--                    FormatString="N0" /> -->
+                                <!--     <TextBlock Text="days" VerticalAlignment="Center" /> -->
+                                <!-- </StackPanel> -->
+                                
+                                <!-- Log Retention - FIXED with proper styling -->
+                                <!-- Log Retention - Dark Theme Compatible -->
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Keep logs for:" Width="120" VerticalAlignment="Center" />
+                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.LogRetentionDays, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="365" Width="100" Height="32"
+                                                   ShowButtonSpinner="True"
+                                                   FormatString="0"
+                                                   Increment="1"
+                                                   Padding="8,4"
+                                                   Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                   BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   BorderThickness="1" />
+                                    <TextBlock Text="days" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Label Content="Max file size:" Width="120" VerticalAlignment="Center" />
+                                    <NumericUpDown Value="{Binding LoggingSettingsViewModel.MaxLogFileSizeMB, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="100" Width="100" Height="32"
+                                                   ShowButtonSpinner="True"
+                                                   FormatString="0"
+                                                   Increment="1"
+                                                   Padding="8,4"
+                                                   Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                   BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   BorderThickness="1" />
+                                    <TextBlock Text="MB" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Options -->
+                                <StackPanel Spacing="8">
+                                    <CheckBox Content="Enable performance logging"
+                                              IsChecked="{Binding LoggingSettingsViewModel.EnablePerformanceLogging}" />
+                                    <CheckBox Content="Show debug output in console (development)"
+                                              IsChecked="{Binding LoggingSettingsViewModel.EnableConsoleOutput}" />
+                                    <CheckBox Content="Include stack traces in error logs"
+                                              IsChecked="{Binding LoggingSettingsViewModel.IncludeStackTraces}" />
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+                                    <Button Content="Save Settings"
+                                            Command="{Binding LoggingSettingsViewModel.SaveSettingsCommand}"
+                                            Background="Green" Foreground="White" />
+                                    <Button Content="Test Logging"
+                                            Command="{Binding LoggingSettingsViewModel.TestLoggingCommand}"
+                                            Background="Blue" Foreground="White" />
+                                    <Button Content="Refresh Status"
+                                            Command="{Binding LoggingSettingsViewModel.RefreshStatusCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Current Log Status -->
+                        <Expander Header="Current Log Status" IsExpanded="True">
+                            <StackPanel Spacing="10" Margin="15">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Current Log Level:"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding LoggingSettingsViewModel.CurrentLogLevelName}"
+                                               Foreground="Blue" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Log File Size:"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{Binding LoggingSettingsViewModel.CurrentLogFileSizeFormatted}"
+                                               Foreground="DarkGreen" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Log Directory:"
+                                               FontWeight="SemiBold" />
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                        <TextBlock Text="{Binding LoggingSettingsViewModel.CurrentLogDirectory}"
+                                                   Foreground="Gray" TextWrapping="Wrap" MaxWidth="400" />
+                                        <Button Content="Open Folder"
+                                                Command="{Binding LoggingSettingsViewModel.OpenLogDirectoryCommand}"
+                                                Height="25" Padding="8,2" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Recent Errors:"
+                                               FontWeight="SemiBold" />
+                                    <!-- <TextBlock Grid.Row="3" Grid.Column="1"  -->
+                                    <!--            Text="{Binding LoggingSettingsViewModel.RecentErrors.Count, StringFormat='{0} errors logged'}"  -->
+                                    <!--            Foreground="Red"/> -->
+                                </Grid>
+
+                                <!-- Log Management Actions -->
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,15,0,0">
+                                    <Button Content="Clear Old Logs"
+                                            Command="{Binding LoggingSettingsViewModel.ClearOldLogsCommand}"
+                                            Background="Orange" Foreground="White" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Recent Errors Display -->
+                        <Expander Header="Recent Errors" IsExpanded="False">
+                            <StackPanel Spacing="10" Margin="15">
+                                <TextBlock Text="Recent errors and warnings from the application:"
+                                           FontSize="12" Foreground="Gray" />
+
+                                <ScrollViewer Height="300" BorderBrush="Gray" BorderThickness="1">
+                                    <ItemsControl ItemsSource="{Binding LoggingSettingsViewModel.RecentErrors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="2" Padding="8" CornerRadius="4"
+                                                        Background="LightGray">
+                                                    <StackPanel Spacing="4">
+                                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                                            <TextBlock Text="{Binding Severity}"
+                                                                       FontWeight="Bold" Foreground="DarkBlue" />
+                                                            <TextBlock
+                                                                Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                                                                FontSize="11" Foreground="Gray" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   FontWeight="SemiBold" Foreground="Black" />
+                                                        <TextBlock Text="{Binding Message}"
+                                                                   TextWrapping="Wrap" Foreground="DarkGray"
+                                                                   MaxWidth="600" />
+                                                        <TextBlock Text="{Binding OperationContext}"
+                                                                   FontSize="10" FontStyle="Italic"
+                                                                   Foreground="Gray"
+                                                                   IsVisible="{Binding OperationContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <TextBlock Text="No recent errors found."
+                                           HorizontalAlignment="Center"
+                                           FontStyle="Italic" Foreground="Green" />
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Help and Tips -->
+                        <Expander Header="Logging Help and Tips" IsExpanded="False">
+                            <StackPanel Spacing="12" Margin="15">
+                                <TextBlock FontWeight="SemiBold" Text="Log Level Guidelines:" />
+                                <StackPanel Spacing="6" Margin="10,0,0,0">
+                                    <TextBlock Text="• Trace: Very detailed - use only for deep debugging" />
+                                    <TextBlock Text="• Debug: Development information - good for troubleshooting" />
+                                    <TextBlock Text="• Info: General operation info - recommended for normal use" />
+                                    <TextBlock Text="• Warning: Only warnings and errors - minimal logging" />
+                                    <TextBlock Text="• Error: Only errors - use when disk space is limited" />
+                                    <TextBlock Text="• Critical: Only critical failures - emergency use only" />
+                                </StackPanel>
+
+                                <TextBlock FontWeight="SemiBold" Text="Performance Tips:" Margin="0,15,0,0" />
+                                <StackPanel Spacing="6" Margin="10,0,0,0">
+                                    <TextBlock
+                                        Text="• Lower log levels improve performance but provide less detail" />
+                                    <TextBlock
+                                        Text="• Performance logging adds overhead but helps identify bottlenecks" />
+                                    <TextBlock Text="• Console output can slow down the application" />
+                                    <TextBlock Text="• Regular log cleanup prevents disk space issues" />
+                                </StackPanel>
+
+                                <TextBlock FontWeight="SemiBold" Text="Troubleshooting:" Margin="0,15,0,0" />
+                                <StackPanel Spacing="6" Margin="10,0,0,0">
+                                    <TextBlock Text="• Set to Debug level when reporting bugs" />
+                                    <TextBlock Text="• Check Recent Errors for quick issue identification" />
+                                    <TextBlock Text="• Log files contain full stack traces for detailed analysis" />
+                                    <TextBlock Text="• Use Test Logging to verify configuration changes" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+
+
+                </ScrollViewer>
+
+            </TabItem>
+
+
+        </TabControl>
+    </Grid>
+</Window>

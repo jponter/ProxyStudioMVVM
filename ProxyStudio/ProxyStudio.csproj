@@ -42,6 +42,7 @@
         <DependentUpon>MainWindow.axaml</DependentUpon>
         <SubType>Code</SubType>
       </Compile>
+      <Compile Remove="ViewModels\ThemeEditorViewModel.cs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -62,14 +63,31 @@
         <DependentUpon>App.axaml</DependentUpon>
         <SubType>Code</SubType>
       </None>
+      <AvaloniaXaml Remove="Backups\MainView.axaml" />
+      <None Include="Backups\MainView.axaml" />
+      <Compile Remove="Backups\MainView.axaml.backup.cs" />
+      <None Include="Backups\MainView.axaml.backup.cs">
+        <DependentUpon>MainView.axaml.backup</DependentUpon>
+        <SubType>Code</SubType>
+      </None>
+      <AvaloniaXaml Remove="Backups\PrintingView.axaml" />
+      <None Include="Backups\PrintingView.axaml" />
+      <Compile Remove="Backups\PrintingView.axaml.cs" />
+      <None Include="Backups\PrintingView.axaml.cs">
+        <DependentUpon>PrintingView.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </None>
     </ItemGroup>
 
    
 
     <ItemGroup>
       <Folder Include="Data\" />
-        <AvaloniaResource Include="Themes\DarkProfessional.axaml" />
+        
         <AvaloniaResource Include="Themes\*.axaml" />
+        
+        <AvaloniaResource Include="Styles\ModernDesignSystem.axaml" />
+        
     </ItemGroup>
 
     <ItemGroup>

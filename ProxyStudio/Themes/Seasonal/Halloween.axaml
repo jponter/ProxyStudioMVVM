@@ -1,0 +1,43 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  
+    <Styles.Resources>
+        <!-- Halloween Colors -->
+        <Color x:Key="HalloweenOrange">#FF4500</Color>
+        <Color x:Key="HalloweenPurple">#8A2BE2</Color>
+        <Color x:Key="HalloweenBlack">#000000</Color>
+        <Color x:Key="HalloweenGreen">#32CD32</Color>
+    
+        <!-- Spooky Gradient -->
+        <LinearGradientBrush x:Key="SpookyGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{StaticResource HalloweenOrange}" Offset="0"/>
+            <GradientStop Color="{StaticResource HalloweenPurple}" Offset="1"/>
+        </LinearGradientBrush>
+    
+        <!-- Glowing Effect -->
+        <Color x:Key="SpookyGlow">#FF4500</Color>
+    </Styles.Resources>
+
+    <!-- Spooky Buttons -->
+    <Style Selector="Button.halloween">
+        <Setter Property="Background" Value="{StaticResource SpookyGradient}"/>
+        <Setter Property="Foreground" Value="{StaticResource HalloweenBlack}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource HalloweenGreen}"/>
+        <Setter Property="Effect">
+            <DropShadowEffect Color="{StaticResource SpookyGlow}" 
+                              BlurRadius="12" 
+                              />
+        </Setter>
+    </Style>
+
+    <!-- Eerie Glow for Text -->
+    <Style Selector="TextBlock.spooky">
+        <Setter Property="Foreground" Value="{StaticResource HalloweenGreen}"/>
+        <Setter Property="Effect">
+            <DropShadowEffect Color="{StaticResource HalloweenGreen}" 
+                              BlurRadius="6" 
+                              />
+        </Setter>
+    </Style>
+
+</Styles>

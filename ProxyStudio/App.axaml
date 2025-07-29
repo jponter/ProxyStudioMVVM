@@ -9,6 +9,8 @@
         <FluentTheme />
         
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <!-- Add your modern design system here -->
+        <StyleInclude Source="avares://ProxyStudio/Styles/ModernDesignSystem.axaml"/>
         <!-- Test styles directly here first -->
         <!-- Then your theme -->
         <!-- <StyleInclude Source="avares://ProxyStudio/Themes/Common/ResponsiveClasses.axaml"/> -->
@@ -20,6 +22,7 @@
                  <ResourceDictionary>
                      <ResourceDictionary.MergedDictionaries>
                          <ResourceInclude Source="avares://LoadingIndicators.Avalonia/LoadingIndicators.axaml" />
+                        
                      </ResourceDictionary.MergedDictionaries>
                  </ResourceDictionary>
              </Application.Resources>

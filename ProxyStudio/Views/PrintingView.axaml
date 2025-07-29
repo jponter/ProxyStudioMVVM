@@ -4,465 +4,431 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:li="using:LoadingIndicators.Avalonia"
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="1000"
+             xmlns:converters="clr-namespace:ProxyStudio.Converters"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="ProxyStudio.Views.PrintingView"
              x:DataType="vm:PrintViewModel">
     
-    <Grid ShowGridLines="False">
-        <Grid.ColumnDefinitions>350,*</Grid.ColumnDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
         
-        <!-- PDF Generation Settings -->
-        <ScrollViewer Grid.Column="0">
-            <StackPanel Spacing="10" Margin="10">
-                <TextBlock Text="PDF Generation Settings" FontSize="16" FontWeight="Bold" />
-                
-                <!-- Page Settings -->
-                <Expander Header="Page Settings" IsExpanded="True">
-                    <StackPanel Spacing="8" Margin="10">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Page Size:" Width="80"/>
-                            <ComboBox ItemsSource="{Binding PageSizes}" 
-                                      SelectedItem="{Binding SelectedPageSize}" 
-                                      Width="120"/>
-                        </StackPanel>
-                        
-                        <CheckBox Content="Portrait Orientation" 
-                                  IsChecked="{Binding IsPortrait}"/>
+        <!-- Modern Settings Panel -->
+        <Border Grid.Column="0" Classes="sidebar" Margin="0,0,24,0">
+            
+            <ScrollViewer>
+                <StackPanel Spacing="24">
+                    
+                    <!-- Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading-medium" Text="Print Settings"/>
+                        <TextBlock Classes="body-medium" Text="Configure your PDF generation options"/>
                     </StackPanel>
-                </Expander>
-                
-                <!-- Layout Settings -->
-                <Expander Header="Layout Settings" IsExpanded="True">
-                    <StackPanel Spacing="8" Margin="10">
-                        <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
-                        <!--     <Label Content="Cards per Row:" Width="100"/> -->
-                        <!--     <TextBox Text="{Binding CardsPerRow, Mode=TwoWay}"  -->
-                        <!--              Width="80"  -->
-                        <!--              Watermark="1-10"/> -->
-                        <!--     <TextBlock Text="{Binding CardsPerRow}" Foreground="Yellow" Width="30"/> -->
-                        <!-- </StackPanel> -->
-                        <!-- -->
-                        <!-- <StackPanel Orientation="Horizontal" Spacing="10"> -->
-                        <!--     <Label Content="Cards per Column:" Width="100"/> -->
-                        <!--     <TextBox Text="{Binding CardsPerColumn, Mode=TwoWay}"  -->
-                        <!--              Width="80"  -->
-                        <!--              Watermark="1-10"/> -->
-                        <!--     <TextBlock Text="{Binding CardsPerColumn}" Foreground="Yellow" Width="30"/> -->
-                        <!-- </StackPanel> -->
-                        
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Card Spacing:" Width="100"/>
-                            <TextBox Text="{Binding CardSpacing, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="0-50"/>
-                            <TextBlock Text="{Binding CardSpacing}" Foreground="Yellow" Width="30"/>
+                    
+                    <!-- Page Settings -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Page Layout"/>
+                            
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="PAGE SIZE"/>
+                                    <ComboBox Classes="modern"
+                                              ItemsSource="{Binding PageSizes}" 
+                                              SelectedItem="{Binding SelectedPageSize}"/>
+                                </StackPanel>
+                                
+                                <CheckBox IsChecked="{Binding IsPortrait}" 
+                                         Content="Portrait Orientation"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
-                </Expander>
-                
-                <!-- Cutting Lines Settings -->
-                <Expander Header="Cutting Lines" IsExpanded="True">
-                    <StackPanel Spacing="8" Margin="10">
-                        <CheckBox Content="Show Cutting Lines" 
-                                  IsChecked="{Binding ShowCuttingLines}"/>
-                        
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Color:" Width="60"/>
-                            <ComboBox ItemsSource="{Binding PredefinedColors}" 
-                                      SelectedItem="{Binding CuttingLineColor}" 
-                                      Width="100"/>
-                            <TextBox Text="{Binding CuttingLineColor}" 
-                                     Width="80" Watermark="#000000"/>
+                    </Border>
+                    
+                    <!-- Layout Settings -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Card Layout"/>
+                            
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="CARD SPACING (PT)"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="60"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Slider Grid.Column="0" 
+                                               Classes="modern"
+                                               Value="{Binding CardSpacing, Mode=TwoWay}" 
+                                               Minimum="0" Maximum="50" 
+                                               VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" 
+                                                Classes="modern"
+                                                Text="{Binding CardSpacing, Mode=TwoWay}"
+                                                Margin="8,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                                
+                                <!-- Layout Info -->
+                                <Border Classes="card-compact highlight-primary">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="body-small" Text="Fixed Layout:"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Classes="body-small" FontWeight="SemiBold" 
+                                                      Text="{Binding IsPortrait, Converter={x:Static converters:BoolToStringConverter.Instance}, ConverterParameter='Portrait:Landscape'}"/>
+                                            <TextBlock Classes="body-small" Text="orientation"/>
+                                        </StackPanel>
+                                        <TextBlock Classes="body-small" Text="Portrait: 3×3 cards • Landscape: 4×2 cards"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </StackPanel>
-                        
-                        <CheckBox Content="Dashed Lines" 
-                                  IsChecked="{Binding IsCuttingLineDashed}"/>
-                        
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Extension:" Width="80"/>
-                            <TextBox Text="{Binding CuttingLineExtension, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="0-50"/>
-                            <TextBlock Text="{Binding CuttingLineExtension}" Foreground="Yellow" Width="30"/>
+                    </Border>
+                    
+                    <!-- Print Quality Settings -->
+                    <Border Classes="card-elevated highlight-primary">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🎯" FontSize="16"/>
+                                <TextBlock Classes="heading-small" Text="Print Quality"/>
+                            </StackPanel>
+                            
+                            <!-- Card Size Info -->
+                            <Border Classes="card-compact">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="body-medium" 
+                                              Text="Card Size: Fixed 63mm × 88mm" 
+                                              FontWeight="SemiBold"/>
+                                    <TextBlock Classes="body-small" 
+                                              Text="Professional standard - dimensions never change"/>
+                                </StackPanel>
+                            </Border>
+                            
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="PRINT RESOLUTION"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ComboBox Grid.Column="0" 
+                                                 Classes="modern"
+                                                 ItemsSource="{Binding CommonPrintDpiOptions}" 
+                                                 SelectedItem="{Binding PrintDpi}"/>
+                                                 
+                                        <TextBox Grid.Column="1" 
+                                                Classes="modern"
+                                                Text="{Binding PrintDpi, Mode=TwoWay}"
+                                                Margin="8,0,0,0"/>
+                                                
+                                        <TextBlock Grid.Column="2" 
+                                                  Classes="body-medium" 
+                                                  Text="DPI" 
+                                                  VerticalAlignment="Center"
+                                                  Margin="8,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                                
+                                <CheckBox Content="🛡️ Enforce minimum 300 DPI" 
+                                         IsChecked="{Binding EnsureMinimumPrintDpi}"/>
+                                
+                                <!-- File Size Estimate -->
+                                <Border Classes="card-compact">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Classes="body-small" Text="Estimated file size:"/>
+                                        <TextBlock Grid.Column="1" Classes="body-small" FontWeight="SemiBold"
+                                                  Text="{Binding EstimatedFileSize, StringFormat='~{0:F1} MB'}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
                         </StackPanel>
+                    </Border>
+                    
+                    <!-- Cutting Lines Settings -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Cutting Lines"/>
+                            
+                            <StackPanel Spacing="12">
+                                <CheckBox Content="Show cutting lines" 
+                                         IsChecked="{Binding ShowCuttingLines}"/>
+                                         
+                                <StackPanel Spacing="8" IsEnabled="{Binding ShowCuttingLines}">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="caption" Text="COLOR"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                     Classes="modern"
+                                                     ItemsSource="{Binding PredefinedColors}" 
+                                                     SelectedItem="{Binding CuttingLineColor}"/>
+                                            <TextBox Grid.Column="1" 
+                                                    Classes="modern"
+                                                    Text="{Binding CuttingLineColor}"
+                                                    Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    
+                                    <CheckBox Content="Dashed lines" 
+                                             IsChecked="{Binding IsCuttingLineDashed}"/>
+                                    
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="caption" Text="EXTENSION (PT)"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="60"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Slider Grid.Column="0" 
+                                                   Classes="modern"
+                                                   Value="{Binding CuttingLineExtension, Mode=TwoWay}" 
+                                                   Minimum="0" Maximum="50"/>
+                                            <TextBox Grid.Column="1" 
+                                                    Classes="modern"
+                                                    Text="{Binding CuttingLineExtension, Mode=TwoWay}"
+                                                    Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="caption" Text="THICKNESS (PT)"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="60"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Slider Grid.Column="0" 
+                                                   Classes="modern"
+                                                   Value="{Binding CuttingLineThickness, Mode=TwoWay}" 
+                                                   Minimum="0.1" Maximum="5"/>
+                                            <TextBox Grid.Column="1" 
+                                                    Classes="modern"
+                                                    Text="{Binding CuttingLineThickness, Mode=TwoWay}"
+                                                    Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Action Buttons -->
+                    <StackPanel Spacing="12">
+                        <Button Classes="secondary" 
+                                Content="🔍 Generate Preview" 
+                                Command="{Binding GeneratePreviewCommand}"
+                                IsEnabled="{Binding !IsGeneratingPreview}"
+                                HorizontalAlignment="Stretch"/>
                         
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Thickness:" Width="80"/>
-                            <TextBox Text="{Binding CuttingLineThickness, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="0.1-5"/>
-                            <TextBlock Text="{Binding CuttingLineThickness}" Foreground="Yellow" Width="30"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Expander>
-                
-                <!-- Print Quality Settings - Insert this BEFORE Preview Settings -->
-                <Expander Header="Print Quality Settings" IsExpanded="True">
-                    <StackPanel Spacing="8" Margin="10">
-                        <TextBlock Text="Card Size: Fixed 63mm × 88mm (Professional Standard)" 
-                                   FontWeight="SemiBold" Foreground="DarkBlue" FontSize="12"/>
-        
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Print DPI:" Width="80"/>
-                            <ComboBox ItemsSource="{Binding CommonPrintDpiOptions}" 
-                                      SelectedItem="{Binding PrintDpi}" 
-                                      Width="80"/>
-                            <TextBox Text="{Binding PrintDpi, Mode=TwoWay}" 
-                                     Width="60" 
-                                     Watermark="300"/>
-                            <TextBlock Text="DPI" VerticalAlignment="Center" FontWeight="Bold"/>
-                        </StackPanel>
-        
-                        <CheckBox Content="Enforce minimum 300 DPI" 
-                                  IsChecked="{Binding EnsureMinimumPrintDpi}"
-                                  ToolTip.Tip="Prevents accidentally generating low-quality PDFs below 300 DPI"/>
-        
-                        <Border Background="LightYellow" BorderBrush="Orange" BorderThickness="1" 
-                                CornerRadius="4" Padding="8" Margin="0,5,0,0">
-                            <StackPanel>
-                                <TextBlock Text="Print Quality Guide:" FontWeight="Bold" FontSize="11"/>
-                                <TextBlock Text="• 300 DPI: Professional printing quality" FontSize="10"/>
-                                <TextBlock Text="• 600 DPI: Ultra-high quality (large files)" FontSize="10"/>
-                                <TextBlock Text="• 150 DPI: Draft quality only" FontSize="10"/>
-                                <TextBlock Text="Card Size: Fixed 63mm × 88mm (Professional Standard)″" 
-                                           FontSize="10" FontWeight="SemiBold" Foreground="DarkBlue"/>
+                        <!-- PDF Generation Button -->
+                        <Button Command="{Binding GeneratePdfCommand}"
+                                IsEnabled="{Binding !IsGeneratingPdf}"
+                                Classes="success"
+                                HorizontalAlignment="Stretch"
+                                Height="48"
+                                FontSize="16">
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock Text="🖨️" FontSize="20"/>
+                                <StackPanel>
+                                    <TextBlock Text="Generate PDF" FontWeight="SemiBold"/>
+                                    <TextBlock FontSize="12" Opacity="0.8"
+                                              Text="{Binding PrintDpi, StringFormat='{}{0} DPI Quality'}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                        
+                        <!-- Progress Section -->
+                        <Border Classes="card highlight-success"
+                                IsVisible="{Binding ShowProgressDetails}">
+                            <StackPanel Spacing="16">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="📊" FontSize="16"/>
+                                    <TextBlock Classes="heading-small" Text="Generation Progress"/>
+                                </StackPanel>
+                                
+                                <!-- Modern Progress Bar -->
+                                <ProgressBar Classes="modern-thick"
+                                            Value="{Binding PdfGenerationProgress}" 
+                                            Minimum="0" Maximum="100"/>
+                                
+                                <StackPanel Spacing="8">
+                                    <TextBlock Classes="body-medium" 
+                                              Text="{Binding PdfGenerationStatus}" 
+                                              TextWrapping="Wrap"/>
+                                              
+                                    <TextBlock Classes="body-small" 
+                                              Text="{Binding CurrentOperation}" 
+                                              TextWrapping="Wrap"/>
+                                              
+                                    <TextBlock Classes="body-small" 
+                                              Text="{Binding TimeRemaining}" 
+                                              Foreground="{StaticResource SuccessBrush}"
+                                              IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
-                        </StackPanel>
-                        </Expander>
-                
-                <!-- Preview Settings -->
-                <Expander Header="Preview Settings" IsExpanded="True">
-                    <StackPanel Spacing="8" Margin="10">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Preview DPI:" Width="80"/>
-                            <TextBox Text="{Binding PreviewDpi, Mode=TwoWay}" 
-                                     Width="80" 
-                                     Watermark="72-300"/>
-                            <TextBlock Text="{Binding PreviewDpi}" Foreground="Yellow" Width="30"/>
-                        </StackPanel>
                         
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Label Content="Quality:" Width="80"/>
-                            <Slider Value="{Binding PreviewQuality, Mode=TwoWay}" 
-                                    Minimum="1" Maximum="100" Width="120"/>
-                            <TextBlock Text="{Binding PreviewQuality}" Width="30"/>
-                        </StackPanel>
+                        <Button Classes="secondary" 
+                                Content="💾 Save PDF As..." 
+                                Command="{Binding SavePdfAsCommand}"
+                                IsEnabled="{Binding !IsGeneratingPdf}"
+                                HorizontalAlignment="Stretch"/>
+                        
+                        <!-- Loading Indicator -->
+                        <Border Classes="card highlight-primary" 
+                                IsVisible="{Binding IsGeneratingPreview}">
+                            <StackPanel Spacing="12" HorizontalAlignment="Center">
+                                <li:LoadingIndicator Foreground="{StaticResource PrimaryBrush}" 
+                                                   IsActive="{Binding IsGeneratingPreview}" 
+                                                   Mode="ThreeDots" 
+                                                   SpeedRatio="1.2"/>
+                                <TextBlock Classes="body-small" 
+                                          Text="Generating preview..." 
+                                          HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </Expander>
-                
-                <!-- Action Buttons -->
-<StackPanel Spacing="10" Margin="0,20,0,0">
-    <Button Content="Generate Preview" 
-            Command="{Binding GeneratePreviewCommand}"
-            IsEnabled="{Binding !IsGeneratingPreview}"
-            HorizontalAlignment="Stretch"/>
-    
-    <!-- PDF Generation Button with enhanced styling -->
-    <Button Command="{Binding GeneratePdfCommand}"
-            IsEnabled="{Binding !IsGeneratingPdf}"
-            HorizontalAlignment="Stretch"
-            Height="40">
-        <Button.Styles>
-            <Style Selector="Button">
-                <Setter Property="Background" Value="#22C55E"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="BorderBrush" Value="#16A34A"/>
-                <Setter Property="BorderThickness" Value="2"/>
-            </Style>
-            <Style Selector="Button:pointerover">
-                <Setter Property="Background" Value="#16A34A"/>
-            </Style>
-            <Style Selector="Button:pressed">
-                <Setter Property="Background" Value="#15803D"/>
-            </Style>
-            <Style Selector="Button:disabled">
-                <Setter Property="Background" Value="#9CA3AF"/>
-                <Setter Property="BorderBrush" Value="#6B7280"/>
-            </Style>
-        </Button.Styles>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
         
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="🖨️" FontSize="16" VerticalAlignment="Center"/>
-            <TextBlock VerticalAlignment="Center">
-                <TextBlock.Text>
-                    <MultiBinding StringFormat="Generate PDF ({0} DPI)">
-                        <Binding Path="PrintDpi"/>
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
-        </StackPanel>
-    </Button>
-    
-    <!-- Progress Section - Only visible during PDF generation -->
-    <Border Background="#F0F9FF" BorderBrush="#3B82F6" BorderThickness="2" 
-            CornerRadius="8" Padding="15" Margin="0,10,0,0"
-            IsVisible="{Binding ShowProgressDetails}">
-        <StackPanel Spacing="10">
-            <TextBlock Text="📊 PDF Generation Progress" 
-                       FontWeight="Bold" FontSize="14" 
-                       Foreground="#1E40AF"/>
-            
-            <!-- Progress Bar -->
-            <ProgressBar Value="{Binding PdfGenerationProgress}" 
-                         Minimum="0" Maximum="100" 
-                         Height="20" 
-                         Background="#E5E7EB"
-                         Foreground="#3B82F6"/>
-            
-            <!-- Progress Text -->
-            <TextBlock Text="{Binding PdfGenerationStatus}" 
-                       FontWeight="SemiBold" 
-                       Foreground="#1E40AF"
-                       TextWrapping="Wrap"/>
-            
-            <!-- Current Operation -->
-            <TextBlock Text="{Binding CurrentOperation}" 
-                       FontSize="11" 
-                       Foreground="#6B7280"
-                       TextWrapping="Wrap"/>
-            
-            <!-- Time Remaining -->
-            <TextBlock Text="{Binding TimeRemaining}" 
-                       FontSize="11" 
-                       FontStyle="Italic" 
-                       Foreground="#059669"
-                       IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            
-            <!-- Cancel Button (for future enhancement) -->
-            <Button Content="Cancel Generation" 
-                    Command="{Binding CancelPdfGenerationCommand}"
-                    IsVisible="False"
-                    Background="#EF4444" 
-                    Foreground="White"
-                    Width="150" 
-                    HorizontalAlignment="Center"
-                    Margin="0,10,0,0"/>
-        </StackPanel>
-    </Border>
-    
-    <Button Content="Save PDF As..." 
-            Command="{Binding SavePdfAsCommand}"
-            IsEnabled="{Binding !IsGeneratingPdf}"
-            HorizontalAlignment="Stretch"/>
-    
-    <!-- Loading Indicator for Preview -->
-    <li:LoadingIndicator Foreground="AliceBlue" 
-                        IsActive="{Binding IsGeneratingPreview}" 
-                        Mode="ThreeDots" SpeedRatio="1.2" />
-    
-    <!-- PDF Generation Status Summary -->
-    <Border Background="#F9FAFB" BorderBrush="#D1D5DB" BorderThickness="1" 
-            CornerRadius="6" Padding="12" Margin="0,15,0,0"
-            IsVisible="{Binding !ShowProgressDetails}">
-        <StackPanel Spacing="6">
-            <TextBlock Text="📋 Generation Summary" FontWeight="SemiBold" 
-                       Foreground="#374151" FontSize="12"/>
-            
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+        <!-- Modern Preview Panel -->
+        <Border Grid.Column="1" Classes="card">
+            <DockPanel>
                 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Print Quality:" 
-                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" 
-                           Text="{Binding PrintDpi, StringFormat='{}{0} DPI'}" 
-                           FontSize="11" Foreground="#059669"/>
-                
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Card Size:" 
-                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="Card Size: Fixed 63mm × 88mm (Professional Standard)" 
-                           FontSize="11" Foreground="#059669"/>
-                
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Est. File Size:" 
-                           FontSize="11" Margin="0,0,10,0" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" FontSize="11" Foreground="#6B7280">
-                    <TextBlock.Text>
-                        <MultiBinding StringFormat="~{0:F1} MB for {1} cards">
-                            <Binding Path="EstimatedFileSize"/>
-                            <Binding Path="CardCount"/>
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
-            </Grid>
-        </StackPanel>
-    </Border>
-</StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-        
-        <!-- PDF Preview -->
-        <DockPanel Grid.Column="1" Background="LightGray">
-            <!-- Preview Controls at Top -->
-            <Border DockPanel.Dock="Top" Background="White" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>Auto,*,Auto</Grid.ColumnDefinitions>
-                    
-                    <!-- Page Navigation (Left) -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Button Command="{Binding PreviousPageCommand}" 
-                                Width="70" Height="30" Margin="0,0,10,0">
-                            <Button.Styles>
-                                <Style Selector="Button">
-                                    <Setter Property="Background" Value="LightBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Style>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="Background" Value="SkyBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                                <Style Selector="Button:pressed">
-                                    <Setter Property="Background" Value="DeepSkyBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                            </Button.Styles>
-                            <TextBlock Text="◀ Prev" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Button>
-                        
-                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="Black" FontWeight="SemiBold">
-                            <Run Text="Page "/>
-                            <Run Text="{Binding CurrentPreviewPage}"/>
-                            <Run Text=" of "/>
-                            <Run Text="{Binding TotalPreviewPages}"/>
-                        </TextBlock>
-                        
-                        <Button Command="{Binding NextPageCommand}"
-                                Width="70" Height="30" Margin="10,0,0,0">
-                            <Button.Styles>
-                                <Style Selector="Button">
-                                    <Setter Property="Background" Value="LightBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                    <Setter Property="BorderBrush" Value="DarkBlue"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Style>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="Background" Value="SkyBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                                <Style Selector="Button:pressed">
-                                    <Setter Property="Background" Value="DeepSkyBlue"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                            </Button.Styles>
-                            <TextBlock Text="Next ▶" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Button>
-                    </StackPanel>
-                    
-                    <!-- Title (Center) -->
-                    <TextBlock Grid.Column="1" Text="PDF Preview"
-                              FontSize="16" FontWeight="Bold" Foreground="Black"
-                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    
-                    <!-- Zoom Controls (Right) -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Command="{Binding ZoomOutCommand}" 
-                                Width="35" Height="30" Margin="0,0,5,0">
-                            <Button.Styles>
-                                <Style Selector="Button">
-                                    <Setter Property="Background" Value="LightGreen"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Style>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="Background" Value="LimeGreen"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                                <Style Selector="Button:pressed">
-                                    <Setter Property="Background" Value="Green"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Style>
-                            </Button.Styles>
-                            <TextBlock Text="−" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" FontWeight="Bold"/>
-                        </Button>
-                        
-                        <TextBlock VerticalAlignment="Center" MinWidth="50" TextAlignment="Center" 
-                                   Foreground="Black" FontWeight="SemiBold">
-                            <Run Text="{Binding PreviewZoom}"/>
-                            <Run Text="%"/>
-                        </TextBlock>
-                        
-                        <Button Command="{Binding ZoomInCommand}" 
-                                Width="35" Height="30" Margin="5,0,5,0">
-                            <Button.Styles>
-                                <Style Selector="Button">
-                                    <Setter Property="Background" Value="LightGreen"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Style>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="Background" Value="LimeGreen"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                                <Style Selector="Button:pressed">
-                                    <Setter Property="Background" Value="Green"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Style>
-                            </Button.Styles>
-                            <TextBlock Text="+" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" FontWeight="Bold"/>
-                        </Button>
-                        
-                        <Button Command="{Binding ResetZoomCommand}" 
-                                Width="50" Height="30" Margin="5,0,0,0">
-                            <Button.Styles>
-                                <Style Selector="Button">
-                                    <Setter Property="Background" Value="Orange"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                    <Setter Property="BorderBrush" Value="DarkOrange"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Style>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="Background" Value="Gold"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Style>
-                                <Style Selector="Button:pressed">
-                                    <Setter Property="Background" Value="DarkOrange"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Style>
-                            </Button.Styles>
-                            <TextBlock Text="100%" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" FontWeight="Bold"/>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </Border>
-            
-            <!-- Replace the preview ScrollViewer section in PrintingView.axaml -->
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                          Background="LightGray" Padding="20">
-                <Border Background="White" 
-                        BorderBrush="Gray" BorderThickness="1"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Preview Header -->
+                <Border DockPanel.Dock="Top" 
+                        Padding="20,16" 
+                        BorderBrush="{StaticResource BorderBrush}" 
+                        BorderThickness="0,0,0,1">
                     <Grid>
-                        <!-- Use Viewbox for proper scaling that affects layout -->
-                        <Viewbox Width="{Binding ActualPreviewWidth}" 
-                                 Height="{Binding ActualPreviewHeight}"
-                                 Stretch="Fill"
-                                 Margin="10">
-                            <Image Source="{Binding PreviewImage}" 
-                                   Width="{Binding PreviewImage.PixelSize.Width}"
-                                   Height="{Binding PreviewImage.PixelSize.Height}"
-                                   Stretch="Fill"/>
-                        </Viewbox>
-            
-                        <!-- No Preview Message -->
-                        <TextBlock Text="No preview available. Click 'Generate Preview' to create one." 
-                                   IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Margin="20" FontSize="14" Foreground="Gray"/>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Page Navigation -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                            <Button Classes="secondary" 
+                                    Command="{Binding PreviousPageCommand}" 
+                                    Content="← Previous"
+                                    Padding="12,8"/>
+                                    
+                            <Border Classes="card-compact">
+                                <TextBlock Classes="body-medium">
+                                    <Run Text="Page "/>
+                                    <Run Text="{Binding CurrentPreviewPage}" FontWeight="SemiBold"/>
+                                    <Run Text=" of "/>
+                                    <Run Text="{Binding TotalPreviewPages}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                            </Border>
+                            
+                            <Button Classes="secondary" 
+                                    Command="{Binding NextPageCommand}"
+                                    Content="Next →"
+                                    Padding="12,8"/>
+                        </StackPanel>
+                        
+                        <!-- Title -->
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Classes="heading-small" Text="PDF Preview"/>
+                            <TextBlock Classes="body-small" Text="Live preview of your print layout"/>
+                        </StackPanel>
+                        
+                        <!-- Zoom Controls -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                            <Button Classes="icon" 
+                                    Command="{Binding ZoomOutCommand}" 
+                                    Content="−" FontSize="16"/>
+                                    
+                            <Border Classes="card-compact" MinWidth="60">
+                                <TextBlock Classes="body-medium" 
+                                          HorizontalAlignment="Center"
+                                          Text="{Binding PreviewZoom, StringFormat='{}{0}%'}"/>
+                            </Border>
+                            
+                            <Button Classes="icon" 
+                                    Command="{Binding ZoomInCommand}" 
+                                    Content="+" FontSize="16"/>
+                                    
+                            <Button Classes="secondary" 
+                                    Command="{Binding ResetZoomCommand}" 
+                                    Content="100%"
+                                    Padding="8,6"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
-            </ScrollViewer>
-        </DockPanel>
+                
+                <!-- Preview Content -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                             VerticalScrollBarVisibility="Auto"
+                             Background="{StaticResource BackgroundSecondaryBrush}" 
+                             Padding="40">
+                    <Panel>
+                        
+                        <!-- Preview Image -->
+                        <Border Background="White" 
+                                BorderBrush="{StaticResource BorderBrush}" 
+                                BorderThickness="1"
+                                BoxShadow="0 4 6 0 #1A000000"
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <Viewbox Width="{Binding ActualPreviewWidth}" 
+                                     Height="{Binding ActualPreviewHeight}"
+                                     Stretch="Fill"
+                                     Margin="20">
+                                <Image Source="{Binding PreviewImage}" 
+                                       Width="{Binding PreviewImage.PixelSize.Width}"
+                                       Height="{Binding PreviewImage.PixelSize.Height}"
+                                       Stretch="Fill"/>
+                            </Viewbox>
+                        </Border>
+                        
+                        <!-- No Preview State -->
+                        <Border Classes="card-elevated"
+                                Padding="48"
+                                HorizontalAlignment="Center" 
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding PreviewImage, Converter={x:Static ObjectConverters.IsNull}}">
+                            <StackPanel Spacing="16" HorizontalAlignment="Center">
+                                <TextBlock Text="🖼️" FontSize="64" 
+                                          HorizontalAlignment="Center" 
+                                          Opacity="0.3"/>
+                                <TextBlock Classes="heading-small" 
+                                          Text="No preview available" 
+                                          HorizontalAlignment="Center"/>
+                                <TextBlock Classes="body-medium" 
+                                          Text="Click 'Generate Preview' to create a preview of your cards"
+                                          HorizontalAlignment="Center"
+                                          TextAlignment="Center"/>
+                                <Button Classes="primary" 
+                                        Content="Generate Preview"
+                                        Command="{Binding GeneratePreviewCommand}"
+                                        HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
+                    </Panel>
+                </ScrollViewer>
+                
+            </DockPanel>
+        </Border>
+        
     </Grid>
 </UserControl>
