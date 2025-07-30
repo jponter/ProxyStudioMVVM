@@ -49,8 +49,7 @@ namespace ProxyStudio.Services
         private readonly IConfigManager _configManager;
         private readonly ILogger<MpcFillService> _logger;
         private readonly string _cacheFolder;
-        // NEW: Use SemaphoreSlim per cardId for thread-safe downloads
-        private readonly ConcurrentDictionary<string, SemaphoreSlim> _downloadSemaphores = new();
+        private readonly ConcurrentDictionary<string, Task<byte[]>> _downloadTasks = new();
 
         // Add this to your constructor for debugging
         public MpcFillService(HttpClient httpClient, IConfigManager configManager, ILogger<MpcFillService> logger)  
@@ -268,146 +267,89 @@ public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgres
                 _logger.LogCritical($"❌ ORDER PRESERVATION FAILED - Check array indexing logic");
             }
             
-            //clean up the semaphores
-            _logger.LogDebug("Cleaning up semaphores...");
-            CleanupSemaphores();
-            
-            
             _logger.LogDebug($"PARALLEL MPC: Returning {orderedResult.Count} cards in original XML order");
-            
             return orderedResult;
         }); // ✅ End of Task.Run - this keeps UI responsive!
     }
     catch (Exception ex)
     {
-        _logger.LogDebug("Cleaning up Semaphores before throwing exception...");
-        CleanupSemaphores();
         _logger.LogCritical($"Error in parallel MPC Fill processing: {ex.Message}");
         _logger.LogCritical($"Stack trace: {ex.StackTrace}");
         throw new InvalidOperationException($"Failed to process MPC Fill XML: {ex.Message}", ex);
     }
 }
 
-// FIXED: Thread-safe caching using SemaphoreSlim
-    // FIXED: Thread-safe caching using SemaphoreSlim with proper disposal handling
-    private byte[] LoadImageWithCacheSync(string cardId, string cardName)
+// ✅ NEW: Synchronous version of LoadImageWithCacheAsync for Parallel.ForEach
+private byte[] LoadImageWithCacheSync(string cardId, string cardName)
+{
+    var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
+    
+    _logger.LogDebug($"Checking cache for {cardName} at: {cacheFilePath}");
+
+    if (File.Exists(cacheFilePath))
     {
-        var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
-        var threadId = Thread.CurrentThread.ManagedThreadId;
-        
-        _logger.LogDebug($"THREAD {threadId}: Requesting {cardName} (cardId: {cardId})");
-
-        // Quick cache check first - if file exists and is valid, return immediately
-        if (File.Exists(cacheFilePath))
-        {
-            try
-            {
-                _logger.LogDebug($"THREAD {threadId}: CACHE HIT - Loading {cardName} from cache");
-                return LoadImageFromFileSync(cacheFilePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug($"THREAD {threadId}: CACHE ERROR for {cardName}: {ex.Message}");
-                // File exists but is corrupted, delete it so we re-download
-                try
-                {
-                    File.Delete(cacheFilePath);
-                    _logger.LogDebug($"THREAD {threadId}: Deleted corrupted cache file for {cardName}");
-                }
-                catch { /* Ignore deletion errors */ }
-            }
-        }
-
-        // Use semaphore to ensure only one download per cardId
-        var semaphore = _downloadSemaphores.GetOrAdd(cardId, _ => new SemaphoreSlim(1, 1));
-        
-        _logger.LogDebug($"THREAD {threadId}: Acquiring semaphore for {cardName}");
-        
         try
         {
-            semaphore.Wait(); // Block until we can proceed
-        }
-        catch (ObjectDisposedException)
-        {
-            // If semaphore was disposed, create a new one and try again
-            _logger.LogDebug($"THREAD {threadId}: Semaphore was disposed, creating new one for {cardName}");
-            semaphore = _downloadSemaphores.AddOrUpdate(cardId, _ => new SemaphoreSlim(1, 1), (_, _) => new SemaphoreSlim(1, 1));
-            semaphore.Wait();
-        }
-        
-        try
-        {
-            // Double-check: another thread might have downloaded while we waited
-            if (File.Exists(cacheFilePath))
-            {
-                _logger.LogDebug($"THREAD {threadId}: CACHE HIT (after wait) - {cardName} was downloaded by another thread");
-                return LoadImageFromFileSync(cacheFilePath);
-            }
-
-            // We're the first thread - do the download
-            _logger.LogDebug($"THREAD {threadId}: DOWNLOADING {cardName} from MPC Fill API (thread-safe)");
-            var imageData = DownloadCardImageSync(cardId);
-            
-            _logger.LogDebug($"THREAD {threadId}: CACHING {cardName} to {Path.GetFileName(cacheFilePath)}");
-            SaveImageToCacheSync(imageData, cacheFilePath);
-
-            // Load the cached version we just saved
-            if (File.Exists(cacheFilePath))
-            {
-                _logger.LogDebug($"THREAD {threadId}: Successfully cached and loading {cardName}");
-                return LoadImageFromFileSync(cacheFilePath);
-            }
-            
-            _logger.LogDebug($"THREAD {threadId}: Cache save failed for {cardName}, processing in memory");
-            return ProcessImageToHighResolution(imageData);
+            _logger.LogDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
+            return LoadImageFromFileSync(cacheFilePath);
         }
         catch (Exception ex)
         {
-            _logger.LogCritical($"THREAD {threadId}: Download/cache failed for {cardName}: {ex.Message}");
-            return CreatePlaceholderImage();
+            _logger.LogCritical($"CACHE ERROR: {ex.Message}");
         }
-        finally
+    }
+
+
+    var downloadTask = _downloadTasks.GetOrAdd(cardId, _ => Task.Run(async () =>
+    {
+        // Double-check cache inside the task
+        if (File.Exists(cacheFilePath))
         {
-            try
-            {
-                semaphore.Release();
-                _logger.LogDebug($"THREAD {threadId}: Released semaphore for {cardName}");
-            }
-            catch (ObjectDisposedException)
-            {
-                _logger.LogDebug($"THREAD {threadId}: Semaphore was already disposed for {cardName}");
-            }
-            catch (SemaphoreFullException)
-            {
-                _logger.LogDebug($"THREAD {threadId}: Semaphore was already at full count for {cardName}");
-            }
+            return LoadImageFromFileSync(cacheFilePath);
         }
+        // If not cached, download the image
+        _logger.LogDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+        _logger.LogDebug($"THREAD {Thread.CurrentThread.ManagedThreadId}: Actually downloading {cardName}");
+        var imageData = DownloadCardImageSync(cardId);
+        // Save to cache
+        SaveImageToCacheSync(imageData, cacheFilePath);
+        
+        return File.Exists(cacheFilePath) 
+            ? LoadImageFromFileSync(cacheFilePath) 
+            : ProcessImageToHighResolution(imageData);
+    }));
+    
+    try
+    {
+        // ... in wait section:
+        _logger.LogDebug($"THREAD {Thread.CurrentThread.ManagedThreadId}: Waiting for {cardName} download by another thread");
+        // Wait for the download task to complete (may be shared across threads)
+        var result = downloadTask.Result;
+        
+        // Clean up completed task
+        _downloadTasks.TryRemove(cardId, out _);
+        
+        return result;
+    }
+    catch (Exception ex)
+    {
+        // Clean up failed task
+        _downloadTasks.TryRemove(cardId, out _);
+        throw;
     }
     
-    private void CleanupSemaphores()
-    {
-        var disposedCount = 0;
-        foreach (var kvp in _downloadSemaphores)
-        {
-            try
-            {
-                if (_downloadSemaphores.TryRemove(kvp.Key, out var semaphore))
-                {
-                    semaphore.Dispose();
-                    disposedCount++;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug($"Error disposing semaphore for {kvp.Key}: {ex.Message}");
-            }
-        }
-        
-        if (disposedCount > 0)
-        {
-            _logger.LogDebug($"Cleaned up {disposedCount} semaphores");
-        }
-    }
+    // // Download, process, and cache
+    // _logger.LogDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+    // var imageData = DownloadCardImageSync(cardId);
+    //
+    // // Save to cache
+    // SaveImageToCacheSync(imageData, cacheFilePath);
+
+   
+    
+    // // Fallback: process in memory if caching failed
+    // return ProcessImageToHighResolution(imageData);
+}
 
 // ✅ NEW: Synchronous helper methods for Parallel.ForEach
 private byte[] LoadImageFromFileSync(string filePath)
@@ -462,35 +404,13 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
             ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
         };
         
-        // Use a temporary file and then move to avoid corruption
-        var tempFilePath = cacheFilePath + ".tmp";
-        image.Save(tempFilePath, pngEncoder);
-            
-        // Atomic move operation
-        if (File.Exists(cacheFilePath))
-        {
-            File.Delete(cacheFilePath);
-        }
-        File.Move(tempFilePath, cacheFilePath);
+        image.Save(cacheFilePath, pngEncoder);
 
-        _logger.LogDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+        DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
     }
     catch (Exception ex)
     {
-        _logger.LogCritical($"Failed to cache image {cacheFilePath}: {ex.Message}");
-            
-        // Clean up temp file if it exists
-        var tempFilePath = cacheFilePath + ".tmp";
-        try
-        {
-            if (File.Exists(tempFilePath))
-            {
-                File.Delete(tempFilePath);
-            }
-        }
-        catch { /* Ignore cleanup errors */ }
-            
-        throw; // Re-throw so caller can handle
+        DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
     }
 }
 
@@ -700,16 +620,7 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
                     }
                 }
 
-                // ADD THIS LINE: Sort by slot position to ensure index matches slot number
-                cards = cards.OrderBy(c => c.SlotPosition).ToList();
-
-                _logger.LogDebug($"Parsed {cards.Count} card slots from XML (expanded from multi-slot cards)");
-        
-                // Debug: Log first few cards to verify sorting
-                for (int i = 0; i < Math.Min(5, cards.Count); i++)
-                {
-                    _logger.LogDebug($"Card at index {i}: {cards[i].Name} (SlotPosition: {cards[i].SlotPosition})");
-                }
+                _logger.LogDebug($"Parsed {cards.Count} cards from XML");
             }
             catch (Exception ex)
             {
@@ -805,19 +716,7 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
         //
         // }
 
-// Optional: Call this method at the end of ProcessXmlContentAsync for cleanup
-        public void PerformMaintenance()
-        {
-            var remainingSemaphores = _downloadSemaphores.Count;
-            if (remainingSemaphores > 0)
-            {
-                _logger.LogDebug($"Cache maintenance: {remainingSemaphores} semaphores still active");
-            }
-            else
-            {
-                _logger.LogDebug("Cache maintenance completed - all semaphores cleaned up");
-            }
-        }
+
 
 
 

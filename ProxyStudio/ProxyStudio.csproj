@@ -79,6 +79,8 @@
       </None>
       <AvaloniaXaml Remove="Backups\ModernDesignSystem.axaml" />
       <None Include="Backups\ModernDesignSystem.axaml" />
+      <Compile Remove="Backups\MpcFillService.cs" />
+      <None Include="Backups\MpcFillService.cs" />
     </ItemGroup>
 
    

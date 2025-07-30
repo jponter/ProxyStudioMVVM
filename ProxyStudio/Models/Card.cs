@@ -23,7 +23,8 @@ public partial class Card : ObservableObject
     public int Height { get; set; } = 118;
 
     public bool ImageDownloaded { get; set; } = true;
-    
+    public int SlotPosition { get; set; }  // NEW: Track which slot this represents
+    public string OriginalCardId { get; set; } = "";  // NEW: Track original card for deduplication
 
     public IRelayCommand? EditMeCommand { get; set; }
 
