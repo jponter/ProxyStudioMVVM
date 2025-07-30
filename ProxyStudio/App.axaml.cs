@@ -168,7 +168,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in application initialization: {ex}");
+            logger.LogCritical($"Error in application initialization: {ex}");
             throw;
         }
         
@@ -178,7 +178,7 @@ public partial class App : Application
             desktopLifetime.ShutdownRequested += OnShutdownRequested;
         }
         
-        Console.WriteLine("=== InitializeApplicationAsync COMPLETED ===");
+        logger.LogInformation("=== InitializeApplicationAsync COMPLETED ===");
     }
     
     // ✅ CLEAN APPROACH: Use only global level switch (no sink-specific switches)
@@ -213,6 +213,7 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
     // Set the level switch
     _loggingLevelSwitch.MinimumLevel = initialLevel;
     Console.WriteLine($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
+    Log.Debug($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
 
     try
     {
@@ -238,7 +239,7 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}")
             .CreateLogger();
 
-        Console.WriteLine("Serilog logger created successfully with GLOBAL level switch only");
+        Log.Debug("Serilog logger created successfully with GLOBAL level switch only");
         
         // Test immediately
         Log.Information("=== SERILOG TEST: Initialization complete at level {Level} ===", initialLevel);
@@ -277,7 +278,7 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
         Console.WriteLine($"Stack trace: {ex.StackTrace}");
     }
     
-    Console.WriteLine("=== SERILOG INITIALIZATION COMPLETE ===");
+    Log.Debug("=== SERILOG INITIALIZATION COMPLETE ===");
 }
 
     // ✅ CORRECTED: UpdateLogLevel method that properly updates both sinks
