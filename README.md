@@ -1,3 +1,8 @@
+Todo: 
+implement API for google drive requests
+change all logging to use serilog sinks
+
+
 # ProxyStudio Alpha
 
 A powerful desktop application for creating and managing proxy cards for tabletop games, built with Avalonia UI and C#.
