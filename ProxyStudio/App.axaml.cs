@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -121,7 +122,52 @@ public partial class App : Application
         // Register services
         services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
         services.AddSingleton<IPdfGenerationService, PdfGenerationService>();
-        services.AddSingleton<HttpClient>();
+        
+        //optimised http client registration
+        // ✅ OPTIMIZED: Configure global HTTP client with enhanced settings
+        services.AddSingleton<HttpClient>(serviceProvider =>
+        {
+            var logger = serviceProvider.GetService<ILogger<HttpClient>>();
+            logger?.LogInformation("Creating optimized global HTTP client");
+
+            var handler = new HttpClientHandler()
+            {
+                // Increase max connections per server for better parallel performance
+                MaxConnectionsPerServer = 20, // Up from default 2 - great for parallel MPC Fill downloads
+            
+                // Disable cookies to reduce overhead (most API calls don't need them)
+                UseCookies = false,
+            
+                // Enable automatic decompression for better performance
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            
+                // Use system proxy settings if available
+                UseProxy = true,
+                UseDefaultCredentials = false
+            };
+
+            var client = new HttpClient(handler, disposeHandler: true)
+            {
+                // Set reasonable timeout (45 seconds for slower connections/large files)
+                Timeout = TimeSpan.FromSeconds(45)
+            };
+
+            // Add standard headers for better compatibility
+            client.DefaultRequestHeaders.Add("User-Agent", 
+                $"ProxyStudio/1.0 (.NET {Environment.Version}; {Environment.OSVersion})");
+            client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
+            client.DefaultRequestHeaders.ConnectionClose = false; // Keep connections alive for reuse
+
+            logger?.LogInformation("Global HTTP client configured: MaxConnections=20, Timeout=45s, Compression=Enabled");
+        
+            return client;
+        });
+        
+        
+        
+        
+        
+        
         services.AddSingleton<IMpcFillService, MpcFillService>();
         services.AddSingleton<IThemeService,ThemeService>();
         

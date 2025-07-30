@@ -289,8 +289,11 @@
                                                 <Slider Grid.Column="0" 
                                                         Classes="modern"
                                                         Value="{Binding CardSpacing, Mode=TwoWay}" 
-                                                        Minimum="0" Maximum="50" 
-                                                        VerticalAlignment="Center"/>
+                                                        Minimum="0" Maximum="10" 
+                                                        VerticalAlignment="Center"
+                                                        TickFrequency="1"
+                                                        IsSnapToTickEnabled="True"
+                                                        />
                                                 <TextBox Grid.Column="1" 
                                                          Classes="modern"
                                                          Text="{Binding CardSpacing, Mode=TwoWay}"
@@ -421,7 +424,10 @@
                                                     <Slider Grid.Column="0" 
                                                             Classes="modern"
                                                             Value="{Binding CuttingLineExtension, Mode=TwoWay}" 
-                                                            Minimum="0" Maximum="50"/>
+                                                            Minimum="0" Maximum="50"
+                                                            TickFrequency="1"
+                                                            IsSnapToTickEnabled="True"
+                                                            />
                                                     <TextBox Grid.Column="1" 
                                                              Classes="modern"
                                                              Text="{Binding CuttingLineExtension, Mode=TwoWay}"
@@ -439,7 +445,10 @@
                                                     <Slider Grid.Column="0" 
                                                             Classes="modern"
                                                             Value="{Binding CuttingLineThickness, Mode=TwoWay}" 
-                                                            Minimum="0.1" Maximum="5"/>
+                                                            Minimum="1" Maximum="5"
+                                                            TickFrequency="1"
+                                                            IsSnapToTickEnabled="True"
+                                                            />
                                                     <TextBox Grid.Column="1" 
                                                              Classes="modern"
                                                              Text="{Binding CuttingLineThickness, Mode=TwoWay}"
