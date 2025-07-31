@@ -29,7 +29,7 @@ ProxyStudio allows users to create, organize, and print collections of proxy car
 
 ### PDF Generation & Printing
 - **Multi-Page Support** - Automatically creates multiple pages when needed
-- **Automatic Layout** - portait (3x3) or landscape (4x2)
+- **Automatic Layout** - portrait (3x3) or landscape (4x2)
 - **Card Spacing** - Adjustable spacing between cards for cutting
 - **Cutting Lines** - Optional cutting guides with customizable color, thickness, and style
 - **Professional Output** - High-quality PDF generation using PDFsharp
