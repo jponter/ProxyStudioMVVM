@@ -406,11 +406,13 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
         
         image.Save(cacheFilePath, pngEncoder);
 
-        DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+        //DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+        _logger.LogDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
     }
     catch (Exception ex)
     {
-        DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
+        //DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
+        _logger.LogError(ex, $"Failed to cache image {cacheFilePath}: {ex.Message}");
     }
 }
 
@@ -420,25 +422,29 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
             // FIXED: Look for PNG cache files (high-res)
             var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
     
-            DebugHelper.WriteDebug($"Checking cache for {cardName} at: {cacheFilePath}");
-
+            //DebugHelper.WriteDebug($"Checking cache for {cardName} at: {cacheFilePath}");
+            _logger.LogDebug($"Checking cache for {cardName} at: {cacheFilePath}");
             if (File.Exists(cacheFilePath))
             {
                 try
                 {
-                    DebugHelper.WriteDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
+                    //DebugHelper.WriteDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
+                    _logger.LogDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
                     var cachedData = await LoadImageFromFileAsync(cacheFilePath);
-                    DebugHelper.WriteDebug($"CACHE SUCCESS: Loaded {cachedData.Length} bytes for {cardName} (already high-res)");
+                    //DebugHelper.WriteDebug($"CACHE SUCCESS: Loaded {cachedData.Length} bytes for {cardName} (already high-res)");
+                    _logger.LogDebug($"CACHE SUCCESS: Loaded {cachedData.Length} bytes for {cardName} (already high-res)");
                     return cachedData;
                 }
                 catch (Exception ex)
                 {
-                    DebugHelper.WriteDebug($"CACHE ERROR: {ex.Message}");
+                    //DebugHelper.WriteDebug($"CACHE ERROR: {ex.Message}");
+                    _logger.LogError(ex, $"CACHE ERROR: {ex.Message}");
                 }
             }
 
             // Download, process, and cache
-            DebugHelper.WriteDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+            //DebugHelper.WriteDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+            _logger.LogDebug($"DOWNLOADING: {cardName} from MPC Fill API");
             var imageData = await DownloadCardImageAsync(cardId);
     
             // Save to cache (this will process to high-res)
@@ -451,6 +457,7 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
             }
     
             // Fallback: process in memory if caching failed
+            _logger.LogDebug("Failed to download image or cache, processing placeholder to high resolution in memory");
             return ProcessImageToHighResolution(imageData);
         }
 
@@ -500,11 +507,13 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
                     image.Save(pngCacheFilePath, pngEncoder);
                 });
 
-                DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+                //DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+                _logger.LogDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
+                //DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
+                _logger.LogError(ex, $"Failed to cache image {cacheFilePath}: {ex.Message}");
             }
         }
 

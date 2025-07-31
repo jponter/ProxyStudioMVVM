@@ -495,44 +495,44 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
 }
 
 
-        private async Task<byte[]> LoadImageWithCacheAsync(string cardId, string cardName)
-        {
-            // FIXED: Look for PNG cache files (high-res)
-            var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
-    
-            DebugHelper.WriteDebug($"Checking cache for {cardName} at: {cacheFilePath}");
-
-            if (File.Exists(cacheFilePath))
-            {
-                try
-                {
-                    DebugHelper.WriteDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
-                    var cachedData = await LoadImageFromFileAsync(cacheFilePath);
-                    DebugHelper.WriteDebug($"CACHE SUCCESS: Loaded {cachedData.Length} bytes for {cardName} (already high-res)");
-                    return cachedData;
-                }
-                catch (Exception ex)
-                {
-                    DebugHelper.WriteDebug($"CACHE ERROR: {ex.Message}");
-                }
-            }
-
-            // Download, process, and cache
-            DebugHelper.WriteDebug($"DOWNLOADING: {cardName} from MPC Fill API");
-            var imageData = await DownloadCardImageAsync(cardId);
-    
-            // Save to cache (this will process to high-res)
-            await SaveImageToCacheAsync(imageData, cacheFilePath);
-
-            // Load the cached high-res version we just saved
-            if (File.Exists(cacheFilePath))
-            {
-                return await LoadImageFromFileAsync(cacheFilePath);
-            }
-    
-            // Fallback: process in memory if caching failed
-            return ProcessImageToHighResolution(imageData);
-        }
+        // private async Task<byte[]> LoadImageWithCacheAsync(string cardId, string cardName)
+        // {
+        //     // FIXED: Look for PNG cache files (high-res)
+        //     var cacheFilePath = Path.Combine(_cacheFolder, $"{cardId}.png");
+        //
+        //     DebugHelper.WriteDebug($"Checking cache for {cardName} at: {cacheFilePath}");
+        //
+        //     if (File.Exists(cacheFilePath))
+        //     {
+        //         try
+        //         {
+        //             DebugHelper.WriteDebug($"CACHE HIT: Loading {cardName} from HIGH-RES cache");
+        //             var cachedData = await LoadImageFromFileAsync(cacheFilePath);
+        //             DebugHelper.WriteDebug($"CACHE SUCCESS: Loaded {cachedData.Length} bytes for {cardName} (already high-res)");
+        //             return cachedData;
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             DebugHelper.WriteDebug($"CACHE ERROR: {ex.Message}");
+        //         }
+        //     }
+        //
+        //     // Download, process, and cache
+        //     DebugHelper.WriteDebug($"DOWNLOADING: {cardName} from MPC Fill API");
+        //     var imageData = await DownloadCardImageAsync(cardId);
+        //
+        //     // Save to cache (this will process to high-res)
+        //     await SaveImageToCacheAsync(imageData, cacheFilePath);
+        //
+        //     // Load the cached high-res version we just saved
+        //     if (File.Exists(cacheFilePath))
+        //     {
+        //         return await LoadImageFromFileAsync(cacheFilePath);
+        //     }
+        //
+        //     // Fallback: process in memory if caching failed
+        //     return ProcessImageToHighResolution(imageData);
+        // }
 
         private async Task<byte[]> LoadImageFromFileAsync(string filePath)
         {

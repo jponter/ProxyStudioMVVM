@@ -45,7 +45,7 @@ namespace ProxyStudio.Helpers
         public ConfigManager()
         {
             DebugHelper.WriteDebug("Creating new config manager.");
-            DebugHelper.WriteDebug("Creating new config manager.");
+            // Ensure the config is loaded when the manager is created
             DebugHelper.WriteDebug($"_config is null: {_config == null}");
         }
 

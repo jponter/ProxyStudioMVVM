@@ -608,8 +608,9 @@ namespace ProxyStudio.Services
             {
                 try
                 {
-                    DebugHelper.WriteDebug(
-                        $"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
+                    // DebugHelper.WriteDebug(
+                    //     $"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
+                    _logger.LogDebug($"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
 
                     if (options == null)
                     {
@@ -961,10 +962,11 @@ namespace ProxyStudio.Services
 
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
         {
+            _logger.BeginScope("CreateSimplePreview");
             try
             {
-                DebugHelper.WriteDebug(
-                    $"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+                //DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+                _logger.LogDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
 
                 // Use the user's orientation choice, not automatic layout
                 var actualCardsPerRow = options.IsPortrait ? 3 : 4;
@@ -972,8 +974,8 @@ namespace ProxyStudio.Services
                 var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                 var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
 
-                DebugHelper.WriteDebug(
-                    $"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+                //DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+                _logger.LogDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
 
                 // Get page dimensions based on selected page size and USER'S orientation choice
                 var pageDimensions =
@@ -990,10 +992,10 @@ namespace ProxyStudio.Services
                 var previewWidth = (int)(pageDimensions.Width * pageScale);
                 var previewHeight = (int)(pageDimensions.Height * pageScale);
 
-                DebugHelper.WriteDebug(
-                    $"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
-                DebugHelper.WriteDebug(
-                    $"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+                //DebugHelper.WriteDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
+                _logger.LogDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
+                //DebugHelper.WriteDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+                _logger.LogDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
 
                 using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
@@ -1008,11 +1010,13 @@ namespace ProxyStudio.Services
                 graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
                     new System.Drawing.PointF(10, 10));
 
-                DebugHelper.WriteDebug("Drew title");
+                //DebugHelper.WriteDebug("Drew title");
+                _logger.LogDebug($"Drew title: {titleText}");
 
                 if (pageCards.Count == 0)
                 {
-                    DebugHelper.WriteDebug("No cards to draw");
+                    //DebugHelper.WriteDebug("No cards to draw");
+                    _logger.LogDebug("No cards to draw, returning empty preview");
                     using var ms = new MemoryStream();
                     bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
                     ms.Position = 0;
@@ -1024,8 +1028,8 @@ namespace ProxyStudio.Services
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
 
-                DebugHelper.WriteDebug(
-                    $"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                //DebugHelper.WriteDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
 
                 // Calculate total grid size
                 var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
@@ -1046,17 +1050,20 @@ namespace ProxyStudio.Services
                 var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
                 var gridStartY = marginTopScaled + titleSpaceScaled + (availableHeight - totalGridHeight) / 2;
 
-                DebugHelper.WriteDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
+                //DebugHelper.WriteDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
+                _logger.LogDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
 
                 // Check if grid fits
                 if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
                 {
-                    DebugHelper.WriteDebug(
-                        $"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+                    // DebugHelper.WriteDebug(
+                    //     $"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+                    _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
                 }
                 else
                 {
-                    DebugHelper.WriteDebug($"SUCCESS: Preview grid fits within page margins");
+                    //DebugHelper.WriteDebug($"SUCCESS: Preview grid fits within page margins");
+                    _logger.LogDebug("SUCCESS: Preview grid fits within page margins");
                 }
 
                 // Draw cards with FIXED spacing
@@ -1078,8 +1085,10 @@ namespace ProxyStudio.Services
                             var x = (int)Math.Round(exactX);
                             var y = (int)Math.Round(exactY);
 
-                            DebugHelper.WriteDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
-                            DebugHelper.WriteDebug($"  Position: ({x}, {y})");
+                            //DebugHelper.WriteDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
+                            _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
+                            //DebugHelper.WriteDebug($"  Position: ({x}, {y})");
+                            _logger.LogDebug($"  Position: ({x}, {y})");
 
                             DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
                                 (int)Math.Round(cardHeightPreview));
@@ -1094,7 +1103,8 @@ namespace ProxyStudio.Services
                         actualCardsPerRow, actualCardsPerColumn, cardWidthPreview, cardHeightPreview, spacingPreview);
                 }
 
-                DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
+                //DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
+                _logger.LogDebug($"Finished drawing cards, converting to Avalonia Bitmap");
 
                 // Convert to Avalonia Bitmap
                 using var outputStream = new MemoryStream();
@@ -1102,14 +1112,16 @@ namespace ProxyStudio.Services
                 outputStream.Position = 0;
 
                 var avaloniaB = new Bitmap(outputStream);
-                DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
+                //DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
+                _logger.LogDebug($"Successfully created Avalonia Bitmap");
 
                 return avaloniaB;
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
-                DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                //DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
+                //DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex,$"Error creating simple preview.");
                 return CreateFallbackPreview(cards, options);
             }
         }
@@ -1122,8 +1134,10 @@ namespace ProxyStudio.Services
             {
                 var rect = new System.Drawing.Rectangle(x, y, width, height);
 
-                DebugHelper.WriteDebug(
-                    $"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+                // DebugHelper.WriteDebug(
+                //     $"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+                
+                _logger.LogDebug($"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
 
                 if (card?.ImageData != null && card.ImageData.Length > 0)
                 {
@@ -1134,21 +1148,22 @@ namespace ProxyStudio.Services
 
                         if (card.EnableBleed)
                         {
-                            // Crop 2mm from preview image (approximate scaling)
+                            // Crop 3mm from preview image (approximate scaling)
                             var sourcePixelsPerMm = Math.Min(originalImage.Width / (2.5 * 25.4),
                                 originalImage.Height / (3.5 * 25.4));
-                            var cropPixels = (int)(2.0 * sourcePixelsPerMm);
+                            var cropPixels = (int)(3.0 * sourcePixelsPerMm);
 
                             var cropRect = new System.Drawing.Rectangle(
                                 cropPixels,
                                 cropPixels,
-                                originalImage.Width - (cropPixels * 2),
-                                originalImage.Height - (cropPixels * 2)
+                                originalImage.Width - (cropPixels * 3),
+                                originalImage.Height - (cropPixels * 3)
                             );
 
                             // Draw cropped portion stretched to full card size
                             graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
-                            DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
+                            //DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
+                            _logger.LogDebug($"Drew preview with bleed crop: {card.Name}");
                         }
                         else
                         {
@@ -1158,7 +1173,8 @@ namespace ProxyStudio.Services
                     }
                     catch (Exception ex)
                     {
-                        DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
+                        //DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
+                        _logger.LogError(ex, $"Error drawing preview image for {card.Name}");
                         DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
                     }
                 }
@@ -1170,7 +1186,8 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+                //DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+                _logger.LogError(ex,$"Error drawing preview card {card?.Name ?? "NULL"}");
             }
         }
 

@@ -76,7 +76,8 @@ public partial class MainViewModel : ViewModelBase
     partial void OnGlobalBleedEnabledChanged(bool value)
     {
         _configManager.Config.GlobalBleedEnabled = value;
-        DebugHelper.WriteDebug("Global bleed enabled changed to " + value);
+        //DebugHelper.WriteDebug("Global bleed enabled changed to " + value);
+        _logger.LogDebug($"Global bleed enabled changed to {value}");
     }
 
     //selected card
@@ -604,9 +605,11 @@ public partial class MainViewModel : ViewModelBase
     // UPDATE your ProcessMPCFillXML method
     public async Task ProcessMPCFillXML(string fileName)
     {
+        _logger.BeginScope("ProcessMPCFillXML");
         try
         {
-            DebugHelper.WriteDebug($"Loading MPC Fill XML: {fileName}");
+            //DebugHelper.WriteDebug($"Loading MPC Fill XML: {fileName}");
+            _logger.LogDebug($"Loading MPC Fill XML: {fileName}");
             IsBusy = true;
             IsLoadingMpcFill = true;
             ShowMpcFillProgress = true;
@@ -647,7 +650,8 @@ public partial class MainViewModel : ViewModelBase
                 }
 
                 // Log progress for debugging too
-                DebugHelper.WriteDebug($"MPC Fill Progress: {progressInfo.PercentageComplete:F0}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
+                //DebugHelper.WriteDebug($"MPC Fill Progress: {progressInfo.PercentageComplete:F0}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
+                _logger.LogDebug($"MPC Fill Progress: {progressInfo.PercentageComplete:F0}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
             });
 
             // Load cards using the service
@@ -670,16 +674,16 @@ public partial class MainViewModel : ViewModelBase
             PrintViewModel?.RefreshCardInfo();
             PrintViewModel?.GeneratePreviewCommand.Execute(null);
 
-            DebugHelper.WriteDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
-
+            //DebugHelper.WriteDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
+            _logger.LogDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
             // Hide progress after a delay
             await Task.Delay(2000);
             ShowMpcFillProgress = false;
         }
         catch (Exception ex)
         {
-            DebugHelper.WriteDebug($"Error loading MPC Fill XML: {ex.Message}");
-            
+            //DebugHelper.WriteDebug($"Error loading MPC Fill XML: {ex.Message}");
+            _logger.LogError(ex,$"Error loading MPC Fill XML");
             // Show error in progress UI
             MpcFillStatus = $"Error: {ex.Message}";
             MpcFillProgress = 0;

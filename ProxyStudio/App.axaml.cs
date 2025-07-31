@@ -18,6 +18,7 @@ using ProxyStudio.Services;
 using Serilog;
 using Serilog.Events;
 using Serilog.Core;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace ProxyStudio;
 
@@ -42,6 +43,7 @@ public partial class App : Application
     {
         Console.WriteLine("=== OnFrameworkInitializationCompleted CALLED ===");
         
+        
         // CRITICAL: Prevent multiple initializations
         lock (InitializationLock)
         {
@@ -63,6 +65,7 @@ public partial class App : Application
 
             _isInitialized = true;
             Console.WriteLine($"Starting SINGLE initialization (call #{currentCount})");
+            
         }
 
         try
@@ -99,8 +102,8 @@ public partial class App : Application
         var tempServiceProvider = services.BuildServiceProvider();
         var configManager = tempServiceProvider.GetRequiredService<IConfigManager>();
         
-        Console.WriteLine("Loading config...");
-        configManager.LoadConfig();
+        //Console.WriteLine("Loading config...");
+        //configManager.LoadConfig();
         var configLogLevel = configManager.Config.LoggingSettings.MinimumLogLevel;
         var initialLogLevel = (LogEventLevel)configLogLevel;
         
@@ -204,7 +207,9 @@ public partial class App : Application
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var mainWindow = new MainView(configManager);
+                var mainWindow = new MainView(configManager, 
+                    Services.GetRequiredService<ILogger<MainView>>());
+                
                 var mainViewModel = Services.GetRequiredService<MainViewModel>();
                 mainWindow.DataContext = mainViewModel;
                 desktop.MainWindow = mainWindow;
@@ -379,6 +384,7 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
         try
         {
             var logger = Services?.GetService<ILogger<App>>();
+            
             logger?.LogInformation("=== PROXYSTUDIO SHUTDOWN {ShutdownTime} ===", DateTime.Now);
             
             Log.CloseAndFlush();
@@ -400,7 +406,8 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
             if (Directory.Exists(logDirectory))
             {
                 var files = Directory.GetFiles(logDirectory, "*.log");
-                Console.WriteLine($"Found {files.Length} log files");
+                //Console.WriteLine($"Found {files.Length} log files");
+                Log.Debug("Found {FilesLength} log files",files.Length);
             }
         }
     }

@@ -10,6 +10,8 @@ using System.Reactive.Linq;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace ProxyStudio;
 
@@ -21,13 +23,17 @@ public partial class MainView : Window
    
     
     // Add a parameterless constructor for design-time
-    public MainView() : this(new DesignTimeConfigManager())
+    public MainView() : this(new DesignTimeConfigManager(), 
+                             App.Services?.GetRequiredService<ILogger<MainView>>() ?? throw new ArgumentNullException(nameof(ILogger<MainView>)))
     {
         // This constructor will be used by the designer
     }
     
-    public MainView(IConfigManager configManager)
+    public MainView(IConfigManager configManager, ILogger<MainView> logger)
     {
+        //Console.WriteLine("MainView Constructor called");
+        logger.BeginScope("MainView Constructor");
+        logger.LogInformation("Initializing MainView with configuration manager.");
         InitializeComponent();
         //DataContext = new MainViewModel();
         
@@ -42,8 +48,11 @@ public partial class MainView : Window
         
         // Load configuration at startup
         
+        logger.LogInformation("Loading Window configuration settings at startup.");
+        logger.LogDebug($"Window Width: {Width}, Height: {Height}, Left: {Position.X}, Top: {Position.Y}" +  $", State: {WindowState}",
+            config.WindowWidth, config.WindowHeight, config.WindowLeft, config.WindowTop);
         
-        DebugHelper.WriteDebug($"MainView() GlobalBleedEnabled = {config.GlobalBleedEnabled}");
+        //DebugHelper.WriteDebug($"MainView() GlobalBleedEnabled = {config.GlobalBleedEnabled}");
         
         //load configuration settings
         //; // Load the configuration settings
@@ -85,9 +94,9 @@ public partial class MainView : Window
         base.OnClosed(e);
         
         //DebugHelper.WriteDebug("Saving configuration settings on window close.");
+        Log.Debug("Saving configuration settings on window close.");
         
-        
-       //_configManager.SaveConfig();
+       _configManager.SaveConfig();
     }
 
     

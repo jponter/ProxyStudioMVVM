@@ -11,8 +11,11 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ProxyStudio.Models;
 using ProxyStudio.ViewModels;
+using Serilog;
 
 namespace ProxyStudio.Behaviors
 {
@@ -25,6 +28,8 @@ namespace ProxyStudio.Behaviors
         private static ListBoxItem? _draggedItemContainer;
         private static DragAdorner? _dragAdorner;
 
+         
+
         public static readonly AttachedProperty<bool> IsReorderEnabledProperty =
             AvaloniaProperty.RegisterAttached<Control, bool>(
                 "IsReorderEnabled", typeof(ReorderableListBoxBehavior), false);
@@ -34,8 +39,15 @@ namespace ProxyStudio.Behaviors
             AvaloniaProperty.RegisterAttached<Control, bool>(
                 "AcceptXmlFiles", typeof(ReorderableListBoxBehavior), false);
 
+        // Subscribe to property changes for IsReorderEnabled and AcceptXmlFiles
+        // to dynamically add/remove event handlers on ListBox instances.
+        // This allows enabling/disabling reorder functionality and XML file drops.
         static ReorderableListBoxBehavior()
+
         {
+            Log.Information("ReorderableListBoxBehavior initialized. Subscribing to property changes.");
+            
+                     
             IsReorderEnabledProperty.Changed.Subscribe(args =>
             {
                 if (args.Sender is ListBox listBox && args.NewValue.HasValue)
@@ -153,7 +165,8 @@ namespace ProxyStudio.Behaviors
                 }
                 catch (Exception ex)
                 {
-                    Helpers.DebugHelper.WriteDebug($"Drag operation failed: {ex.Message}");
+                    //Helpers.DebugHelper.WriteDebug($"Drag operation failed: {ex.Message}");
+                    Log.Warning(ex," Drag operation failed in ReorderableListBoxBehavior.");
                 }
                 finally
                 {
@@ -275,7 +288,8 @@ namespace ProxyStudio.Behaviors
             }
             catch (Exception ex)
             {
-                Helpers.DebugHelper.WriteDebug($"Error during reorder: {ex.Message}");
+                //Helpers.DebugHelper.WriteDebug($"Error during reorder: {ex.Message}");
+                Log.Warning(ex, "Error during reorder in ReorderableListBoxBehavior.");
             }
         }
 
@@ -297,7 +311,8 @@ namespace ProxyStudio.Behaviors
                 var mainViewModel = FindMainViewModel(listBox);
                 if (mainViewModel == null)
                 {
-                    Helpers.DebugHelper.WriteDebug("Could not find MainViewModel to handle file drop");
+                    //Helpers.DebugHelper.WriteDebug("Could not find MainViewModel to handle file drop");
+                    Log.Warning("Could not find MainViewModel to handle file drop in ReorderableListBoxBehavior.");
                     return;
                 }
 
@@ -314,7 +329,9 @@ namespace ProxyStudio.Behaviors
                             var path = file.TryGetLocalPath();
                             if (string.IsNullOrEmpty(path))
                             {
-                                Helpers.DebugHelper.WriteDebug($"File {file.Name} does not have a local path.");
+                                
+                                //Helpers.DebugHelper.WriteDebug($"File {file.Name} does not have a local path.");
+                                Log.Warning("File {Filename} does not have a local path in ReorderableListBoxBehavior. ", file.Name);
                                 continue;
                             }
                             var fullPath = Path.GetFullPath(path);
@@ -332,7 +349,8 @@ namespace ProxyStudio.Behaviors
                     }
                     catch (Exception ex)
                     {
-                        Helpers.DebugHelper.WriteDebug($"Error processing file {file.Name}: {ex.Message}");
+                        //Helpers.DebugHelper.WriteDebug($"Error processing file {file.Name}: {ex.Message}");
+                        Log.Error(ex,"Error processing file {FileName}: {ExMessage}, in ReorderableListBoxBehavior.", file.Name, ex.Message);
                     }
                 }
 
@@ -340,7 +358,8 @@ namespace ProxyStudio.Behaviors
             }
             catch (Exception ex)
             {
-                Helpers.DebugHelper.WriteDebug($"Error in HandleXmlFileDrop: {ex.Message}");
+                //Helpers.DebugHelper.WriteDebug($"Error in HandleXmlFileDrop: {ex.Message}");
+                Log.Error(ex, "Error during reorder in ReorderableListBoxBehavior.");
             }
         }
 
@@ -386,7 +405,8 @@ namespace ProxyStudio.Behaviors
             }
             catch (Exception ex)
             {
-                Helpers.DebugHelper.WriteDebug($"Error creating drag adorner: {ex.Message}");
+                //Helpers.DebugHelper.WriteDebug($"Error creating drag adorner: {ex.Message}");
+                Log.Error(ex, "Error creating drag adorner.");
             }
         }
 
