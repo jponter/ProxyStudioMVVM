@@ -11,7 +11,7 @@
         Width="1400" Height="900"
         MinWidth="1000" MinHeight="600"
         Background="{StaticResource BackgroundPrimaryBrush}"
-        x:Class="ProxyStudio.MainView"
+        x:Class="ProxyStudio.Views.MainView"
         x:DataType="vm:MainViewModel"
         Title="ProxyStudio">
 
@@ -57,7 +57,9 @@
                                 <StackPanel Spacing="12">
                                     
                                     <Button Classes="secondary" 
-                                            Content="➕ Add Single Card" 
+                                            Content="➕ Add Local Card Image(s)"
+                                            Command ="{Binding LoadSingleImageCommand}"
+                                            IsEnabled="{Binding !IsLoadingSingleImage}"
                                             HorizontalAlignment="Stretch"/>
                                     
                                     <Button Classes="primary"
@@ -248,9 +250,9 @@
                                                 <Button Classes="primary" 
                                                         Content="Load MPC Fill XML"
                                                         Command="{Binding LoadMpcFillXmlCommand}"/>
-                                                <Button Classes="secondary" 
-                                                        Content="Add Test Cards"
-                                                        Command="{Binding AddTestCardsRelayCommand}"/>
+                                                <Button Classes="primary"
+                                                        Content="Add Local Image(s)"
+                                                        Command="{Binding LoadSingleImageCommand}"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>

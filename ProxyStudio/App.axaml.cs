@@ -212,8 +212,8 @@ public partial class App : Application
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var mainWindow = new MainView(_singleConfigManager, 
-                    Services.GetRequiredService<ILogger<MainView>>());
+                var mainWindow = new Views.MainView(_singleConfigManager, 
+                    Services.GetRequiredService<ILogger<Views.MainView>>());
                 
                 var mainViewModel = Services.GetRequiredService<MainViewModel>();
                 mainWindow.DataContext = mainViewModel;
@@ -268,8 +268,8 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
 
     // Set the level switch
     _loggingLevelSwitch.MinimumLevel = initialLevel;
-    Console.WriteLine($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
-    Log.Debug($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
+    //Console.WriteLine($"Level switch set to: {_loggingLevelSwitch.MinimumLevel}");
+    Log.Debug("Level switch set to: {MinimumLevel}", _loggingLevelSwitch.MinimumLevel);
 
     try
     {

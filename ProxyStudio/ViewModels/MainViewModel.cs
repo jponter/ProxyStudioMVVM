@@ -72,6 +72,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _showMpcFillProgress = false;
     [ObservableProperty] private bool _isLoadingMpcFill = false;
     
+    //single image loading properties
+    [ObservableProperty] private bool _isLoadingSingleImage = false;
+    
 
     partial void OnGlobalBleedEnabledChanged(bool value)
     {
@@ -429,6 +432,11 @@ public partial class MainViewModel : ViewModelBase
         DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
         return cards;
     }
+    
+    
+    
+    
+    
     /// <summary>
     /// Processes image files dropped onto the application
     /// </summary>
@@ -749,6 +757,63 @@ public partial class MainViewModel : ViewModelBase
             DebugHelper.WriteDebug($"Error in LoadMpcFillXmlAsync: {ex.Message}");
         }
     }
+    
+    [RelayCommand]
+    private async Task LoadSingleImage()
+    {
+        IsLoadingSingleImage = true;
+        try
+        {
+            // Get the top-level window for the file dialog
+            var topLevel = App.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop 
+                ? desktop.MainWindow 
+                : null;
+
+            if (topLevel == null) return;
+
+            // Show file picker
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Select Image File",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Image Files")
+                    {
+                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png",  }
+                    },
+                    new FilePickerFileType("All Files")
+                    {
+                        Patterns = new[] { "*.*" }
+                    }
+                }
+            });
+
+            if (files.Count > 0)
+            {
+                var file = files[0];
+                var filePath = file.TryGetLocalPath();
+            
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    using var stream = await file.OpenReadAsync();
+                    using var memoryStream = new MemoryStream();
+                    await stream.CopyToAsync(memoryStream);
+                    var imageData = memoryStream.ToArray();
+                            
+                    await ProcessImageFileAsync(imageData, file.Name);
+                    
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            IsLoadingSingleImage = false;
+            DebugHelper.WriteDebug($"Error in LoadMpcFillXmlAsync: {ex.Message}");
+        }
+        IsLoadingSingleImage=false;
+    }
+    
     
 
     // private async Task UpdateCardCollectionAsync()

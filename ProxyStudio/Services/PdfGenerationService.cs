@@ -1522,12 +1522,12 @@ namespace ProxyStudio.Services
             {
                 DebugHelper.WriteDebug($"GetFont called for: {faceName}");
                 // Return null to use system fonts - this is the safest approach
-                return null;
+                return null!;
             }
             catch (Exception ex)
             {
                 DebugHelper.WriteDebug($"Error in GetFont: {ex.Message}");
-                return null;
+                return null!; // Return null to use system fonts
             }
         }
 

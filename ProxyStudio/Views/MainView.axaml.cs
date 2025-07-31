@@ -1,19 +1,12 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
-using CommunityToolkit.Mvvm.Input;
-using Metsys.Bson;
-using ProxyStudio.Helpers;
-using ProxyStudio.ViewModels;
-using Avalonia.Styling;
-using System.Reactive.Linq;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Serilog;
+using ProxyStudio.Helpers;
+using ProxyStudio.ViewModels;
 
-namespace ProxyStudio;
+namespace ProxyStudio.Views;
 
 public partial class MainView : Window
 {
