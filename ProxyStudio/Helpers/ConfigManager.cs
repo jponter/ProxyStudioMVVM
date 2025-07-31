@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace ProxyStudio.Helpers
 {
@@ -44,7 +45,10 @@ namespace ProxyStudio.Helpers
         }
         public ConfigManager()
         {
-            DebugHelper.WriteDebug("Creating new config manager.");
+            var instanceId = Guid.NewGuid().ToString("N")[..8];
+            DebugHelper.WriteDebug($"ConfigManager created: {instanceId}");
+            
+            
             // Ensure the config is loaded when the manager is created
             DebugHelper.WriteDebug($"_config is null: {_config == null}");
         }

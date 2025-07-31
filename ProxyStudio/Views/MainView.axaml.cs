@@ -88,16 +88,16 @@ public partial class MainView : Window
     }
 
     
-    protected override void OnClosed(EventArgs e)
-    {
-     
-        base.OnClosed(e);
-        
-        //DebugHelper.WriteDebug("Saving configuration settings on window close.");
-        Log.Debug("Saving configuration settings on window close.");
-        
-       _configManager.SaveConfig();
-    }
+    // protected override void OnClosed(EventArgs e)
+    // {
+    //  
+    //     base.OnClosed(e);
+    //     
+    //     //DebugHelper.WriteDebug("Saving configuration settings on window close.");
+    //     //Log.Debug("Saving configuration settings on window close.");
+    //     
+    //    //_configManager.SaveConfig();
+    // }
 
     
 }

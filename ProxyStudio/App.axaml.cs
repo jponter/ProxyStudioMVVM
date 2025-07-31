@@ -34,6 +34,8 @@ public partial class App : Application
     
     public static IServiceProvider? Services { get; private set; }
     
+    public static IConfigManager? _singleConfigManager { get; private set; }
+    
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -98,13 +100,16 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         // Register configuration first
-        services.AddSingleton<IConfigManager, ConfigManager>();
-        var tempServiceProvider = services.BuildServiceProvider();
-        var configManager = tempServiceProvider.GetRequiredService<IConfigManager>();
+        Console.WriteLine("Registering IConfigManager...");
+        _singleConfigManager = new ConfigManager();
+        services.AddSingleton<IConfigManager>(_singleConfigManager);
+        // var tempServiceProvider = services.BuildServiceProvider();
+        // var configManager = tempServiceProvider.GetRequiredService<IConfigManager>();
         
         //Console.WriteLine("Loading config...");
         //configManager.LoadConfig();
-        var configLogLevel = configManager.Config.LoggingSettings.MinimumLogLevel;
+        _singleConfigManager.LoadConfig();
+        var configLogLevel = _singleConfigManager.Config.LoggingSettings.MinimumLogLevel;
         var initialLogLevel = (LogEventLevel)configLogLevel;
         
         Console.WriteLine($"Config loaded - MinimumLogLevel: {configLogLevel} -> {initialLogLevel}");
@@ -207,7 +212,7 @@ public partial class App : Application
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var mainWindow = new MainView(configManager, 
+                var mainWindow = new MainView(_singleConfigManager, 
                     Services.GetRequiredService<ILogger<MainView>>());
                 
                 var mainViewModel = Services.GetRequiredService<MainViewModel>();
@@ -384,6 +389,21 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
         try
         {
             var logger = Services?.GetService<ILogger<App>>();
+            
+            logger?.LogInformation("=== PROXYSTUDIO SHUTDOWN REQUESTED {ShutdownTime} ===", DateTime.Now);
+            
+            // ✅ CRITICAL: Save config using the SAME ConfigManager instance
+            if (_singleConfigManager != null)
+            {
+                logger?.LogInformation("Saving configuration using SINGLE ConfigManager instance...");
+                _singleConfigManager.SaveConfig();
+                logger?.LogInformation("Configuration saved successfully during shutdown");
+            }
+            else
+            {
+                logger?.LogWarning("ConfigManager instance is null during shutdown - config not saved!");
+            }
+
             
             logger?.LogInformation("=== PROXYSTUDIO SHUTDOWN {ShutdownTime} ===", DateTime.Now);
             
