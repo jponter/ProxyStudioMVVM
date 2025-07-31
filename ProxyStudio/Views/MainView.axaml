@@ -66,10 +66,10 @@
                                             Command="{Binding LoadMpcFillXmlCommand}"
                                             IsEnabled="{Binding !IsLoadingMpcFill}"/>
                                     
-                                    <Button Classes="secondary" 
-                                            Content="🧪 Load Test Cards"
-                                            HorizontalAlignment="Stretch"
-                                            Command="{Binding AddTestCardsRelayCommand}"/>
+                                    <!-- <Button Classes="secondary"  -->
+                                    <!--         Content="🧪 Load Test Cards" -->
+                                    <!--         HorizontalAlignment="Stretch" -->
+                                    <!--         Command="{Binding AddTestCardsRelayCommand}"/> -->
                                     
                                     <Button Classes="secondary"
                                             Background="{StaticResource ErrorBrush}"
