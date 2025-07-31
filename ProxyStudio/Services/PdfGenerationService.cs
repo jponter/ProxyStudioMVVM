@@ -1149,15 +1149,15 @@ namespace ProxyStudio.Services
                         if (card.EnableBleed)
                         {
                             // Crop 3mm from preview image (approximate scaling)
-                            var sourcePixelsPerMm = Math.Min(originalImage.Width / (2.5 * 25.4),
-                                originalImage.Height / (3.5 * 25.4));
+                            var sourcePixelsPerMm = Math.Min(originalImage.Width / (CARD_WIDTH_MM),
+                                originalImage.Height / (CARD_HEIGHT_MM));
                             var cropPixels = (int)(3.0 * sourcePixelsPerMm);
 
                             var cropRect = new System.Drawing.Rectangle(
                                 cropPixels,
                                 cropPixels,
-                                originalImage.Width - (cropPixels * 3),
-                                originalImage.Height - (cropPixels * 3)
+                                originalImage.Width - (cropPixels * 2),
+                                originalImage.Height - (cropPixels * 2)
                             );
 
                             // Draw cropped portion stretched to full card size
