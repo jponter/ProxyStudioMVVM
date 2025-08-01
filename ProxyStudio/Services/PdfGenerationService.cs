@@ -135,7 +135,7 @@ namespace ProxyStudio.Services
             {
                 _logger.LogError(ex, "Failed to add test cards");
                  _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
-                //DebugHelper.WriteDebug($"ERROR: Failed to convert {cardName} to PNG: {ex.Message}");
+                
                 return null;
             }
         }
@@ -282,8 +282,8 @@ namespace ProxyStudio.Services
         MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2)
     };
     
-    DebugHelper.WriteDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
-    DebugHelper.WriteDebug($"System has {Environment.ProcessorCount} logical processors");
+    _logger.LogDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
+    _logger.LogDebug($"System has {Environment.ProcessorCount} logical processors");
     
     var parallelStartTime = DateTime.Now;
     
@@ -298,7 +298,7 @@ namespace ProxyStudio.Services
             {
                 if (card.ImageData != null && card.ImageData.Length > 0)
                 {
-                    DebugHelper.WriteDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
+                    _logger.LogDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
                     
                     var cardStartTime = DateTime.Now;
                     var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
@@ -307,16 +307,16 @@ namespace ProxyStudio.Services
                     if (processedImage != null)
                     {
                         processedImages[card.Id] = processedImage;
-                        DebugHelper.WriteDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                        _logger.LogDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
                     }
                     else
                     {
-                        DebugHelper.WriteDebug($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
+                        _logger.LogWarning($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
                     }
                 }
                 else
                 {
-                    DebugHelper.WriteDebug($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
+                    _logger.LogError($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
                 }
                 
                 // Thread-safe progress update
@@ -342,11 +342,11 @@ namespace ProxyStudio.Services
                 
                 progress?.Report(tempProgressInfo);
                 
-                DebugHelper.WriteDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
+                _logger.LogDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
+                _logger.LogError($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
                 
                 // Still increment counter for failed cards
                 Interlocked.Increment(ref completedCount);
@@ -356,22 +356,22 @@ namespace ProxyStudio.Services
         var parallelEndTime = DateTime.Now;
         var parallelDuration = parallelEndTime - parallelStartTime;
         
-        DebugHelper.WriteDebug($"=== PARALLEL PROCESSING COMPLETE ===");
-        DebugHelper.WriteDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
-        DebugHelper.WriteDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
-        DebugHelper.WriteDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
+        _logger.LogDebug($"=== PARALLEL PROCESSING COMPLETE ===");
+        _logger.LogDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
+        _logger.LogDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
+        _logger.LogDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
         
         if (cards.Count > 1)
         {
             var theoreticalSequentialTime = cards.Count * 3.7; // Based on your previous 3.7s per card
             var speedupRatio = theoreticalSequentialTime / parallelDuration.TotalSeconds;
-            DebugHelper.WriteDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
+            _logger.LogDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
         }
     }
     catch (Exception ex)
     {
-        DebugHelper.WriteDebug($"ERROR: Parallel.ForEach failed: {ex.Message}");
-        DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+        _logger.LogCritical($"ERROR: Parallel.ForEach failed: {ex.Message}");
+        _logger.LogCritical($"Stack trace: {ex.StackTrace}");
         throw;
     }
     
@@ -414,7 +414,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+                _logger.LogError($"Error drawing title: {ex.Message}");
             }
     
             // Draw cards using pre-processed images - this is now FAST!
@@ -470,7 +470,7 @@ namespace ProxyStudio.Services
                         }
                         catch (Exception ex)
                         {
-                            DebugHelper.WriteDebug($"Failed to create XImage for {card.Name}: {ex.Message}, converting to PNG...");
+                            _logger.LogWarning($"Failed to create XImage for {card.Name}: {ex.Message}, converting to PNG...");
                     
                             // Fallback: convert to PNG
                             var pngData = ConvertToPng(processedImageData, card.Name);
@@ -485,11 +485,11 @@ namespace ProxyStudio.Services
                         {
                             // Draw the pre-processed image - FAST!
                             gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
-                            DebugHelper.WriteDebug($"FAST DRAW: Drew pre-processed image for {card.Name}");
+                            _logger.LogDebug($"FAST DRAW: Drew pre-processed image for {card.Name}");
                         }
                         else
                         {
-                            DebugHelper.WriteDebug($"ERROR: Failed to create XImage for {card.Name}");
+                            _logger.LogDebug($"ERROR: Failed to create XImage for {card.Name}");
                             DrawPlaceholder(gfx, card, x, y, width, height, "Image Load Error");
                         }
                     }
@@ -500,13 +500,13 @@ namespace ProxyStudio.Services
                 }
                 else
                 {
-                    DebugHelper.WriteDebug($"WARNING: No pre-processed image found for {card.Name}");
+                    _logger.LogWarning($"WARNING: No pre-processed image found for {card.Name}");
                     DrawPlaceholder(gfx, card, x, y, width, height, card.EnableBleed ? "No Image (Bleed)" : "No Image");
                 }
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: Exception in DrawCardWithPreProcessedImage for {card.Name}: {ex.Message}");
+                _logger.LogError($"ERROR: Exception in DrawCardWithPreProcessedImage for {card.Name}: {ex.Message}");
                 DrawPlaceholder(gfx, card, x, y, width, height, "Error");
             }
         }
@@ -546,7 +546,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+                _logger.LogError($"Error drawing title: {ex.Message}");
             }
 
             // Draw cards with individual progress updates
@@ -608,27 +608,26 @@ namespace ProxyStudio.Services
             {
                 try
                 {
-                    // DebugHelper.WriteDebug(
-                    //     $"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
+                   
                     _logger.LogDebug($"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
 
                     if (options == null)
                     {
-                        DebugHelper.WriteDebug("ERROR: options is null!");
+                        _logger.LogError("ERROR: options is null!");
                         return CreateFallbackPreview(cards, options);
                     }
 
                     // Use preview DPI for preview generation (not print DPI)
                     var previewBitmap = CreateSimplePreview(cards, options, options.PreviewDpi);
 
-                    DebugHelper.WriteDebug(
+                    _logger.LogDebug(
                         $"Preview generated successfully using {options.PreviewDpi} DPI (final PDF will use {options.PrintDpi} DPI)");
                     return previewBitmap;
                 }
                 catch (Exception ex)
                 {
-                    DebugHelper.WriteDebug($"Error generating preview: {ex.Message}");
-                    DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                    _logger.LogError($"Error generating preview: {ex.Message}");
+                    _logger.LogError($"Stack trace: {ex.StackTrace}");
                     return CreateFallbackPreview(cards, options);
                 }
             });
@@ -643,11 +642,11 @@ namespace ProxyStudio.Services
                 document.Info.Creator = "ProxyStudio";
                 document.Info.Subject = $"Proxy Cards at {targetDpi} DPI for high-quality printing";
 
-                DebugHelper.WriteDebug($"Applied high-DPI settings: {targetDpi} DPI");
+                _logger.LogDebug($"Applied high-DPI settings: {targetDpi} DPI");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Warning: Could not apply high-DPI document settings: {ex.Message}");
+                _logger.LogError($"Warning: Could not apply high-DPI document settings: {ex.Message}");
             }
         }
 
@@ -657,8 +656,8 @@ namespace ProxyStudio.Services
             // High-DPI is now handled purely through image processing, not graphics scaling
             // This ensures cards remain exactly 2.5" × 3.5" regardless of DPI setting
 
-            DebugHelper.WriteDebug("Skipped graphics DPI transformation - handling DPI through image processing only");
-            DebugHelper.WriteDebug($"Cards will maintain EXACT 2.5\" × 3.5\" dimensions at {targetDpi} DPI");
+            _logger.LogDebug("Skipped graphics DPI transformation - handling DPI through image processing only");
+            _logger.LogDebug($"Cards will maintain EXACT  dimensions at {targetDpi} DPI");
         }
 
         private (double Width, double Height) GetPageDimensions(string pageSize, bool isLandscape)
@@ -705,14 +704,14 @@ namespace ProxyStudio.Services
             var actualCardsPerRow = options.IsPortrait ? 3 : 4;
             var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
 
-            DebugHelper.WriteDebug(
+            _logger.LogDebug(
                 $"Drawing {pageCards.Count} cards in FIXED {actualCardsPerRow}x{actualCardsPerColumn} grid ({(options.IsPortrait ? "Portrait" : "Landscape")}) with {options.CardSpacing}pt spacing (Page {currentPage} of {totalPages})");
 
             // FIXED CARD DIMENSIONS: Always exactly 2.5" x 3.5" (180 x 252 points)
             var cardWidthPt = CARD_WIDTH_POINTS;
             var cardHeightPt = CARD_HEIGHT_POINTS;
 
-            DebugHelper.WriteDebug(
+            _logger.LogDebug(
                 $"Card dimensions: {cardWidthPt:F3}x{cardHeightPt:F3} points (FIXED 2.5\" x 3.5\") - spacing: {options.CardSpacing}pt");
 
             // Calculate total grid size
@@ -730,7 +729,7 @@ namespace ProxyStudio.Services
             var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
             var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
 
-            DebugHelper.WriteDebug(
+            _logger.LogDebug(
                 $"Grid layout: start=({startXPt:F3}, {startYPt:F3}), total size=({totalGridWidthPt:F3}x{totalGridHeightPt:F3})");
 
             // Draw title with page info
@@ -743,11 +742,11 @@ namespace ProxyStudio.Services
 
                 gfx.DrawString(title, font, XBrushes.Black,
                     new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
-                DebugHelper.WriteDebug("Drew title successfully");
+                _logger.LogDebug("Drew title successfully");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing title: {ex.Message}");
+                _logger.LogError($"Error drawing title: {ex.Message}");
             }
 
             // Draw cards with precise positioning
@@ -771,7 +770,7 @@ namespace ProxyStudio.Services
                         var cardWidth = XUnit.FromPoint(cardWidthPt);
                         var cardHeight = XUnit.FromPoint(cardHeightPt);
 
-                        DebugHelper.WriteDebug(
+                        _logger.LogDebug(
                             $"Drawing card {cardIndex} ({card.Name}) at ({xPt:F3}, {yPt:F3}) - row {row}, col {col}");
 
                         DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
@@ -791,7 +790,7 @@ namespace ProxyStudio.Services
         private void DrawCard(XGraphics gfx, Card card, PdfGenerationOptions options, XUnit x, XUnit y, XUnit width,
             XUnit height)
         {
-            DebugHelper.WriteDebug($"DrawCard: {card.Name} - EnableBleed: {card.EnableBleed}");
+            _logger.LogDebug($"DrawCard: {card.Name} - EnableBleed: {card.EnableBleed}");
 
             try
             {
@@ -815,7 +814,7 @@ namespace ProxyStudio.Services
                             }
                             catch (Exception ex)
                             {
-                                DebugHelper.WriteDebug(
+                                _logger.LogError(
                                     $"Failed to create XImage directly: {ex.Message}, converting to PNG...");
 
                                 // Convert to PNG as fallback - PDFsharp handles PNG better
@@ -831,12 +830,12 @@ namespace ProxyStudio.Services
                             {
                                 // Draw at full card size - the image is already processed for bleed
                                 gfx.DrawImage(xImage, new XRect(x.Point, y.Point, width.Point, height.Point));
-                                DebugHelper.WriteDebug(
+                                _logger.LogDebug(
                                     $"SUCCESS: Drew {(card.EnableBleed ? "bleed-cropped" : "full")} image for {card.Name}");
                             }
                             else
                             {
-                                DebugHelper.WriteDebug($"ERROR: Failed to create XImage for {card.Name}");
+                                _logger.LogError($"ERROR: Failed to create XImage for {card.Name}");
                                 DrawPlaceholder(gfx, card, x, y, width, height, "Image Load Error");
                             }
                         }
@@ -853,7 +852,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: Exception in DrawCard for {card.Name}: {ex.Message}");
+                _logger.LogError($"ERROR: Exception in DrawCard for {card.Name}: {ex.Message}");
                 DrawPlaceholder(gfx, card, x, y, width, height, "Error");
             }
         }
@@ -864,15 +863,15 @@ namespace ProxyStudio.Services
         {
             try
             {
-                DebugHelper.WriteDebug(
+                _logger.LogDebug(
                     $"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI - EnableBleed: {enableBleed}");
 
                 using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
                 var originalSize = $"{image.Width}x{image.Height}";
 
-                DebugHelper.WriteDebug($"  Source: {originalSize}");
+                _logger.LogDebug($"  Source: {originalSize}");
 
-                // Calculate target dimensions for exact 2.5" × 3.5" at target DPI
+                // Calculate target dimensions for exact 2.48" × 3.46" at target DPI
                 var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
                 var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
 
@@ -880,11 +879,11 @@ namespace ProxyStudio.Services
                 if (enableBleed)
                 {
                     // Calculate 2mm in pixels based on the current image resolution
-                    // Assume source image represents a 2.5" × 3.5" card with bleed
-                    var sourcePixelsPerMm = Math.Min(image.Width / (2.5 * 25.4), image.Height / (3.5 * 25.4));
+                    // Assume source image represents a 63mm × 88mm card with bleed
+                    var sourcePixelsPerMm = Math.Min(image.Width / (CARD_WIDTH_MM), image.Height / (CARD_HEIGHT_MM));
                     var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
 
-                    DebugHelper.WriteDebug($"  Bleed crop: {cropPixels} pixels from each edge");
+                    _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 
                     // Crop the image (remove 2mm bleed from all sides)
                     var cropRect = new SixLabors.ImageSharp.Rectangle(
@@ -895,10 +894,10 @@ namespace ProxyStudio.Services
                     );
 
                     image.Mutate(x => x.Crop(cropRect));
-                    DebugHelper.WriteDebug($"  After crop: {image.Width}x{image.Height}");
+                    _logger.LogDebug($"  After crop: {image.Width}x{image.Height}");
                 }
 
-                DebugHelper.WriteDebug(
+                _logger.LogDebug(
                     $"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
 
                 // Resize to exact target dimensions (this stretches the cropped image to full card size)
@@ -906,7 +905,7 @@ namespace ProxyStudio.Services
                 {
                     var scaleX = (double)targetWidth / image.Width;
                     var scaleY = (double)targetHeight / image.Height;
-                    DebugHelper.WriteDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
+                    _logger.LogDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
 
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
@@ -947,15 +946,15 @@ namespace ProxyStudio.Services
                 var processedData = outputStream.ToArray();
                 outputStream.Dispose();
 
-                DebugHelper.WriteDebug($"  Output: {processedData.Length} bytes as {format}");
-                DebugHelper.WriteDebug(
+                _logger.LogDebug($"  Output: {processedData.Length} bytes as {format}");
+                _logger.LogDebug(
                     $"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName} - Bleed {(enableBleed ? "removed" : "preserved")}");
 
                 return processedData;
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
+                _logger.LogError($"ERROR: ProcessImageForHighDpiPdf failed for {cardName}: {ex.Message}");
                 return null;
             }
         }
@@ -965,7 +964,7 @@ namespace ProxyStudio.Services
             _logger.BeginScope("CreateSimplePreview");
             try
             {
-                //DebugHelper.WriteDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+                
                 _logger.LogDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
 
                 // Use the user's orientation choice, not automatic layout
@@ -974,7 +973,7 @@ namespace ProxyStudio.Services
                 var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                 var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
 
-                //DebugHelper.WriteDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+                
                 _logger.LogDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
 
                 // Get page dimensions based on selected page size and USER'S orientation choice
@@ -992,9 +991,9 @@ namespace ProxyStudio.Services
                 var previewWidth = (int)(pageDimensions.Width * pageScale);
                 var previewHeight = (int)(pageDimensions.Height * pageScale);
 
-                //DebugHelper.WriteDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
+                
                 _logger.LogDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
-                //DebugHelper.WriteDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+                // Ensure we have a valid page scale
                 _logger.LogDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
 
                 using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
@@ -1010,12 +1009,12 @@ namespace ProxyStudio.Services
                 graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
                     new System.Drawing.PointF(10, 10));
 
-                //DebugHelper.WriteDebug("Drew title");
+                
                 _logger.LogDebug($"Drew title: {titleText}");
 
                 if (pageCards.Count == 0)
                 {
-                    //DebugHelper.WriteDebug("No cards to draw");
+                    
                     _logger.LogDebug("No cards to draw, returning empty preview");
                     using var ms = new MemoryStream();
                     bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
@@ -1028,7 +1027,7 @@ namespace ProxyStudio.Services
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
 
-                //DebugHelper.WriteDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                
                 _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
 
                 // Calculate total grid size
@@ -1050,19 +1049,18 @@ namespace ProxyStudio.Services
                 var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
                 var gridStartY = marginTopScaled + titleSpaceScaled + (availableHeight - totalGridHeight) / 2;
 
-                //DebugHelper.WriteDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
+                
                 _logger.LogDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
 
                 // Check if grid fits
                 if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
                 {
-                    // DebugHelper.WriteDebug(
-                    //     $"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+                    
                     _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
                 }
                 else
                 {
-                    //DebugHelper.WriteDebug($"SUCCESS: Preview grid fits within page margins");
+                    
                     _logger.LogDebug("SUCCESS: Preview grid fits within page margins");
                 }
 
@@ -1085,9 +1083,9 @@ namespace ProxyStudio.Services
                             var x = (int)Math.Round(exactX);
                             var y = (int)Math.Round(exactY);
 
-                            //DebugHelper.WriteDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
+                            
                             _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
-                            //DebugHelper.WriteDebug($"  Position: ({x}, {y})");
+                            
                             _logger.LogDebug($"  Position: ({x}, {y})");
 
                             DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
@@ -1103,7 +1101,7 @@ namespace ProxyStudio.Services
                         actualCardsPerRow, actualCardsPerColumn, cardWidthPreview, cardHeightPreview, spacingPreview);
                 }
 
-                //DebugHelper.WriteDebug("Finished drawing cards, converting to Avalonia Bitmap");
+                
                 _logger.LogDebug($"Finished drawing cards, converting to Avalonia Bitmap");
 
                 // Convert to Avalonia Bitmap
@@ -1112,15 +1110,14 @@ namespace ProxyStudio.Services
                 outputStream.Position = 0;
 
                 var avaloniaB = new Bitmap(outputStream);
-                //DebugHelper.WriteDebug("Successfully created Avalonia Bitmap");
+                
                 _logger.LogDebug($"Successfully created Avalonia Bitmap");
 
                 return avaloniaB;
             }
             catch (Exception ex)
             {
-                //DebugHelper.WriteDebug($"Error creating simple preview: {ex.Message}");
-                //DebugHelper.WriteDebug($"Stack trace: {ex.StackTrace}");
+                
                 _logger.LogError(ex,$"Error creating simple preview.");
                 return CreateFallbackPreview(cards, options);
             }
@@ -1134,8 +1131,7 @@ namespace ProxyStudio.Services
             {
                 var rect = new System.Drawing.Rectangle(x, y, width, height);
 
-                // DebugHelper.WriteDebug(
-                //     $"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+                
                 
                 _logger.LogDebug($"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
 
@@ -1162,7 +1158,7 @@ namespace ProxyStudio.Services
 
                             // Draw cropped portion stretched to full card size
                             graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
-                            //DebugHelper.WriteDebug($"Drew preview with bleed crop: {card.Name}");
+                            
                             _logger.LogDebug($"Drew preview with bleed crop: {card.Name}");
                         }
                         else
@@ -1173,7 +1169,7 @@ namespace ProxyStudio.Services
                     }
                     catch (Exception ex)
                     {
-                        //DebugHelper.WriteDebug($"Error drawing preview image for {card.Name}: {ex.Message}");
+                       
                         _logger.LogError(ex, $"Error drawing preview image for {card.Name}");
                         DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
                     }
@@ -1186,7 +1182,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                //DebugHelper.WriteDebug($"Error drawing preview card {card?.Name ?? "NULL"}: {ex.Message}");
+                
                 _logger.LogError(ex,$"Error drawing preview card {card?.Name ?? "NULL"}");
             }
         }
@@ -1217,11 +1213,11 @@ namespace ProxyStudio.Services
                 graphics.DrawString(card?.Name ?? "Unknown", smallFont, System.Drawing.Brushes.DarkGray, nameRect,
                     stringFormat);
 
-                DebugHelper.WriteDebug($"Drew placeholder for {card?.Name ?? "NULL"}: {message}");
+                _logger.LogDebug($"Drew placeholder for {card?.Name ?? "NULL"}: {message}");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing placeholder: {ex.Message}");
+                _logger.LogError($"Error drawing placeholder: {ex.Message}");
                 try
                 {
                     graphics.FillRectangle(System.Drawing.Brushes.Pink, rect);
@@ -1229,6 +1225,7 @@ namespace ProxyStudio.Services
                 catch
                 {
                     // Give up
+                    //todo add a throw here
                 }
             }
         }
@@ -1249,7 +1246,7 @@ namespace ProxyStudio.Services
 
                 var extension = options.CuttingLineExtension;
 
-                DebugHelper.WriteDebug($"Drawing grid cutting lines with {extension}pt extension OUTSIDE grid only");
+                _logger.LogDebug($"Drawing grid cutting lines with {extension}pt extension OUTSIDE grid only");
 
                 // Calculate grid boundaries
                 var gridLeft = gridStartX;
@@ -1283,11 +1280,11 @@ namespace ProxyStudio.Services
                     graphics.DrawLine(pen, x, gridBottom, x, gridBottom + extension);
                 }
 
-                DebugHelper.WriteDebug("Completed drawing grid cutting line extensions");
+                _logger.LogDebug("Completed drawing grid cutting line extensions");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing grid cutting lines: {ex.Message}");
+                _logger.LogError($"Error drawing grid cutting lines: {ex.Message}");
             }
         }
 
@@ -1347,7 +1344,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error creating font {familyName}: {ex.Message}, falling back to default");
+                _logger.LogError($"Error creating font {familyName}: {ex.Message}, falling back to default");
 
                 try
                 {
@@ -1388,7 +1385,7 @@ namespace ProxyStudio.Services
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing placeholder text: {ex.Message}");
+                _logger.LogError($"Error drawing placeholder text: {ex.Message}");
             }
         }
 
@@ -1408,7 +1405,7 @@ namespace ProxyStudio.Services
 
                 var extension = options.CuttingLineExtension;
 
-                DebugHelper.WriteDebug(
+                _logger.LogDebug(
                     $"Drawing PDF grid cutting lines with {extension}pt extension OUTSIDE grid only");
 
                 // Calculate grid boundaries
@@ -1455,11 +1452,11 @@ namespace ProxyStudio.Services
                         xUnit, XUnit.FromPoint(gridBottom + extension));
                 }
 
-                DebugHelper.WriteDebug("Completed drawing PDF grid cutting line extensions");
+                _logger.LogDebug("Completed drawing PDF grid cutting line extensions");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Error drawing PDF grid cutting lines: {ex.Message}");
+                _logger.LogError($"Error drawing PDF grid cutting lines: {ex.Message}");
             }
         }
 

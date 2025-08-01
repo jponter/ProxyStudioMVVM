@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Dialogs;
@@ -48,6 +49,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly ILogger<MainViewModel> _logger;
     private readonly IErrorHandlingService _errorHandler;
     private readonly IThemeService _themeService;
+    private readonly IServiceProvider _serviceProvider;
+    
     public ThemeSettingsViewModel? ThemeSettingsViewModel { get; private set; }
     
     
@@ -58,7 +61,8 @@ public partial class MainViewModel : ViewModelBase
 
     // Print ViewModel
     [ObservableProperty] private PrintViewModel? _printViewModel;
-    [ObservableProperty] private LoggingSettingsViewModel? _loggingSettingsViewModel; // ADD THIS
+    [ObservableProperty] private LoggingSettingsViewModel? _loggingSettingsViewModel; 
+    
 
     // configuration properties
     [ObservableProperty] private bool _globalBleedEnabled;
@@ -79,7 +83,7 @@ public partial class MainViewModel : ViewModelBase
     partial void OnGlobalBleedEnabledChanged(bool value)
     {
         _configManager.Config.GlobalBleedEnabled = value;
-        //DebugHelper.WriteDebug("Global bleed enabled changed to " + value);
+        
         _logger.LogDebug($"Global bleed enabled changed to {value}");
     }
 
@@ -96,7 +100,7 @@ public partial class MainViewModel : ViewModelBase
 
     //constructor with design time check as some of the DI stuff breaks it
     public MainViewModel(IConfigManager configManager, IPdfGenerationService pdfService, 
-        IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory, IThemeService themeService )
+        IMpcFillService mpcFillService, ILogger<MainViewModel> logger, IErrorHandlingService errorHandler, ILoggerFactory loggerFactory, IThemeService themeService, IServiceProvider serviceProvider )
     {
         
         _logger = logger;
@@ -106,6 +110,7 @@ public partial class MainViewModel : ViewModelBase
         _logger.LogInformation("MpcFillService assigned");
         _configManager = configManager;
         _pdfService = pdfService;
+        _serviceProvider = serviceProvider;
         
         _errorHandler = errorHandler;
         _logger.LogInformation("ErrorHandler assigned");
@@ -119,7 +124,7 @@ public partial class MainViewModel : ViewModelBase
         _logger.LogInformation("MainViewModel initializing (Instance: {InstanceId})", instanceId);
         
        
-        ThemeSettingsViewModel = new ThemeSettingsViewModel(themeService);
+        ThemeSettingsViewModel = new ThemeSettingsViewModel(themeService, loggerFactory.CreateLogger<ThemeSettingsViewModel>(), errorHandler);
 
         if (Design.IsDesignMode)
         {
@@ -163,8 +168,15 @@ public partial class MainViewModel : ViewModelBase
         Microsoft.Extensions.Logging.Abstractions.NullLogger<MainViewModel>.Instance, // Use built-in null logger
         new DesignTimeErrorHandlingService(),
         Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance,  // Use built-in null factory
-       new DesignTimeThemeService()
-        )
+        new DesignTimeThemeService(),
+        new ServiceCollection()
+            .AddSingleton<IConfigManager>(configManager)
+            .AddSingleton<IPdfGenerationService, DesignTimePdfService>()
+            .AddSingleton<IMpcFillService, DesignTimeMpcFillService>()
+            .AddSingleton<IErrorHandlingService, DesignTimeErrorHandlingService>()
+            .AddSingleton<IThemeService, DesignTimeThemeService>()
+            .BuildServiceProvider()
+    )
     {
         // Design-time constructor
     }
@@ -370,13 +382,13 @@ public partial class MainViewModel : ViewModelBase
     {
         List<Card> cards = new();
 
-        DebugHelper.WriteDebug("Loading high-resolution images for dynamic DPI scaling...");
+        _logger.LogDebug("Loading high-resolution images for dynamic DPI scaling...");
     
         // Load images at their native resolution
         var image = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/preacher.jpg");
         var image2 = SixLabors.ImageSharp.Image.Load<Rgba32>("Resources/vampire.jpg");
 
-        DebugHelper.WriteDebug($"Loaded images: preacher={image.Width}x{image.Height}, vampire={image2.Width}x{image2.Height}");
+        _logger.LogDebug($"Loaded images: preacher={image.Width}x{image.Height}, vampire={image2.Width}x{image2.Height}");
 
         // IMPORTANT: Store images at a high base resolution instead of scaling at startup
         // We'll use 600 DPI (1500x2100) as our "source" resolution that can be scaled down
@@ -414,8 +426,8 @@ public partial class MainViewModel : ViewModelBase
         image2.Save(ms2, pngEncoder);
         var buffer2 = ms2.ToArray();
 
-        DebugHelper.WriteDebug($"Created high-resolution base images: {baseWidth}x{baseHeight} ({baseDpi} DPI base)");
-        DebugHelper.WriteDebug($"Image sizes: preacher={buffer.Length} bytes, vampire={buffer2.Length} bytes");
+        _logger.LogDebug($"Created high-resolution base images: {baseWidth}x{baseHeight} ({baseDpi} DPI base)");
+        _logger.LogDebug($"Image sizes: preacher={buffer.Length} bytes, vampire={buffer2.Length} bytes");
 
         for (var i = 0; i < 2; i++)
         {
@@ -429,7 +441,7 @@ public partial class MainViewModel : ViewModelBase
         foreach (var card in cards) card.EnableBleed= true;
         
     
-        DebugHelper.WriteDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
+        _logger.LogDebug($"Created {cards.Count} cards with high-resolution images ready for dynamic DPI scaling");
         return cards;
     }
     
@@ -446,7 +458,7 @@ public partial class MainViewModel : ViewModelBase
     {
         try
         {
-            DebugHelper.WriteDebug($"Processing image file: {fileName}");
+            _logger.LogDebug($"Processing image file: {fileName}");
         
             IsBusy = true;
         
@@ -458,12 +470,13 @@ public partial class MainViewModel : ViewModelBase
                 PrintViewModel?.RefreshCardInfo();
                 PrintViewModel?.GeneratePreviewCommand.Execute(null);
             
-                DebugHelper.WriteDebug($"Successfully added card from image: {fileName}");
+                _logger.LogDebug($"Successfully added card from image: {fileName}");
             }
         }
         catch (Exception ex)
         {
-            DebugHelper.WriteDebug($"Error processing image file {fileName}: {ex.Message}");
+            _logger.LogCritical($"Error processing image file {fileName}: {ex.Message}");
+            await _errorHandler.HandleExceptionAsync(ex,"Error processing image file", "ProcessImageFileAsync");
         }
         finally
         {
@@ -479,7 +492,7 @@ public partial class MainViewModel : ViewModelBase
         // Use filename without extension as card name
         var cardName = Path.GetFileNameWithoutExtension(fileName);
         var cardId = Guid.NewGuid().ToString();
-    
+        _logger.LogDebug($"Creating card: {cardName} from {fileName} with ID {cardId}");
         // Process image using same high-resolution logic as AddTestCards
         var processedImageData = ProcessImageToHighResolution(imageData);
     
@@ -495,8 +508,8 @@ public partial class MainViewModel : ViewModelBase
     private byte[] ProcessImageToHighResolution(byte[] imageData)
     {
         const int baseDpi = 600;
-        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
-        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+        var baseWidth = (int)(CARD_WIDTH_INCHES * baseDpi);   // 1500 pixels
+        var baseHeight = (int)(CARD_HEIGHT_INCHES * baseDpi);  // 2100 pixels
     
         using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
     
@@ -524,18 +537,18 @@ public partial class MainViewModel : ViewModelBase
     
     // Add this RelayCommand to your MainViewModel.cs class
 
-    [RelayCommand]
+    [RelayCommand ]
     private void DeleteAllCards()
     {
         try
         {
-            DebugHelper.WriteDebug("DeleteAllCards: Starting to delete all cards");
+            _logger.LogDebug("DeleteAllCards: Starting to delete all cards");
         
             var cardCount = Cards.Count;
         
             if (cardCount == 0)
             {
-                DebugHelper.WriteDebug("DeleteAllCards: No cards to delete");
+                _logger.LogDebug("DeleteAllCards: No cards to delete");
                 return;
             }
         
@@ -549,22 +562,19 @@ public partial class MainViewModel : ViewModelBase
             // This will automatically clear the preview since CardCount = 0
             PrintViewModel?.RefreshCardInfo();
         
-            DebugHelper.WriteDebug($"Successfully deleted all {cardCount} cards and cleared preview");
+            _logger.LogDebug($"Successfully deleted all {cardCount} cards and cleared preview");
         }
         catch (Exception ex)
         {
-            DebugHelper.WriteDebug($"Error deleting all cards: {ex.Message}");
+            _logger.LogDebug($"Error deleting all cards: {ex.Message}");
+            _errorHandler.HandleExceptionAsync(ex,"Error deleting all cards", "DeleteAllCards");
         }
     }
 
-// Optional: Add a method to check if deletion is allowed
-    private bool CanDeleteAllCards()
-    {
-        return Cards.Count > 0 && !IsBusy;
-    }
+
     
 
-// Add this RelayCommand to your MainViewModel.cs
+
 
     [RelayCommand]
     private void DeleteCard(Card card)
@@ -573,11 +583,11 @@ public partial class MainViewModel : ViewModelBase
         {
             if (card == null)
             {
-                DebugHelper.WriteDebug("DeleteCard: Card parameter is null");
+                _logger.LogDebug("DeleteCard: Card parameter is null");
                 return;
             }
 
-            DebugHelper.WriteDebug($"Deleting card: {card.Name} (ID: {card.Id})");
+            _logger.LogDebug($"Deleting card: {card.Name} (ID: {card.Id})");
 
             // Clear selection if we're deleting the selected card
             if (SelectedCard == card)
@@ -594,11 +604,12 @@ public partial class MainViewModel : ViewModelBase
             // Regenerate preview to reflect the change
             PrintViewModel?.GeneratePreviewCommand.Execute(null);
 
-            DebugHelper.WriteDebug($"Successfully deleted card. Remaining cards: {Cards.Count}");
+            _logger.LogDebug($"Successfully deleted card. Remaining cards: {Cards.Count}");
         }
         catch (Exception ex)
         {
-            DebugHelper.WriteDebug($"Error deleting card {card?.Name}: {ex.Message}");
+            _logger.LogCritical($"Error deleting card {card?.Name}: {ex.Message}");
+            _errorHandler.HandleExceptionAsync(ex, "Error deleting card", "DeleteCard");
         }
     }
 
@@ -613,10 +624,13 @@ public partial class MainViewModel : ViewModelBase
     // UPDATE your ProcessMPCFillXML method
     public async Task ProcessMPCFillXML(string fileName)
     {
-        _logger.BeginScope("ProcessMPCFillXML");
+        using var scope = _logger.BeginScope("ProcessMPCFillXML");
+        List<Card>? newCards = null;
+        Exception? lastError = null;
+        
         try
         {
-            //DebugHelper.WriteDebug($"Loading MPC Fill XML: {fileName}");
+            
             _logger.LogDebug($"Loading MPC Fill XML: {fileName}");
             IsBusy = true;
             IsLoadingMpcFill = true;
@@ -658,40 +672,127 @@ public partial class MainViewModel : ViewModelBase
                 }
 
                 // Log progress for debugging too
-                //DebugHelper.WriteDebug($"MPC Fill Progress: {progressInfo.PercentageComplete:F0}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
+                
                 _logger.LogDebug($"MPC Fill Progress: {progressInfo.PercentageComplete:F0}% - {progressInfo.CurrentOperation} - {progressInfo.CurrentCardName}");
             });
 
-            // Load cards using the service
-            var newCards = await _mpcFillService.LoadCardsFromXmlAsync(fileName, progress);
-
-            // Add to UI collection
-            foreach (var card in newCards)
+            
+            try
             {
-                card.EditMeCommand = EditCardCommand;
-                Cards.AddCard(card);
+                newCards = await _mpcFillService.LoadCardsFromXmlAsync(fileName, progress);
             }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("missing 'fronts' element"))
+            {
+                // Handle specific XML format errors
+                lastError = ex;
+                await _errorHandler.ShowErrorAsync(
+                    "Invalid XML Format",
+                    "The selected file is not a valid MPC Fill XML file. Please ensure you're using an XML file exported from MPC Fill.",
+                    ErrorSeverity.Error,
+                    ex);
+                
+            }
+            catch (XmlException ex)
+            {
+                // Handle XML parsing errors
+                lastError = ex;
+                await _errorHandler.ShowErrorAsync(
+                    "XML Parse Error",
+                    "The selected XML file is corrupted or contains invalid XML. Please try exporting the file again from MPC Fill.",
+                    ErrorSeverity.Error,
+                    ex);
+                
+            }
+            catch (FileNotFoundException ex)
+            {
+                // Handle file not found
+                lastError = ex;
+                await _errorHandler.ShowErrorAsync(
+                    "File Not Found",
+                    $"The XML file could not be found: {Path.GetFileName(fileName)}",
+                    ErrorSeverity.Error,
+                    ex);
+                
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Handle permission errors
+                lastError = ex;
+                await _errorHandler.ShowErrorAsync(
+                    "Access Denied",
+                    $"Cannot read the XML file. Please check that you have permission to access: {Path.GetFileName(fileName)}",
+                    ErrorSeverity.Error,
+                    ex);
+                
+            }
+            catch (HttpRequestException ex)
+            {
+                // Handle network errors during image downloads
+                lastError = ex;
+                await _errorHandler.ShowRecoverableErrorAsync(
+                    "Network Error",
+                    "Failed to download card images from MPC Fill. This might be due to network connectivity issues.",
+                    "Retry download",
+                    async () => await ProcessMPCFillXML(fileName));
+                
+            }
+            catch (Exception ex)
+            {
+                // Handle all other errors
+                lastError = ex;
+                await _errorHandler.HandleExceptionAsync(ex, 
+                    "An unexpected error occurred while loading the MPC Fill XML file. Please check the file format and try again.", 
+                    "ProcessMPCFillXML");
+                
+            }
+            
+            bool isSuccess = newCards != null && newCards.Count > 0 && lastError == null;
 
-            // Update final status
-            MpcFillProgress = 100;
-            MpcFillStatus = $"Successfully loaded {newCards.Count} cards!";
-            MpcFillCurrentOperation = $"Added {newCards.Count} cards to collection";
-            MpcFillTimeRemaining = "";
+            if (isSuccess)
+            {
+                // Add to UI collection
+                foreach (var card in newCards)
+                {
+                    card.EditMeCommand = EditCardCommand;
+                    Cards.AddCard(card);
+                }
 
-            // Refresh UI
-            PrintViewModel?.RefreshCardInfo();
-            PrintViewModel?.GeneratePreviewCommand.Execute(null);
+                // Update final status
+                MpcFillProgress = 100;
+                MpcFillStatus = $"Successfully loaded {newCards.Count} cards!";
+                MpcFillCurrentOperation = $"Added {newCards.Count} cards to collection";
+                MpcFillTimeRemaining = "";
 
-            //DebugHelper.WriteDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
-            _logger.LogDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
-            // Hide progress after a delay
-            await Task.Delay(2000);
-            ShowMpcFillProgress = false;
+                // Refresh UI
+                PrintViewModel?.RefreshCardInfo();
+                PrintViewModel?.GeneratePreviewCommand.Execute(null);
+
+               
+                _logger.LogDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
+                // Hide progress after a delay
+                await Task.Delay(2000);
+                ShowMpcFillProgress = false;
+            }
+            else
+            {
+                // ✅ Handle error case - update UI to show failure
+                MpcFillStatus = "Import failed";
+                MpcFillProgress = 0;
+                MpcFillCurrentOperation = "Import failed";
+                MpcFillTimeRemaining = "";
+            
+                _logger.LogWarning("MPC Fill import failed: {ErrorMessage}", lastError?.Message ?? "Unknown error");
+            
+                // Hide progress after error delay
+                await Task.Delay(3000);
+            }
         }
         catch (Exception ex)
         {
-            //DebugHelper.WriteDebug($"Error loading MPC Fill XML: {ex.Message}");
-            _logger.LogError(ex,$"Error loading MPC Fill XML");
+            _logger.LogError(ex, "Unexpected error in ProcessMPCFillXML");
+        
+            // Final catch-all for any errors we missed
+           
             // Show error in progress UI
             MpcFillStatus = $"Error: {ex.Message}";
             MpcFillProgress = 0;
@@ -704,8 +805,12 @@ public partial class MainViewModel : ViewModelBase
         }
         finally
         {
+            // ✅ Always cleanup, regardless of success or failure
+            ShowMpcFillProgress = false;
             IsBusy = false;
             IsLoadingMpcFill = false;
+        
+            _logger.LogDebug("ProcessMPCFillXML cleanup completed");
         }
     }
     
@@ -754,7 +859,8 @@ public partial class MainViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            DebugHelper.WriteDebug($"Error in LoadMpcFillXmlAsync: {ex.Message}");
+            _logger.LogCritical($"Error in LoadMpcFillXmlAsync: {ex.Message}");
+            await _errorHandler.HandleExceptionAsync(ex, "Error loading MPC Fill XML file", "LoadMpcFillXmlAsync");
         }
     }
     
@@ -809,70 +915,13 @@ public partial class MainViewModel : ViewModelBase
         catch (Exception ex)
         {
             IsLoadingSingleImage = false;
-            DebugHelper.WriteDebug($"Error in LoadMpcFillXmlAsync: {ex.Message}");
+            _logger.LogCritical($"Error in LoadSingleImage: {ex.Message}");
+            await _errorHandler.HandleExceptionAsync(ex,"Error loading single image", "LoadSingleImage");
         }
         IsLoadingSingleImage=false;
     }
     
     
 
-    // private async Task UpdateCardCollectionAsync()
-    // {
-    //     DebugHelper.WriteDebug($"Entering UpdateCardCollectionAsnc. Total cards: {Cards.Count}");
-    //
-    //     var checkedCards = Cards.Count > 0 ? Cards : null;
-    //     var checkedCards1 = Cards.Where(card => !card.ImageDownloaded).ToList();
-    //
-    //     var tasks = Cards
-    //         .Where(card => !card.ImageDownloaded)
-    //         .Select(async card =>
-    //         {
-    //             DebugHelper.WriteDebug($"Card {card.Name} with ID {card.Id} has not downloaded the image yet.");
-    //
-    //             await LoadImageFromCacheAsync(card); // Async load
-    //             card.ImageDownloaded = true;
-    //         });
-    //     DebugHelper.WriteDebug($"UpdateCardCollectionAsync - Finished selecting cards for tasks");
-    //
-    //     await Task.WhenAll(tasks); // Wait for all image loading tasks
-    // }
-
-    // public async Task LoadImageFromCacheAsync(Card card)
-    // {
-    //     DebugHelper.WriteDebug("Entering LoadImageFromCacheAsync");
-    //     byte[] imageBuffer = Array.Empty<byte>();
-    //     string cacheFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ProxyStudio", "Cache");
-    //     string imageFilePath = Path.Combine(cacheFolder, $"{card.Id}.jpg");
-    //
-    //     if (!File.Exists(imageFilePath))
-    //     {
-    //         DebugHelper.WriteDebug($"Image for card {card.Name} with ID {card.Id} does not exist in cache. Downloading...");
-    //
-    //         GetMPCImages helperInstance = new GetMPCImages();
-    //         imageBuffer = await helperInstance.GetImageFromMPCFill(card.Id, httpClient);
-    //
-    //         if (!Directory.Exists(cacheFolder))
-    //             Directory.CreateDirectory(cacheFolder);
-    //
-    //         await Task.Run(() =>
-    //         {
-    //             using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageBuffer);
-    //             var encoder = new JpegEncoder { Quality = 100 };
-    //             image.Save(imageFilePath, encoder);
-    //         });
-    //     }
-    //     else
-    //     {
-    //         DebugHelper.WriteDebug($"Image for card {card.Name} with ID {card.Id} found in cache.");
-    //
-    //         imageBuffer = await Task.Run(() =>
-    //         {
-    //             using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageFilePath);
-    //             return ImageSharpToWPFConverter.ImageToByteArray(image);
-    //         });
-    //     }
-    //
-    //     card.ImageData = imageBuffer;
-    // }
-    //
+    
 }

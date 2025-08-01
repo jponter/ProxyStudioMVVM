@@ -60,13 +60,17 @@
                                             Content="➕ Add Local Card Image(s)"
                                             Command ="{Binding LoadSingleImageCommand}"
                                             IsEnabled="{Binding !IsLoadingSingleImage}"
-                                            HorizontalAlignment="Stretch"/>
+                                            HorizontalAlignment="Stretch"
+                                            ToolTip.Tip="Add single or multiple local card images to the collection" />
+                                            
                                     
                                     <Button Classes="primary"
                                             Content="📥 Load MPC Fill XML"
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding LoadMpcFillXmlCommand}"
-                                            IsEnabled="{Binding !IsLoadingMpcFill}"/>
+                                            IsEnabled="{Binding !IsLoadingMpcFill}"
+                                            ToolTip.Tip="Load an MPC Fill XML file to import cards to the collection" />
+                                            
                                     
                                     <!-- <Button Classes="secondary"  -->
                                     <!--         Content="🧪 Load Test Cards" -->
@@ -79,7 +83,7 @@
                                             Content="🗑️ Delete All Cards"
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding DeleteAllCardsCommand}"
-                                            IsEnabled="{Binding !IsBusy}"
+                                            
                                             ToolTip.Tip="Remove all cards from the collection and clear preview"/>
                                     
                                 </StackPanel>

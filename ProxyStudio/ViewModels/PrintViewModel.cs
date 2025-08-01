@@ -98,6 +98,7 @@ namespace ProxyStudio.ViewModels
             _logger = logger;
             _errorHandler = errorHandlingService;
 
+            _logger.BeginScope("PrintViewModel Initialization");
             _logger.LogDebug($"PrintViewModel constructor: Received {cards?.Count ?? 0} cards");
 
             // Set minimal defaults (will be overridden by LoadSettings)
@@ -125,13 +126,14 @@ namespace ProxyStudio.ViewModels
             _logger.LogDebug("PrintViewModel constructor: Set default values, about to load settings...");
 
             // Load actual settings from config (this will override the defaults above)
-            LoadSettings();
+            
             
             // IMPORTANT: Enable saving after initialization is complete
             _isInitializing = false;
             _logger.LogDebug("PrintViewModel initialization complete - config saving now enabled");
             
             _logger.LogDebug($"Loading Config");
+            // Load settings from config
             LoadSettings();
             _logger.LogDebug("Config loaded successfully");
         }
@@ -164,6 +166,7 @@ namespace ProxyStudio.ViewModels
 
             public Task<Bitmap> GeneratePreviewImageAsync(CardCollection cards, PdfGenerationOptions options)
             {
+            // Return a placeholder image for design-time
                 return Task.FromResult<Bitmap>(null!);
             }
         }
@@ -605,7 +608,7 @@ namespace ProxyStudio.ViewModels
             // Remove preview regeneration since layout is fixed
             if (!_isInitializing)
             {
-                SaveSettings(); // Keep for compatibility but doesn't affect layout
+                //SaveSettings(); // Keep for compatibility but doesn't affect layout
             }
         }
 
@@ -615,7 +618,7 @@ namespace ProxyStudio.ViewModels
             // Remove preview regeneration since layout is fixed
             if (!_isInitializing)
             {
-                SaveSettings(); // Keep for compatibility but doesn't affect layout
+                //SaveSettings(); // Keep for compatibility but doesn't affect layout
             }
         }
 
@@ -625,7 +628,7 @@ namespace ProxyStudio.ViewModels
             if (value >= 0 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -635,7 +638,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -645,7 +648,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -655,7 +658,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -665,7 +668,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+               // SaveSettings();
             }
         }
 
@@ -675,7 +678,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -685,7 +688,7 @@ namespace ProxyStudio.ViewModels
             if (value >= 72 && value <= 300 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -695,7 +698,7 @@ namespace ProxyStudio.ViewModels
             if (value >= 1 && value <= 100 && !_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -705,7 +708,7 @@ namespace ProxyStudio.ViewModels
             if (!_isInitializing)
             {
                 _ = GeneratePreviewAsync();
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -716,7 +719,7 @@ namespace ProxyStudio.ViewModels
             {
                 CurrentPreviewPage = 1; // Reset to page 1 when layout changes
                 _ = GeneratePreviewAsync(); // Regenerate because layout actually changed
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -727,7 +730,7 @@ namespace ProxyStudio.ViewModels
             
             if (value >= 150m && value <= 1200m && !_isInitializing)
             {
-                SaveSettings();
+                //SaveSettings();
             }
         }
 
@@ -736,7 +739,7 @@ namespace ProxyStudio.ViewModels
             _logger.LogDebug($"OnEnsureMinimumPrintDpiChanged: {value} (initializing: {_isInitializing})");
             if (!_isInitializing)
             {
-                SaveSettings();
+                //SaveSettings();
             }
         }
 

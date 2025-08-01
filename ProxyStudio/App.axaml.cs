@@ -208,6 +208,7 @@ public partial class App : Application
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to apply theme, continuing without custom theme");
+                await errorHandler.HandleExceptionAsync(ex, "Failed to apply theme, continuing without custom theme", "Initialisation: Theme Error");
             }
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -224,7 +225,11 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            // failed to initialize application - display error and log it then throw
             logger.LogCritical($"Error in application initialization: {ex}");
+            logger.LogCritical($"Stack trace: {ex.StackTrace}");
+            await Services.GetRequiredService<IErrorHandlingService>()
+                .HandleExceptionAsync(ex, "Application initialization failed", "Initialization Error");
             throw;
         }
         

@@ -48,16 +48,20 @@ namespace ProxyStudio.Services
 
         private readonly IConfigManager _configManager;
         private readonly ILogger<MpcFillService> _logger;
+        private readonly IErrorHandlingService _errorHandlingService;
         private readonly string _cacheFolder;
         // NEW: Use SemaphoreSlim per cardId for thread-safe downloads
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _downloadSemaphores = new();
 
         // Add this to your constructor for debugging
-        public MpcFillService(HttpClient httpClient, IConfigManager configManager, ILogger<MpcFillService> logger)  
+        public MpcFillService(HttpClient httpClient, IConfigManager configManager, ILogger<MpcFillService> logger, IErrorHandlingService errorHandlingService)  
         {
             _httpClient = httpClient;
             _configManager = configManager;
             _logger = logger;
+            _errorHandlingService = errorHandlingService;
+            
+            // Initialize cache folder in AppData
             _cacheFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "ProxyStudio",
@@ -76,6 +80,11 @@ namespace ProxyStudio.Services
             catch (Exception ex)
             {
                 logger.LogCritical($"Error creating cache directory: {ex.Message}");
+                
+                // synchronously handle the exception
+                _ = Task.Run(async () =>
+                errorHandlingService.HandleExceptionAsync(ex,"Error creating cache directory","Failed to create cache directory for MPC Fill images."));
+                    
             }
         }
         
@@ -96,7 +105,13 @@ namespace ProxyStudio.Services
             IProgress<MpcFillProgress>? progress = null)
         {
             if (!File.Exists(xmlFilePath))
+            {
+                await _errorHandlingService.ShowErrorAsync("File Not Found",
+                    $"The specified XML file does not exist: {xmlFilePath}",
+                    ErrorSeverity.Critical);
+                    _logger.LogCritical($"File Not Found: {xmlFilePath}");
                 throw new FileNotFoundException($"XML file not found: {xmlFilePath}");
+            }
 
             var xmlContent = await File.ReadAllTextAsync(xmlFilePath);
             return await ProcessXmlContentAsync(xmlContent, progress);
@@ -206,6 +221,9 @@ public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgres
                         catch (Exception ex)
                         {
                             _logger.LogCritical($"ERROR: Processing {metadata?.Name ?? "unknown"} (index {index}) failed on thread {threadId}: {ex.Message}");
+                            _ = Task.Run(async() => _errorHandlingService.HandleExceptionAsync(ex,
+                                $"Failed to process card '{metadata?.Name ?? "unknown"}' (index {index}) in MPC Fill XML.",
+                                "MpcFillService.ProcessXmlContentAsync"));
                             
                             // Still increment counter and store placeholder for failed cards
                             var placeholderImage = CreatePlaceholderImage();
@@ -580,11 +598,11 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
                     image.Save(pngCacheFilePath, pngEncoder);
                 });
 
-                DebugHelper.WriteDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
+                _logger.LogDebug($"Cached HIGH-RES image: {Path.GetFileName(cacheFilePath)}");
             }
             catch (Exception ex)
             {
-                DebugHelper.WriteDebug($"Failed to cache image {cacheFilePath}: {ex.Message}");
+                _logger.LogCritical($"Failed to cache image {cacheFilePath}: {ex.Message}");
             }
         }
 
@@ -713,6 +731,9 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
             }
             catch (Exception ex)
             {
+                _logger.LogCritical($"Failed to parse MPC Fill XML: {ex.Message}");
+                
+                
                 throw new InvalidOperationException($"Failed to parse MPC Fill XML: {ex.Message}", ex);
             }
 

@@ -14,6 +14,7 @@ namespace ProxyStudio.Services
     {
         private readonly IConfigManager _configManager;
         private readonly ILogger<ThemeService> _logger;
+        private readonly IErrorHandlingService _errorHandlingService;
         private ThemeType _currentTheme = ThemeType.DarkProfessional;
 
         public ThemeType CurrentTheme => _currentTheme;
@@ -64,10 +65,11 @@ namespace ProxyStudio.Services
 
         public event EventHandler<ThemeType>? ThemeChanged;
 
-        public ThemeService(IConfigManager configManager, ILogger<ThemeService> logger)
+        public ThemeService(IConfigManager configManager, ILogger<ThemeService> logger, IErrorHandlingService errorHandlingService)
         {
             _configManager = configManager;
             _logger = logger;
+            _errorHandlingService = errorHandlingService;
         }
 
         
@@ -139,11 +141,13 @@ namespace ProxyStudio.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to apply theme: {ThemeName}", theme);
+                await _errorHandlingService.HandleExceptionAsync(ex, "Failed to apply theme" + theme.ToString(), "ThemeService.ApplyThemeAsync");
+                
                 throw;
             }
         }
 
-        public bool SaveThemePreference(ThemeType theme)
+        public  bool SaveThemePreference(ThemeType theme)
         {
             try
             {
@@ -154,6 +158,7 @@ namespace ProxyStudio.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to save theme preference");
+                
                 return false;
             }
         }

@@ -25,7 +25,7 @@ namespace ProxyStudio.Helpers
         private static readonly string ConfigFileName = "AppConfig.xml";
         private static readonly string appName = "ProxyStudio"; // Replace with your actual application name
         private static readonly string ConfigFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName, ConfigFileName);
-
+       
 
 
 
