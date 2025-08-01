@@ -21,6 +21,21 @@ using Microsoft.Extensions.Logging;
 
 namespace ProxyStudio.Services
 {
+    /// <summary>
+    /// Service for generating PDFs from card collections with high DPI support.
+    /// </summary>
+    /// <remarks>
+    /// This service handles both PDF generation and preview image creation,
+    /// ensuring cards are rendered at exact dimensions regardless of DPI settings.
+    /// 
+    /// <seealso cref="IPdfGenerationService"/>
+    /// <seealso cref="PdfGenerationOptions"/>
+    /// <seealso cref="PdfGenerationProgress"/>
+    /// <seealso cref="CardCollection"/>
+    /// <seealso cref="Card"/>
+    ///
+    /// </remarks>
+
     public interface IPdfGenerationService
     {
         Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options,
@@ -68,38 +83,34 @@ namespace ProxyStudio.Services
         public int PreviewQuality { get; set; } = 85;
         public string PageSize { get; set; } = "A4";
     }
-    
-    
 
     public class PdfGenerationService : IPdfGenerationService
     {
-        
-        
         // Card dimensions in points (72 DPI standard) - FIXED at exactly 2.5" x 3.5"
         // UPDATED: Card dimensions in points (72 DPI standard) - FIXED at exactly 63mm × 88mm
         private const double CARD_WIDTH_MM = 63.0;
         private const double CARD_HEIGHT_MM = 88.0;
-    
+
         // Convert mm to inches, then to points (1 inch = 25.4mm, 1 inch = 72 points)
-        private const double CARD_WIDTH_INCHES = CARD_WIDTH_MM / 25.4;    // 2.480 inches
-        private const double CARD_HEIGHT_INCHES = CARD_HEIGHT_MM / 25.4;  // 3.465 inches
-    
-        private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72;   // 178.583 points
+        private const double CARD_WIDTH_INCHES = CARD_WIDTH_MM / 25.4; // 2.480 inches
+        private const double CARD_HEIGHT_INCHES = CARD_HEIGHT_MM / 25.4; // 3.465 inches
+
+        private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72; // 178.583 points
         private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
 
         private readonly ILogger<PdfGenerationService> _logger;
         private readonly IErrorHandlingService _errorHandler;
-            
+
 
         public PdfGenerationService(ILogger<PdfGenerationService> logger, IErrorHandlingService errorHandler)
         {
             _logger = logger;
             _errorHandler = errorHandler;
-            
+
             // Set up PDFsharp with better font handling
             try
             {
-                PdfSharp.Fonts.GlobalFontSettings.FontResolver = new SafeFontResolver();
+                GlobalFontSettings.FontResolver = new SafeFontResolver();
                 _logger.LogInformation("PDFsharp font resolver set up successfully");
             }
             catch (Exception ex)
@@ -107,7 +118,7 @@ namespace ProxyStudio.Services
                 _logger.LogError(ex, "Error setting up PDFsharp font resolver");
             }
         }
-        
+
         // Add this helper method to convert problematic images to PNG
         private byte[]? ConvertToPng(byte[] imageData, string cardName)
         {
@@ -115,12 +126,12 @@ namespace ProxyStudio.Services
             {
                 _logger.LogDebug($"Converting {cardName} to PNG for PDFsharp compatibility...");
 
-                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+                using var image = Image.Load<Rgba32>(imageData);
 
-                var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                var pngEncoder = new PngEncoder
                 {
-                    CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
-                    ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+                    CompressionLevel = PngCompressionLevel.BestCompression,
+                    ColorType = PngColorType.RgbWithAlpha
                 };
 
                 using var outputStream = new MemoryStream();
@@ -135,107 +146,112 @@ namespace ProxyStudio.Services
             {
                 _logger.LogError(ex, "Failed to add test cards");
                 _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
-                
+
                 return null;
             }
         }
 
-        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options, IProgress<PdfGenerationProgress>? progress = null)
+        public async Task<byte[]> GeneratePdfAsync(CardCollection cards, PdfGenerationOptions options,
+            IProgress<PdfGenerationProgress>? progress = null)
         {
             using var scope = _logger.BeginScope("Generate PDF Async");
-            _logger.LogInformation("Starting PDF generation: {CardCount} cards at {PrintDpi} DPI", cards.Count, options.PrintDpi);
-            
+            _logger.LogInformation("Starting PDF generation: {CardCount} cards at {PrintDpi} DPI", cards.Count,
+                options.PrintDpi);
+
             return await Task.Run(() =>
             {
                 try
                 {
                     var startTime = DateTime.Now;
                     var progressInfo = new PdfGenerationProgress();
-            
+
                     // Calculate total steps for progress tracking
                     var actualCardsPerRow = options.IsPortrait ? 3 : 4;
                     var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
                     var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                     var totalPages = (int)Math.Ceiling((double)cards.Count / cardsPerPage);
-            
+
                     progressInfo.TotalSteps = cards.Count + totalPages + 2; // Cards + Pages + Setup + Finalization
                     progressInfo.TotalPages = totalPages;
                     progressInfo.CurrentOperation = "Pre-processing all images in parallel...";
-            
+
                     progress?.Report(progressInfo);
-            
+
                     _logger.LogDebug($"=== PDF GENERATION START (PARALLEL) ===");
                     _logger.LogDebug($"Target DPI: {options.PrintDpi}");
                     _logger.LogDebug($"Cards: {cards.Count}, Pages: {totalPages}");
-            
+
                     // ✅ NEW: PRE-PROCESS ALL IMAGES IN PARALLEL
-                    var processedImages = PreProcessAllImagesParallel(cards, options, progress, progressInfo, startTime);
-            
+                    var processedImages =
+                        PreProcessAllImagesParallel(cards, options, progress, progressInfo, startTime);
+
                     // Create PDF document
                     progressInfo.CurrentStep = cards.Count + 1;
                     progressInfo.CurrentOperation = "Creating PDF document...";
                     progress?.Report(progressInfo);
-            
+
                     var document = new PdfDocument();
                     ApplyHighDpiSettings(document, options.PrintDpi);
-            
+
                     _logger.LogDebug($"Parallel pre-processing complete, now drawing {totalPages} pages sequentially");
                     _logger.LogDebug($"Successfully processed {processedImages.Count} images in parallel");
-            
+
                     // Process each page (sequential due to PDFsharp thread-safety)
-                    for (int pageIndex = 0; pageIndex < totalPages; pageIndex++)
+                    for (var pageIndex = 0; pageIndex < totalPages; pageIndex++)
                     {
                         progressInfo.CurrentPage = pageIndex + 1;
                         progressInfo.CurrentStep = cards.Count + 2 + pageIndex;
                         progressInfo.CurrentOperation = $"Drawing page {pageIndex + 1} of {totalPages}...";
                         progressInfo.ElapsedTime = DateTime.Now - startTime;
-                
+
                         // Estimate remaining time for page drawing phase
                         if (pageIndex > 0)
                         {
                             var averageTimePerPage = (DateTime.Now - startTime).TotalSeconds / (pageIndex + 1);
                             var remainingPages = totalPages - pageIndex;
-                            progressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
+                            progressInfo.EstimatedRemainingTime =
+                                TimeSpan.FromSeconds(averageTimePerPage * remainingPages);
                         }
-                
+
                         progress?.Report(progressInfo);
-                
+
                         var page = document.AddPage();
                         page.Size = GetPageSize(options.PageSize);
-                        page.Orientation = options.IsPortrait ? 
-                            PdfSharp.PageOrientation.Portrait : 
-                            PdfSharp.PageOrientation.Landscape;
-                
+                        page.Orientation = options.IsPortrait
+                            ? PdfSharp.PageOrientation.Portrait
+                            : PdfSharp.PageOrientation.Landscape;
+
                         var gfx = XGraphics.FromPdfPage(page);
                         ApplyHighDpiTransformation(gfx, options.PrintDpi);
-                
+
                         var startCardIndex = pageIndex * cardsPerPage;
                         var pageCards = cards.Skip(startCardIndex).Take(cardsPerPage).ToList();
-                
-                        _logger.LogDebug($"Page {pageIndex + 1}: Drawing {pageCards.Count} cards using pre-processed images");
-                
+
+                        _logger.LogDebug(
+                            $"Page {pageIndex + 1}: Drawing {pageCards.Count} cards using pre-processed images");
+
                         // ✅ FAST DRAWING: Use pre-processed images (no processing during drawing!)
-                        DrawCardGridWithPreProcessedImages(gfx, pageCards, processedImages, options, 
+                        DrawCardGridWithPreProcessedImages(gfx, pageCards, processedImages, options,
                             page.Width, page.Height, pageIndex + 1, totalPages);
-                
+
                         gfx.Dispose();
                     }
-            
+
                     // Finalize PDF
                     progressInfo.CurrentStep = progressInfo.TotalSteps - 1;
                     progressInfo.CurrentOperation = "Finalizing PDF...";
                     progressInfo.CurrentCardName = "";
                     progressInfo.ElapsedTime = DateTime.Now - startTime;
                     progress?.Report(progressInfo);
-            
+
                     using var stream = new MemoryStream();
                     document.Save(stream);
                     document.Close();
-            
+
                     var pdfBytes = stream.ToArray();
                     var endTime = DateTime.Now;
                     var duration = endTime - startTime;
-            
+
                     // Report completion
                     progressInfo.CurrentStep = progressInfo.TotalSteps;
                     progressInfo.CurrentOperation = "PDF generation complete!";
@@ -243,19 +259,19 @@ namespace ProxyStudio.Services
                     progressInfo.ElapsedTime = duration;
                     progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
                     progress?.Report(progressInfo);
-            
+
                     _logger.LogDebug($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
                     _logger.LogDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
                     _logger.LogDebug($"Total generation time: {duration.TotalSeconds:F1} seconds");
                     _logger.LogDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");
                     _logger.LogDebug("Parallel processing saved significant time during image processing phase");
-            
+
                     return pdfBytes;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError($"Error generating PDF: {ex.Message}");
-            
+
                     // Report error
                     progress?.Report(new PdfGenerationProgress
                     {
@@ -269,98 +285,107 @@ namespace ProxyStudio.Services
                 }
             });
         }
-   
-        private Dictionary<string, byte[]> PreProcessAllImagesParallel(CardCollection cards, PdfGenerationOptions options, 
+
+        private Dictionary<string, byte[]> PreProcessAllImagesParallel(CardCollection cards,
+            PdfGenerationOptions options,
             IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
         {
             var processedImages = new ConcurrentDictionary<string, byte[]>();
             var completedCount = 0;
-    
+
             // Use ParallelOptions to control parallel execution
             var parallelOptions = new ParallelOptions
             {
                 MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2)
             };
-    
-            _logger.LogDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
+
+            _logger.LogDebug(
+                $"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
             _logger.LogDebug($"System has {Environment.ProcessorCount} logical processors");
-    
+
             var parallelStartTime = DateTime.Now;
-    
+
             // Use Parallel.ForEach which guarantees parallel execution for CPU-bound work
             try
             {
                 Parallel.ForEach(cards, parallelOptions, card =>
                 {
                     var threadId = Thread.CurrentThread.ManagedThreadId;
-            
+
                     try
                     {
                         if (card.ImageData != null && card.ImageData.Length > 0)
                         {
                             _logger.LogDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
-                    
+
                             var cardStartTime = DateTime.Now;
-                            var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
+                            var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi,
+                                card.EnableBleed);
                             var cardProcessTime = DateTime.Now - cardStartTime;
-                    
+
                             if (processedImage != null)
                             {
                                 processedImages[card.Id] = processedImage;
-                                _logger.LogDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                                _logger.LogDebug(
+                                    $"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
                             }
                             else
                             {
-                                _logger.LogWarning($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
+                                _logger.LogWarning(
+                                    $"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
                             }
                         }
                         else
                         {
                             _logger.LogError($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
                         }
-                
+
                         // Thread-safe progress update
                         var newCompletedCount = Interlocked.Increment(ref completedCount);
-                
+
                         // Update progress (this should be thread-safe)
                         var tempProgressInfo = new PdfGenerationProgress
                         {
                             TotalSteps = progressInfo.TotalSteps,
                             CurrentStep = newCompletedCount,
                             CurrentCardName = card.Name,
-                            CurrentOperation = $"Pre-processed {newCompletedCount}/{cards.Count} images (Thread {threadId})",
+                            CurrentOperation =
+                                $"Pre-processed {newCompletedCount}/{cards.Count} images (Thread {threadId})",
                             ElapsedTime = DateTime.Now - startTime
                         };
-                
+
                         // Estimate remaining time for parallel processing phase
                         if (newCompletedCount > 1)
                         {
                             var averageTimePerCard = tempProgressInfo.ElapsedTime.TotalSeconds / newCompletedCount;
                             var remainingCards = cards.Count - newCompletedCount;
-                            tempProgressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
+                            tempProgressInfo.EstimatedRemainingTime =
+                                TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
                         }
-                
+
                         progress?.Report(tempProgressInfo);
-                
-                        _logger.LogDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
+
+                        _logger.LogDebug(
+                            $"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
-                
+                        _logger.LogError(
+                            $"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
+
                         // Still increment counter for failed cards
                         Interlocked.Increment(ref completedCount);
                     }
                 });
-        
+
                 var parallelEndTime = DateTime.Now;
                 var parallelDuration = parallelEndTime - parallelStartTime;
-        
+
                 _logger.LogDebug($"=== PARALLEL PROCESSING COMPLETE ===");
                 _logger.LogDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
                 _logger.LogDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
                 _logger.LogDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
-        
+
                 if (cards.Count > 1)
                 {
                     var theoreticalSequentialTime = cards.Count * 3.7; // Based on your previous 3.7s per card
@@ -374,33 +399,33 @@ namespace ProxyStudio.Services
                 _logger.LogCritical($"Stack trace: {ex.StackTrace}");
                 throw;
             }
-    
+
             return new Dictionary<string, byte[]>(processedImages);
         }
 
 // ✅ NEW: FAST DRAWING METHOD USING PRE-PROCESSED IMAGES
-        private void DrawCardGridWithPreProcessedImages(XGraphics gfx, List<Card> pageCards, 
+        private void DrawCardGridWithPreProcessedImages(XGraphics gfx, List<Card> pageCards,
             Dictionary<string, byte[]> processedImages, PdfGenerationOptions options,
             XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages)
         {
             // Use fixed layout based on orientation
             var actualCardsPerRow = options.IsPortrait ? 3 : 4;
             var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
-    
+
             var cardWidthPt = CARD_WIDTH_POINTS;
             var cardHeightPt = CARD_HEIGHT_POINTS;
-    
+
             var totalHorizontalSpacing = (actualCardsPerRow - 1) * options.CardSpacing;
             var totalVerticalSpacing = (actualCardsPerColumn - 1) * options.CardSpacing;
             var totalGridWidthPt = actualCardsPerRow * cardWidthPt + totalHorizontalSpacing;
             var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
-    
+
             var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
-            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin );
-    
+            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin);
+
             var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
-            var startYPt = options.TopMargin +  (availableHeightPt - totalGridHeightPt) / 2;
-    
+            var startYPt = options.TopMargin + (availableHeightPt - totalGridHeightPt) / 2;
+
             // // Draw title
             // try
             // {
@@ -416,42 +441,38 @@ namespace ProxyStudio.Services
             // {
             //     _logger.LogError($"Error drawing title: {ex.Message}");
             // }
-    
+
             // Draw cards using pre-processed images - this is now FAST!
-            for (int row = 0; row < actualCardsPerColumn; row++)
+            for (var row = 0; row < actualCardsPerColumn; row++)
+            for (var col = 0; col < actualCardsPerRow; col++)
             {
-                for (int col = 0; col < actualCardsPerRow; col++)
+                var cardIndex = row * actualCardsPerRow + col;
+
+                if (cardIndex < pageCards.Count)
                 {
-                    var cardIndex = row * actualCardsPerRow + col;
-            
-                    if (cardIndex < pageCards.Count)
-                    {
-                        var card = pageCards[cardIndex];
-                
-                        var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
-                        var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
-                
-                        var x = XUnit.FromPoint(xPt);
-                        var y = XUnit.FromPoint(yPt);
-                        var cardWidth = XUnit.FromPoint(cardWidthPt);
-                        var cardHeight = XUnit.FromPoint(cardHeightPt);
-                
-                        // ✅ FAST: Use pre-processed image (no processing during drawing!)
-                        DrawCardWithPreProcessedImage(gfx, card, processedImages, x, y, cardWidth, cardHeight);
-                    }
+                    var card = pageCards[cardIndex];
+
+                    var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
+                    var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
+
+                    var x = XUnit.FromPoint(xPt);
+                    var y = XUnit.FromPoint(yPt);
+                    var cardWidth = XUnit.FromPoint(cardWidthPt);
+                    var cardHeight = XUnit.FromPoint(cardHeightPt);
+
+                    // ✅ FAST: Use pre-processed image (no processing during drawing!)
+                    DrawCardWithPreProcessedImage(gfx, card, processedImages, x, y, cardWidth, cardHeight);
                 }
             }
-    
+
             // Draw cutting lines
             if (options.ShowCuttingLines)
-            {
-                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt, 
+                DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt,
                     actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
-            }
         }
 
 // ✅ NEW: DRAW CARD USING PRE-PROCESSED IMAGE (FAST!)
-        private void DrawCardWithPreProcessedImage(XGraphics gfx, Card card, Dictionary<string, byte[]> processedImages, 
+        private void DrawCardWithPreProcessedImage(XGraphics gfx, Card card, Dictionary<string, byte[]> processedImages,
             XUnit x, XUnit y, XUnit width, XUnit height)
         {
             try
@@ -463,15 +484,16 @@ namespace ProxyStudio.Services
                     try
                     {
                         using var ms = new MemoryStream(processedImageData);
-                
+
                         try
                         {
                             xImage = XImage.FromStream(ms);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning($"Failed to create XImage for {card.Name}: {ex.Message}, converting to PNG...");
-                    
+                            _logger.LogWarning(
+                                $"Failed to create XImage for {card.Name}: {ex.Message}, converting to PNG...");
+
                             // Fallback: convert to PNG
                             var pngData = ConvertToPng(processedImageData, card.Name);
                             if (pngData != null)
@@ -480,7 +502,7 @@ namespace ProxyStudio.Services
                                 xImage = XImage.FromStream(pngMs);
                             }
                         }
-                
+
                         if (xImage != null)
                         {
                             // Draw the pre-processed image - FAST!
@@ -510,7 +532,7 @@ namespace ProxyStudio.Services
                 DrawPlaceholder(gfx, card, x, y, width, height, "Error");
             }
         }
-        
+
 
         private void DrawCardGridWithProgress(XGraphics gfx, List<Card> pageCards, PdfGenerationOptions options,
             XUnit pageWidth, XUnit pageHeight, int currentPage, int totalPages,
@@ -550,44 +572,42 @@ namespace ProxyStudio.Services
             }
 
             // Draw cards with individual progress updates
-            for (int row = 0; row < actualCardsPerColumn; row++)
+            for (var row = 0; row < actualCardsPerColumn; row++)
+            for (var col = 0; col < actualCardsPerRow; col++)
             {
-                for (int col = 0; col < actualCardsPerRow; col++)
+                var cardIndex = row * actualCardsPerRow + col;
+
+                if (cardIndex < pageCards.Count)
                 {
-                    var cardIndex = row * actualCardsPerRow + col;
+                    var card = pageCards[cardIndex];
 
-                    if (cardIndex < pageCards.Count)
+                    // Update progress for this card
+                    progressInfo.CurrentStep = 2 + totalPages + (currentPage - 1) * pageCards.Count + cardIndex;
+                    progressInfo.CurrentOperation = $"Processing card {cardIndex + 1} of {pageCards.Count}";
+                    progressInfo.CurrentCardName = card.Name;
+                    progressInfo.ElapsedTime = DateTime.Now - startTime;
+
+                    // Update estimated time based on cards processed so far
+                    var totalCardsProcessed = (currentPage - 1) * pageCards.Count + cardIndex;
+                    if (totalCardsProcessed > 0)
                     {
-                        var card = pageCards[cardIndex];
-
-                        // Update progress for this card
-                        progressInfo.CurrentStep = 2 + totalPages + (currentPage - 1) * pageCards.Count + cardIndex;
-                        progressInfo.CurrentOperation = $"Processing card {cardIndex + 1} of {pageCards.Count}";
-                        progressInfo.CurrentCardName = card.Name;
-                        progressInfo.ElapsedTime = DateTime.Now - startTime;
-
-                        // Update estimated time based on cards processed so far
-                        var totalCardsProcessed = (currentPage - 1) * pageCards.Count + cardIndex;
-                        if (totalCardsProcessed > 0)
-                        {
-                            var averageTimePerCard = progressInfo.ElapsedTime.TotalSeconds / totalCardsProcessed;
-                            var remainingCards = progressInfo.TotalSteps - progressInfo.CurrentStep;
-                            progressInfo.EstimatedRemainingTime =
-                                TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
-                        }
-
-                        progress?.Report(progressInfo);
-
-                        var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
-                        var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
-
-                        var x = XUnit.FromPoint(xPt);
-                        var y = XUnit.FromPoint(yPt);
-                        var cardWidth = XUnit.FromPoint(cardWidthPt);
-                        var cardHeight = XUnit.FromPoint(cardHeightPt);
-
-                        DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
+                        var averageTimePerCard = progressInfo.ElapsedTime.TotalSeconds / totalCardsProcessed;
+                        var remainingCards = progressInfo.TotalSteps - progressInfo.CurrentStep;
+                        progressInfo.EstimatedRemainingTime =
+                            TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
                     }
+
+                    progress?.Report(progressInfo);
+
+                    var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
+                    var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
+
+                    var x = XUnit.FromPoint(xPt);
+                    var y = XUnit.FromPoint(yPt);
+                    var cardWidth = XUnit.FromPoint(cardWidthPt);
+                    var cardHeight = XUnit.FromPoint(cardHeightPt);
+
+                    DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
                 }
             }
 
@@ -608,8 +628,8 @@ namespace ProxyStudio.Services
             {
                 try
                 {
-                   
-                    _logger.LogDebug($"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
+                    _logger.LogDebug(
+                        $"Generating preview for {cards?.Count ?? 0} cards using Preview DPI: {options.PreviewDpi} (Print DPI will be: {options.PrintDpi})");
 
                     if (options == null)
                     {
@@ -675,10 +695,7 @@ namespace ProxyStudio.Services
             };
 
             // Swap dimensions for landscape
-            if (isLandscape)
-            {
-                return (dimensions.Item2, dimensions.Item1);
-            }
+            if (isLandscape) return (dimensions.Item2, dimensions.Item1);
 
             return dimensions;
         }
@@ -750,40 +767,36 @@ namespace ProxyStudio.Services
             }
 
             // Draw cards with precise positioning
-            for (int row = 0; row < actualCardsPerColumn; row++)
+            for (var row = 0; row < actualCardsPerColumn; row++)
+            for (var col = 0; col < actualCardsPerRow; col++)
             {
-                for (int col = 0; col < actualCardsPerRow; col++)
+                var cardIndex = row * actualCardsPerRow + col;
+
+                if (cardIndex < pageCards.Count)
                 {
-                    var cardIndex = row * actualCardsPerRow + col;
+                    var card = pageCards[cardIndex];
 
-                    if (cardIndex < pageCards.Count)
-                    {
-                        var card = pageCards[cardIndex];
+                    // Calculate position with spacing - use precise double arithmetic
+                    var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
+                    var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
 
-                        // Calculate position with spacing - use precise double arithmetic
-                        var xPt = startXPt + col * (cardWidthPt + options.CardSpacing);
-                        var yPt = startYPt + row * (cardHeightPt + options.CardSpacing);
+                    // Convert to XUnit only at the very end to preserve precision
+                    var x = XUnit.FromPoint(xPt);
+                    var y = XUnit.FromPoint(yPt);
+                    var cardWidth = XUnit.FromPoint(cardWidthPt);
+                    var cardHeight = XUnit.FromPoint(cardHeightPt);
 
-                        // Convert to XUnit only at the very end to preserve precision
-                        var x = XUnit.FromPoint(xPt);
-                        var y = XUnit.FromPoint(yPt);
-                        var cardWidth = XUnit.FromPoint(cardWidthPt);
-                        var cardHeight = XUnit.FromPoint(cardHeightPt);
+                    _logger.LogDebug(
+                        $"Drawing card {cardIndex} ({card.Name}) at ({xPt:F3}, {yPt:F3}) - row {row}, col {col}");
 
-                        _logger.LogDebug(
-                            $"Drawing card {cardIndex} ({card.Name}) at ({xPt:F3}, {yPt:F3}) - row {row}, col {col}");
-
-                        DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
-                    }
+                    DrawCard(gfx, card, options, x, y, cardWidth, cardHeight);
                 }
             }
 
             // Draw cutting lines for the entire grid (outside card areas)
             if (options.ShowCuttingLines)
-            {
                 DrawPdfGridCuttingLines(gfx, options, startXPt, startYPt,
                     actualCardsPerRow, actualCardsPerColumn, cardWidthPt, cardHeightPt);
-            }
         }
 
         // Update DrawCard method to pass bleed flag and fix image loading issue
@@ -866,7 +879,7 @@ namespace ProxyStudio.Services
                 _logger.LogDebug(
                     $"ProcessImageForHighDpiPdf: Processing {cardName} for {targetDpi} DPI - EnableBleed: {enableBleed}");
 
-                using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
+                using var image = Image.Load<Rgba32>(imageData);
                 var originalSize = $"{image.Width}x{image.Height}";
 
                 _logger.LogDebug($"  Source: {originalSize}");
@@ -880,17 +893,17 @@ namespace ProxyStudio.Services
                 {
                     // Calculate 2mm in pixels based on the current image resolution
                     // Assume source image represents a 63mm × 88mm card with bleed
-                    var sourcePixelsPerMm = Math.Min(image.Width / (CARD_WIDTH_MM), image.Height / (CARD_HEIGHT_MM));
+                    var sourcePixelsPerMm = Math.Min(image.Width / CARD_WIDTH_MM, image.Height / CARD_HEIGHT_MM);
                     var cropPixels = (int)(3.0 * sourcePixelsPerMm); // 3mm in pixels
 
                     _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 
                     // Crop the image (remove 2mm bleed from all sides)
-                    var cropRect = new SixLabors.ImageSharp.Rectangle(
+                    var cropRect = new Rectangle(
                         cropPixels,
                         cropPixels,
-                        image.Width - (cropPixels * 2),
-                        image.Height - (cropPixels * 2)
+                        image.Width - cropPixels * 2,
+                        image.Height - cropPixels * 2
                     );
 
                     image.Mutate(x => x.Crop(cropRect));
@@ -909,7 +922,7 @@ namespace ProxyStudio.Services
 
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
-                        Size = new SixLabors.ImageSharp.Size(targetWidth, targetHeight),
+                        Size = new Size(targetWidth, targetHeight),
                         Mode = ResizeMode.Stretch, // Stretch cropped image to fill full card
                         Sampler = KnownResamplers.Lanczos3
                     }));
@@ -920,22 +933,22 @@ namespace ProxyStudio.Services
                 image.Metadata.VerticalResolution = targetDpi;
 
                 // Choose output format
-                MemoryStream outputStream = new MemoryStream();
+                var outputStream = new MemoryStream();
                 string format;
 
                 if (targetDpi >= 600)
                 {
-                    var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
+                    var pngEncoder = new PngEncoder
                     {
-                        CompressionLevel = SixLabors.ImageSharp.Formats.Png.PngCompressionLevel.BestCompression,
-                        ColorType = SixLabors.ImageSharp.Formats.Png.PngColorType.RgbWithAlpha
+                        CompressionLevel = PngCompressionLevel.BestCompression,
+                        ColorType = PngColorType.RgbWithAlpha
                     };
                     image.Save(outputStream, pngEncoder);
                     format = "PNG";
                 }
                 else
                 {
-                    var jpegEncoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                    var jpegEncoder = new JpegEncoder
                     {
                         Quality = 95
                     };
@@ -1124,13 +1137,17 @@ namespace ProxyStudio.Services
         // }
 
         // Update preview drawing to handle bleed
-        
+
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
         {
             _logger.BeginScope("CreateSimplePreview");
             try
             {
-                _logger.LogDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+                _logger.LogDebug(
+                    $"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+
+                // ✅ NEW: Log DPI impact analysis
+                LogPreviewDpiImpact(options, cards);
 
                 // Use the user's orientation choice, not automatic layout
                 var actualCardsPerRow = options.IsPortrait ? 3 : 4;
@@ -1138,10 +1155,12 @@ namespace ProxyStudio.Services
                 var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                 var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
 
-                _logger.LogDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+                _logger.LogDebug(
+                    $"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
 
                 // Get page dimensions based on selected page size and USER'S orientation choice
-                var pageDimensions = GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
+                var pageDimensions =
+                    GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
 
                 // ✅ FIXED SCALING LOGIC: Maintain exact aspect ratio
                 var targetPreviewSize = CalculateOptimalPreviewSize(pageDimensions.Width, pageDimensions.Height);
@@ -1153,7 +1172,8 @@ namespace ProxyStudio.Services
                 _logger.LogDebug($"  Page dimensions: {pageDimensions.Width:F0}×{pageDimensions.Height:F0} pt");
                 _logger.LogDebug($"  Preview dimensions: {previewWidth}×{previewHeight} px");
                 _logger.LogDebug($"  Scale factor: {pageScale:F3}");
-                _logger.LogDebug($"  Aspect ratio preserved: {Math.Abs((double)previewWidth / previewHeight - pageDimensions.Width / pageDimensions.Height) < 0.001}");
+                _logger.LogDebug(
+                    $"  Aspect ratio preserved: {Math.Abs((double)previewWidth / previewHeight - pageDimensions.Width / pageDimensions.Height) < 0.001}");
 
                 using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
@@ -1170,16 +1190,18 @@ namespace ProxyStudio.Services
                     return new Bitmap(ms);
                 }
 
-                // FIXED CARD DIMENSIONS: Always 2.4" x 3.4" scaled for preview
+                // FIXED CARD DIMENSIONS: Always 2.5" x 3.5" scaled for preview
                 var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
 
-                _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}×{cardHeightPreview:F1} (EXACTLY 2.5\" × 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                _logger.LogDebug(
+                    $"FIXED Preview card layout: {cardWidthPreview:F1}×{cardHeightPreview:F1} (EXACTLY 2.5\" × 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
 
                 // Calculate total grid size
                 var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
-                var totalGridHeight = actualCardsPerColumn * cardHeightPreview + (actualCardsPerColumn - 1) * spacingPreview;
+                var totalGridHeight = actualCardsPerColumn * cardHeightPreview +
+                                      (actualCardsPerColumn - 1) * spacingPreview;
 
                 // Use ONLY print margins, no title space
                 var marginLeftScaled = options.LeftMargin * pageScale;
@@ -1202,7 +1224,8 @@ namespace ProxyStudio.Services
                 // Check if grid fits (this should always pass now with proper scaling)
                 if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
                 {
-                    _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1}×{totalGridHeight:F1}) is larger than available space ({availableWidth:F1}×{availableHeight:F1})");
+                    _logger.LogWarning(
+                        $"WARNING: Preview grid ({totalGridWidth:F1}×{totalGridHeight:F1}) is larger than available space ({availableWidth:F1}×{availableHeight:F1})");
                 }
                 else
                 {
@@ -1228,7 +1251,8 @@ namespace ProxyStudio.Services
                             var x = (int)Math.Round(exactX);
                             var y = (int)Math.Round(exactY);
 
-                            _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"} at ({x}, {y})");
+                            _logger.LogDebug(
+                                $"Preview card {cardIndex}: {card?.Name ?? "NULL"} at ({x}, {y}) using {options.PreviewDpi} DPI");
 
                             DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
                                 (int)Math.Round(cardHeightPreview));
@@ -1261,27 +1285,86 @@ namespace ProxyStudio.Services
                 return CreateFallbackPreview(cards, options);
             }
         }
-        
+
+        /// <summary>
+        /// Calculate preview file size estimate (for UI display)
+        /// </summary>
+        public string GetPreviewSizeEstimate(CardCollection cards, PdfGenerationOptions options)
+        {
+            if (cards == null || cards.Count == 0) return "0 KB";
+
+            // Rough estimate based on preview DPI
+            var cardCount = Math.Min(cards.Count, 9); // Max cards in preview
+            var pixelsPerCard = CARD_WIDTH_INCHES * CARD_HEIGHT_INCHES * options.PreviewDpi * options.PreviewDpi;
+            var bytesPerPixel = options.PreviewDpi >= 200 ? 4 : 3; // PNG vs JPEG
+            var compressionRatio = options.PreviewDpi >= 200 ? 0.7 : options.PreviewQuality / 100.0;
+
+            var estimatedBytes = cardCount * pixelsPerCard * bytesPerPixel * compressionRatio;
+
+            if (estimatedBytes < 1024) return $"{estimatedBytes:F0} B";
+            if (estimatedBytes < 1024 * 1024) return $"{estimatedBytes / 1024:F1} KB";
+            return $"{estimatedBytes / (1024 * 1024):F1} MB";
+        }
+
+// ============================================================================
+// Add logging to show the DPI difference impact:
+
+        private void LogPreviewDpiImpact(PdfGenerationOptions options, CardCollection cards)
+        {
+            _logger.LogDebug($"=== PREVIEW DPI IMPACT ANALYSIS ===");
+            _logger.LogDebug($"Preview DPI: {options.PreviewDpi} (for screen display)");
+            _logger.LogDebug($"Print DPI: {options.PrintDpi} (for PDF generation)");
+
+            var previewCardPixels = (int)(CARD_WIDTH_INCHES * options.PreviewDpi) *
+                                    (int)(CARD_HEIGHT_INCHES * options.PreviewDpi);
+            var printCardPixels =
+                (int)(CARD_WIDTH_INCHES * options.PrintDpi) * (int)(CARD_HEIGHT_INCHES * options.PrintDpi);
+
+            _logger.LogDebug(
+                $"Preview card resolution: {(int)(CARD_WIDTH_INCHES * options.PreviewDpi)}×{(int)(CARD_HEIGHT_INCHES * options.PreviewDpi)} = {previewCardPixels:N0} pixels");
+            _logger.LogDebug(
+                $"Print card resolution: {(int)(CARD_WIDTH_INCHES * options.PrintDpi)}×{(int)(CARD_HEIGHT_INCHES * options.PrintDpi)} = {printCardPixels:N0} pixels");
+
+            var pixelRatio = (double)printCardPixels / previewCardPixels;
+            _logger.LogDebug($"Print has {pixelRatio:F1}x more pixels than preview");
+
+            var previewSizeEstimate = GetPreviewSizeEstimate(cards, options);
+            _logger.LogDebug($"Estimated preview memory usage: {previewSizeEstimate}");
+
+            // Performance recommendations
+            if (options.PreviewDpi > 200)
+                _logger.LogDebug($"💡 Preview DPI ({options.PreviewDpi}) is high - may impact UI performance");
+            else if (options.PreviewDpi < 100)
+                _logger.LogDebug($"⚠️  Preview DPI ({options.PreviewDpi}) is low - preview may appear pixelated");
+            else
+                _logger.LogDebug($"✅ Preview DPI ({options.PreviewDpi}) is optimal for screen display");
+
+            _logger.LogDebug($"=== END PREVIEW DPI ANALYSIS ===");
+        }
+
+
         /// <summary>
         /// Calculates optimal preview dimensions that maintain exact aspect ratio
         /// while fitting within reasonable screen bounds
         /// </summary>
-        private (int Width, int Height, double Scale) CalculateOptimalPreviewSize(double pageWidthPt, double pageHeightPt)
+        private (int Width, int Height, double Scale) CalculateOptimalPreviewSize(double pageWidthPt,
+            double pageHeightPt)
         {
             // Define reasonable preview size limits
-            const int minPreviewDimension = 400;  // Minimum for readability
+            const int minPreviewDimension = 400; // Minimum for readability
             const int maxPreviewDimension = 1400; // Maximum for screen fit
-            const int idealMinDimension = 800;    // Preferred minimum
-    
+            const int idealMinDimension = 800; // Preferred minimum
+
             _logger.LogDebug($"Calculating optimal preview size for page: {pageWidthPt:F0}×{pageHeightPt:F0} pt");
-    
+
             // Calculate page aspect ratio
             var pageAspectRatio = pageWidthPt / pageHeightPt;
-            _logger.LogDebug($"Page aspect ratio: {pageAspectRatio:F3} ({(pageAspectRatio > 1 ? "landscape" : "portrait")})");
-    
+            _logger.LogDebug(
+                $"Page aspect ratio: {pageAspectRatio:F3} ({(pageAspectRatio > 1 ? "landscape" : "portrait")})");
+
             int previewWidth, previewHeight;
             double scale;
-    
+
             // Strategy: Size the longer dimension to idealMinDimension, 
             // then check if shorter dimension fits within maxPreviewDimension
             if (pageWidthPt >= pageHeightPt)
@@ -1289,14 +1372,14 @@ namespace ProxyStudio.Services
                 // Landscape or square - width is longer
                 previewWidth = idealMinDimension;
                 previewHeight = (int)Math.Round(idealMinDimension / pageAspectRatio);
-        
+
                 // Check if height exceeds maximum
                 if (previewHeight > maxPreviewDimension)
                 {
                     previewHeight = maxPreviewDimension;
                     previewWidth = (int)Math.Round(maxPreviewDimension * pageAspectRatio);
                 }
-        
+
                 scale = (double)previewWidth / pageWidthPt;
             }
             else
@@ -1304,17 +1387,17 @@ namespace ProxyStudio.Services
                 // Portrait - height is longer
                 previewHeight = idealMinDimension;
                 previewWidth = (int)Math.Round(idealMinDimension * pageAspectRatio);
-        
+
                 // Check if width exceeds maximum
                 if (previewWidth > maxPreviewDimension)
                 {
                     previewWidth = maxPreviewDimension;
                     previewHeight = (int)Math.Round(maxPreviewDimension / pageAspectRatio);
                 }
-        
+
                 scale = (double)previewHeight / pageHeightPt;
             }
-    
+
             // Ensure minimum dimensions for usability
             if (previewWidth < minPreviewDimension)
             {
@@ -1323,7 +1406,7 @@ namespace ProxyStudio.Services
                 previewHeight = (int)Math.Round(previewHeight * adjustmentFactor);
                 scale *= adjustmentFactor;
             }
-    
+
             if (previewHeight < minPreviewDimension)
             {
                 var adjustmentFactor = (double)minPreviewDimension / previewHeight;
@@ -1331,26 +1414,22 @@ namespace ProxyStudio.Services
                 previewWidth = (int)Math.Round(previewWidth * adjustmentFactor);
                 scale *= adjustmentFactor;
             }
-    
+
             // Verify aspect ratio is maintained (within rounding tolerance)
             var previewAspectRatio = (double)previewWidth / previewHeight;
             var aspectRatioError = Math.Abs(previewAspectRatio - pageAspectRatio);
-    
+
             _logger.LogDebug($"Preview calculation results:");
             _logger.LogDebug($"  Preview size: {previewWidth}×{previewHeight} px");
             _logger.LogDebug($"  Scale factor: {scale:F4}");
             _logger.LogDebug($"  Preview aspect ratio: {previewAspectRatio:F3}");
             _logger.LogDebug($"  Aspect ratio error: {aspectRatioError:F6} (should be < 0.001)");
-    
+
             if (aspectRatioError > 0.001)
-            {
                 _logger.LogWarning($"⚠️  Aspect ratio error {aspectRatioError:F6} exceeds tolerance!");
-            }
             else
-            {
                 _logger.LogDebug($"✅ Aspect ratio perfectly preserved");
-            }
-    
+
             return (previewWidth, previewHeight, scale);
         }
 
@@ -1358,93 +1437,183 @@ namespace ProxyStudio.Services
         /// Alternative method: Fixed maximum dimensions with perfect aspect ratio preservation
         /// Use this if you prefer consistent maximum sizes
         /// </summary>
-        private (int Width, int Height, double Scale) CalculateOptimalPreviewSizeFixed(double pageWidthPt, double pageHeightPt)
+        private (int Width, int Height, double Scale) CalculateOptimalPreviewSizeFixed(double pageWidthPt,
+            double pageHeightPt)
         {
             // Fixed maximum dimensions
             const int maxWidth = 1200;
             const int maxHeight = 900;
-    
+
             // Calculate scales for each dimension
             var scaleX = (double)maxWidth / pageWidthPt;
             var scaleY = (double)maxHeight / pageHeightPt;
-    
+
             // Use the smaller scale to ensure both dimensions fit
             var scale = Math.Min(scaleX, scaleY);
-    
+
             // Calculate actual preview dimensions (will be smaller than max in one dimension)
             var previewWidth = (int)Math.Round(pageWidthPt * scale);
             var previewHeight = (int)Math.Round(pageHeightPt * scale);
-    
+
             _logger.LogDebug($"Fixed scaling calculation:");
             _logger.LogDebug($"  Page: {pageWidthPt:F0}×{pageHeightPt:F0} pt");
             _logger.LogDebug($"  Max bounds: {maxWidth}×{maxHeight} px");
             _logger.LogDebug($"  Scale factors: X={scaleX:F3}, Y={scaleY:F3}, chosen={scale:F3}");
             _logger.LogDebug($"  Result: {previewWidth}×{previewHeight} px");
-            _logger.LogDebug($"  Utilization: {(double)previewWidth / maxWidth * 100:F1}% width, {(double)previewHeight / maxHeight * 100:F1}% height");
-    
+            _logger.LogDebug(
+                $"  Utilization: {(double)previewWidth / maxWidth * 100:F1}% width, {(double)previewHeight / maxHeight * 100:F1}% height");
+
             return (previewWidth, previewHeight, scale);
         }
-        
-        private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x,
-            int y, int width, int height)
+
+        private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options,
+            int x, int y, int width, int height)
         {
             try
             {
                 var rect = new System.Drawing.Rectangle(x, y, width, height);
 
-                
-                
-                _logger.LogDebug($"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed}");
+                _logger.LogDebug(
+                    $"Drawing preview card {card?.Name ?? "NULL"} - EnableBleed: {card?.EnableBleed} at {options.PreviewDpi} DPI");
 
                 if (card?.ImageData != null && card.ImageData.Length > 0)
-                {
                     try
                     {
-                        using var imageStream = new MemoryStream(card.ImageData);
-                        using var originalImage = System.Drawing.Image.FromStream(imageStream);
+                        // ✅ NEW: Process image at preview DPI instead of using raw image data
+                        var processedImageData = ProcessImageForPreviewDpi(card.ImageData, card.Name,
+                            options.PreviewDpi, card.EnableBleed, width, height);
+
+                        using var imageStream = new MemoryStream(processedImageData);
+                        using var processedImage = System.Drawing.Image.FromStream(imageStream);
 
                         if (card.EnableBleed)
                         {
-                            // Crop 3mm from preview image (approximate scaling)
-                            var sourcePixelsPerMm = Math.Min(originalImage.Width / (CARD_WIDTH_MM),
-                                originalImage.Height / (CARD_HEIGHT_MM));
-                            var cropPixels = (int)(3.0 * sourcePixelsPerMm);
-
-                            var cropRect = new System.Drawing.Rectangle(
-                                cropPixels,
-                                cropPixels,
-                                originalImage.Width - (cropPixels * 2),
-                                originalImage.Height - (cropPixels * 2)
-                            );
-
-                            // Draw cropped portion stretched to full card size
-                            graphics.DrawImage(originalImage, rect, cropRect, System.Drawing.GraphicsUnit.Pixel);
-                            
-                            _logger.LogDebug($"Drew preview with bleed crop: {card.Name}");
+                            // For bleed cards, the processed image is already cropped
+                            graphics.DrawImage(processedImage, rect);
+                            _logger.LogDebug($"Drew preview with bleed (pre-processed): {card.Name}");
                         }
                         else
                         {
-                            // Draw full image
-                            graphics.DrawImage(originalImage, rect);
+                            // For non-bleed cards, draw the processed image directly
+                            graphics.DrawImage(processedImage, rect);
+                            _logger.LogDebug($"Drew preview without bleed (pre-processed): {card.Name}");
                         }
                     }
                     catch (Exception ex)
                     {
-                       
                         _logger.LogError(ex, $"Error drawing preview image for {card.Name}");
                         DrawPreviewPlaceholder(graphics, card, rect, "Image Error");
                     }
-                }
                 else
-                {
                     DrawPreviewPlaceholder(graphics, card, rect,
                         card?.EnableBleed == true ? "No Image (Bleed)" : "No Image");
-                }
             }
             catch (Exception ex)
             {
-                
-                _logger.LogError(ex,$"Error drawing preview card {card?.Name ?? "NULL"}");
+                _logger.LogError(ex, $"Error drawing preview card {card?.Name ?? "NULL"}");
+            }
+        }
+
+        /// <summary>
+        /// Process image specifically for preview display at the specified DPI and screen dimensions
+        /// This is separate from PDF processing and optimized for preview performance
+        /// </summary>
+        private byte[] ProcessImageForPreviewDpi(byte[] imageData, string cardName, int previewDpi,
+            bool enableBleed, int targetWidthPx, int targetHeightPx)
+        {
+            try
+            {
+                _logger.LogDebug(
+                    $"Processing preview image: {cardName} at {previewDpi} DPI for {targetWidthPx}×{targetHeightPx}px display");
+
+                using var image = Image.Load<Rgba32>(imageData);
+                var originalSize = $"{image.Width}×{image.Height}";
+
+                _logger.LogDebug($"  Source: {originalSize}");
+
+                // Apply bleed cropping if enabled
+                if (enableBleed)
+                {
+                    // Calculate 2mm crop in pixels based on current image resolution
+                    // Assume source image represents a 63mm × 88mm card with bleed
+                    var sourcePixelsPerMm = Math.Min(image.Width / CARD_WIDTH_MM, image.Height / CARD_HEIGHT_MM);
+                    var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
+
+                    _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
+
+                    // Crop the image (remove 2mm bleed from all sides)
+                    var cropRect = new Rectangle(
+                        cropPixels,
+                        cropPixels,
+                        image.Width - cropPixels * 2,
+                        image.Height - cropPixels * 2
+                    );
+
+                    image.Mutate(x => x.Crop(cropRect));
+                    _logger.LogDebug($"  After crop: {image.Width}×{image.Height}");
+                }
+
+                // ✅ KEY CHANGE: Resize based on preview DPI and target display size
+                // The target size should match the card dimensions at preview DPI
+                var previewCardWidthPx = (int)(CARD_WIDTH_INCHES * previewDpi);
+                var previewCardHeightPx = (int)(CARD_HEIGHT_INCHES * previewDpi);
+
+                _logger.LogDebug(
+                    $"  Preview DPI sizing: {previewCardWidthPx}×{previewCardHeightPx}px at {previewDpi} DPI");
+                _logger.LogDebug($"  Display target: {targetWidthPx}×{targetHeightPx}px");
+
+                // For preview, we want good quality but not excessive - resize to preview DPI
+                if (image.Width != previewCardWidthPx || image.Height != previewCardHeightPx)
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(previewCardWidthPx, previewCardHeightPx),
+                        Mode = ResizeMode.Stretch,
+                        Sampler = KnownResamplers.Lanczos3 // High quality for preview
+                    }));
+
+                // Set DPI metadata for the preview
+                image.Metadata.HorizontalResolution = previewDpi;
+                image.Metadata.VerticalResolution = previewDpi;
+
+                // Choose output format based on preview DPI
+                var outputStream = new MemoryStream();
+                string format;
+
+                if (previewDpi >= 200)
+                {
+                    // Higher DPI previews: use PNG for quality
+                    var pngEncoder = new PngEncoder
+                    {
+                        CompressionLevel = PngCompressionLevel.DefaultCompression,
+                        ColorType = PngColorType.RgbWithAlpha
+                    };
+                    image.Save(outputStream, pngEncoder);
+                    format = "PNG";
+                }
+                else
+                {
+                    // Lower DPI previews: use JPEG for smaller file size
+                    var jpegEncoder = new JpegEncoder
+                    {
+                        Quality = 50 // Use the preview quality setting
+                    };
+                    image.Save(outputStream, jpegEncoder);
+                    format = "JPEG";
+                }
+
+                var processedData = outputStream.ToArray();
+                outputStream.Dispose();
+
+                _logger.LogDebug($"  Preview output: {processedData.Length} bytes as {format} at {previewDpi} DPI");
+                _logger.LogDebug($"SUCCESS: Preview processing completed for {cardName}");
+
+                return processedData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR: Preview processing failed for {cardName}: {ex.Message}");
+                // Return original data as fallback
+                return imageData;
             }
         }
 
@@ -1500,10 +1669,7 @@ namespace ProxyStudio.Services
                 var color = ParseSystemDrawingColor(options.CuttingLineColor);
                 using var pen = new System.Drawing.Pen(color, options.CuttingLineThickness);
 
-                if (options.IsCuttingLineDashed)
-                {
-                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                }
+                if (options.IsCuttingLineDashed) pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
 
                 var extension = options.CuttingLineExtension;
 
@@ -1516,7 +1682,7 @@ namespace ProxyStudio.Services
                 var gridBottom = gridStartY + cardsPerColumn * cardHeight + (cardsPerColumn - 1) * spacing;
 
                 // Draw horizontal cutting line extensions (only outside grid)
-                for (int row = 0; row <= cardsPerColumn; row++)
+                for (var row = 0; row <= cardsPerColumn; row++)
                 {
                     var y = gridStartY + row * (cardHeight + spacing);
                     if (row > 0) y -= spacing; // Adjust for spacing except at top
@@ -1529,7 +1695,7 @@ namespace ProxyStudio.Services
                 }
 
                 // Draw vertical cutting line extensions (only outside grid)
-                for (int col = 0; col <= cardsPerRow; col++)
+                for (var col = 0; col <= cardsPerRow; col++)
                 {
                     var x = gridStartX + col * (cardWidth + spacing);
                     if (col > 0) x -= spacing; // Adjust for spacing except at left
@@ -1582,10 +1748,7 @@ namespace ProxyStudio.Services
                     {
                         var ptr = (uint*)context.Address;
                         var pixelCount = width * height;
-                        for (int i = 0; i < pixelCount; i++)
-                        {
-                            ptr[i] = 0xFFFFFFFF; // White
-                        }
+                        for (var i = 0; i < pixelCount; i++) ptr[i] = 0xFFFFFFFF; // White
                     }
                 }
 
@@ -1659,10 +1822,7 @@ namespace ProxyStudio.Services
                 var color = ParseColor(options.CuttingLineColor);
                 var pen = new XPen(color, options.CuttingLineThickness);
 
-                if (options.IsCuttingLineDashed)
-                {
-                    pen.DashStyle = XDashStyle.Dash;
-                }
+                if (options.IsCuttingLineDashed) pen.DashStyle = XDashStyle.Dash;
 
                 var extension = options.CuttingLineExtension;
 
@@ -1676,7 +1836,7 @@ namespace ProxyStudio.Services
                 var gridBottom = gridStartY + cardsPerColumn * cardHeight + (cardsPerColumn - 1) * options.CardSpacing;
 
                 // Draw horizontal cutting line extensions (only outside grid)
-                for (int row = 0; row <= cardsPerColumn; row++)
+                for (var row = 0; row <= cardsPerColumn; row++)
                 {
                     var y = gridStartY + row * (cardHeight + options.CardSpacing);
                     if (row > 0) y -= options.CardSpacing; // Adjust for spacing except at top
@@ -1695,7 +1855,7 @@ namespace ProxyStudio.Services
                 }
 
                 // Draw vertical cutting line extensions (only outside grid)
-                for (int col = 0; col <= cardsPerRow; col++)
+                for (var col = 0; col <= cardsPerRow; col++)
                 {
                     var x = gridStartX + col * (cardWidth + options.CardSpacing);
                     if (col > 0) x -= options.CardSpacing; // Adjust for spacing except at left
@@ -1746,7 +1906,7 @@ namespace ProxyStudio.Services
         }
     }
 
-    // Improved font resolver for PDFsharp
+// Improved font resolver for PDFsharp
     public class SafeFontResolver : IFontResolver
     {
         public FontResolverInfo ResolveTypeface(string familyName, bool isBold, bool isItalic)
@@ -1788,10 +1948,5 @@ namespace ProxyStudio.Services
                 return null!; // Return null to use system fonts
             }
         }
-
-
-
-
-        
     }
 }
