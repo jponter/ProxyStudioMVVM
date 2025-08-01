@@ -128,13 +128,15 @@ namespace ProxyStudio.ViewModels
             // Load actual settings from config (this will override the defaults above)
             
             
-            // IMPORTANT: Enable saving after initialization is complete
-            _isInitializing = false;
+            
             _logger.LogDebug("PrintViewModel initialization complete - config saving now enabled");
             
             _logger.LogDebug($"Loading Config");
             // Load settings from config
             LoadSettings();
+            
+            // IMPORTANT: Enable saving after initialization is complete
+            _isInitializing = false;
             _logger.LogDebug("Config loaded successfully");
         }
 
@@ -213,7 +215,7 @@ namespace ProxyStudio.ViewModels
             _logger.LogDebug($"  PrintDpi: {PrintDpi}, EnsureMinPrintDpi: {EnsureMinimumPrintDpi}");
             
             // Auto-generate preview on startup
-            _ = GeneratePreviewAsync();
+           // _ = GeneratePreviewAsync();
         }
 
         private void SaveSettings()

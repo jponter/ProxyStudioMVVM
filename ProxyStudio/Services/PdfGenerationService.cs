@@ -396,26 +396,26 @@ namespace ProxyStudio.Services
             var totalGridHeightPt = actualCardsPerColumn * cardHeightPt + totalVerticalSpacing;
     
             var availableWidthPt = pageWidth.Point - (options.LeftMargin + options.RightMargin);
-            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin + 50);
+            var availableHeightPt = pageHeight.Point - (options.TopMargin + options.BottomMargin );
     
             var startXPt = options.LeftMargin + (availableWidthPt - totalGridWidthPt) / 2;
-            var startYPt = options.TopMargin + 30 + (availableHeightPt - totalGridHeightPt) / 2;
+            var startYPt = options.TopMargin +  (availableHeightPt - totalGridHeightPt) / 2;
     
-            // Draw title
-            try
-            {
-                var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
-                var title = totalPages > 1 
-                    ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)"
-                    : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)";
-            
-                gfx.DrawString(title, font, XBrushes.Black,
-                    new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error drawing title: {ex.Message}");
-            }
+            // // Draw title
+            // try
+            // {
+            //     var font = GetSafeFont("Arial", 14, XFontStyleEx.Bold);
+            //     var title = totalPages > 1 
+            //         ? $"Card Collection - Page {currentPage} of {totalPages} ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)"
+            //         : $"Card Collection - {pageCards.Count} cards ({actualCardsPerRow}x{actualCardsPerColumn}) - {options.PrintDpi} DPI (Parallel)";
+            //
+            //     gfx.DrawString(title, font, XBrushes.Black,
+            //         new XPoint(XUnit.FromPoint(options.LeftMargin), XUnit.FromPoint(options.TopMargin)));
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError($"Error drawing title: {ex.Message}");
+            // }
     
             // Draw cards using pre-processed images - this is now FAST!
             for (int row = 0; row < actualCardsPerColumn; row++)
@@ -1002,15 +1002,15 @@ namespace ProxyStudio.Services
                 graphics.Clear(System.Drawing.Color.White);
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                // Draw title
-                using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
-                var titleText =
-                    $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
-                graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
-                    new System.Drawing.PointF(10, 10));
-
-                
-                _logger.LogDebug($"Drew title: {titleText}");
+                // // Draw title
+                // using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
+                // var titleText =
+                //     $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
+                // graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
+                //     new System.Drawing.PointF(10, 10));
+                //
+                //
+                // _logger.LogDebug($"Drew title: {titleText}");
 
                 if (pageCards.Count == 0)
                 {
@@ -1022,7 +1022,7 @@ namespace ProxyStudio.Services
                     return new Bitmap(ms);
                 }
 
-                // FIXED CARD DIMENSIONS: Always 2.5" x 3.5" scaled for preview
+                // FIXED CARD DIMENSIONS: Always in mm, but scaled for preview
                 var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
@@ -1040,14 +1040,14 @@ namespace ProxyStudio.Services
                 var marginRightScaled = options.RightMargin * pageScale;
                 var marginTopScaled = options.TopMargin * pageScale;
                 var marginBottomScaled = options.BottomMargin * pageScale;
-                var titleSpaceScaled = 30 * pageScale; // Space for title
+                //var titleSpaceScaled = 30 * pageScale; // Space for title
 
                 var availableWidth = previewWidth - marginLeftScaled - marginRightScaled;
-                var availableHeight = previewHeight - marginTopScaled - marginBottomScaled - titleSpaceScaled;
+                var availableHeight = previewHeight - marginTopScaled - marginBottomScaled ;
 
                 // Center the grid on the page
                 var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
-                var gridStartY = marginTopScaled + titleSpaceScaled + (availableHeight - totalGridHeight) / 2;
+                var gridStartY = marginTopScaled +  (availableHeight - totalGridHeight) / 2;
 
                 
                 _logger.LogDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
