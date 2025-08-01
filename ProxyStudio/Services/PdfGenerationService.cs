@@ -134,7 +134,7 @@ namespace ProxyStudio.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to add test cards");
-                 _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
+                _errorHandler.HandleExceptionAsync(ex, "Failed to add test cards", "AddTestCards");
                 
                 return null;
             }
@@ -271,112 +271,112 @@ namespace ProxyStudio.Services
         }
    
         private Dictionary<string, byte[]> PreProcessAllImagesParallel(CardCollection cards, PdfGenerationOptions options, 
-    IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
-{
-    var processedImages = new ConcurrentDictionary<string, byte[]>();
-    var completedCount = 0;
-    
-    // Use ParallelOptions to control parallel execution
-    var parallelOptions = new ParallelOptions
-    {
-        MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2)
-    };
-    
-    _logger.LogDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
-    _logger.LogDebug($"System has {Environment.ProcessorCount} logical processors");
-    
-    var parallelStartTime = DateTime.Now;
-    
-    // Use Parallel.ForEach which guarantees parallel execution for CPU-bound work
-    try
-    {
-        Parallel.ForEach(cards, parallelOptions, card =>
+            IProgress<PdfGenerationProgress>? progress, PdfGenerationProgress progressInfo, DateTime startTime)
         {
-            var threadId = Thread.CurrentThread.ManagedThreadId;
-            
+            var processedImages = new ConcurrentDictionary<string, byte[]>();
+            var completedCount = 0;
+    
+            // Use ParallelOptions to control parallel execution
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2)
+            };
+    
+            _logger.LogDebug($"Pre-processing {cards.Count} images with {parallelOptions.MaxDegreeOfParallelism} max parallel threads using Parallel.ForEach");
+            _logger.LogDebug($"System has {Environment.ProcessorCount} logical processors");
+    
+            var parallelStartTime = DateTime.Now;
+    
+            // Use Parallel.ForEach which guarantees parallel execution for CPU-bound work
             try
             {
-                if (card.ImageData != null && card.ImageData.Length > 0)
+                Parallel.ForEach(cards, parallelOptions, card =>
                 {
-                    _logger.LogDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
-                    
-                    var cardStartTime = DateTime.Now;
-                    var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
-                    var cardProcessTime = DateTime.Now - cardStartTime;
-                    
-                    if (processedImage != null)
+                    var threadId = Thread.CurrentThread.ManagedThreadId;
+            
+                    try
                     {
-                        processedImages[card.Id] = processedImage;
-                        _logger.LogDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                        if (card.ImageData != null && card.ImageData.Length > 0)
+                        {
+                            _logger.LogDebug($"PARALLEL PDF: Processing {card.Name} on thread {threadId}");
+                    
+                            var cardStartTime = DateTime.Now;
+                            var processedImage = ProcessImageForHighDpiPdf(card.ImageData, card.Name, options.PrintDpi, card.EnableBleed);
+                            var cardProcessTime = DateTime.Now - cardStartTime;
+                    
+                            if (processedImage != null)
+                            {
+                                processedImages[card.Id] = processedImage;
+                                _logger.LogDebug($"PARALLEL PDF SUCCESS: {card.Name} ({processedImage.Length} bytes) on thread {threadId} in {cardProcessTime.TotalSeconds:F1}s");
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
+                        }
+                
+                        // Thread-safe progress update
+                        var newCompletedCount = Interlocked.Increment(ref completedCount);
+                
+                        // Update progress (this should be thread-safe)
+                        var tempProgressInfo = new PdfGenerationProgress
+                        {
+                            TotalSteps = progressInfo.TotalSteps,
+                            CurrentStep = newCompletedCount,
+                            CurrentCardName = card.Name,
+                            CurrentOperation = $"Pre-processed {newCompletedCount}/{cards.Count} images (Thread {threadId})",
+                            ElapsedTime = DateTime.Now - startTime
+                        };
+                
+                        // Estimate remaining time for parallel processing phase
+                        if (newCompletedCount > 1)
+                        {
+                            var averageTimePerCard = tempProgressInfo.ElapsedTime.TotalSeconds / newCompletedCount;
+                            var remainingCards = cards.Count - newCompletedCount;
+                            tempProgressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
+                        }
+                
+                        progress?.Report(tempProgressInfo);
+                
+                        _logger.LogDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogWarning($"PARALLEL PDF WARNING: {card.Name} processing returned null on thread {threadId}");
+                        _logger.LogError($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
+                
+                        // Still increment counter for failed cards
+                        Interlocked.Increment(ref completedCount);
                     }
-                }
-                else
+                });
+        
+                var parallelEndTime = DateTime.Now;
+                var parallelDuration = parallelEndTime - parallelStartTime;
+        
+                _logger.LogDebug($"=== PARALLEL PROCESSING COMPLETE ===");
+                _logger.LogDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
+                _logger.LogDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
+                _logger.LogDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
+        
+                if (cards.Count > 1)
                 {
-                    _logger.LogError($"PARALLEL PDF SKIP: {card.Name} has no image data on thread {threadId}");
+                    var theoreticalSequentialTime = cards.Count * 3.7; // Based on your previous 3.7s per card
+                    var speedupRatio = theoreticalSequentialTime / parallelDuration.TotalSeconds;
+                    _logger.LogDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
                 }
-                
-                // Thread-safe progress update
-                var newCompletedCount = Interlocked.Increment(ref completedCount);
-                
-                // Update progress (this should be thread-safe)
-                var tempProgressInfo = new PdfGenerationProgress
-                {
-                    TotalSteps = progressInfo.TotalSteps,
-                    CurrentStep = newCompletedCount,
-                    CurrentCardName = card.Name,
-                    CurrentOperation = $"Pre-processed {newCompletedCount}/{cards.Count} images (Thread {threadId})",
-                    ElapsedTime = DateTime.Now - startTime
-                };
-                
-                // Estimate remaining time for parallel processing phase
-                if (newCompletedCount > 1)
-                {
-                    var averageTimePerCard = tempProgressInfo.ElapsedTime.TotalSeconds / newCompletedCount;
-                    var remainingCards = cards.Count - newCompletedCount;
-                    tempProgressInfo.EstimatedRemainingTime = TimeSpan.FromSeconds(averageTimePerCard * remainingCards);
-                }
-                
-                progress?.Report(tempProgressInfo);
-                
-                _logger.LogDebug($"PROGRESS UPDATE: Completed {newCompletedCount}/{cards.Count} images, thread {threadId}");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"ERROR: Processing {card?.Name ?? "unknown"} failed on thread {threadId}: {ex.Message}");
-                
-                // Still increment counter for failed cards
-                Interlocked.Increment(ref completedCount);
+                _logger.LogCritical($"ERROR: Parallel.ForEach failed: {ex.Message}");
+                _logger.LogCritical($"Stack trace: {ex.StackTrace}");
+                throw;
             }
-        });
-        
-        var parallelEndTime = DateTime.Now;
-        var parallelDuration = parallelEndTime - parallelStartTime;
-        
-        _logger.LogDebug($"=== PARALLEL PROCESSING COMPLETE ===");
-        _logger.LogDebug($"Processed {processedImages.Count}/{cards.Count} images successfully");
-        _logger.LogDebug($"Parallel processing time: {parallelDuration.TotalSeconds:F1} seconds");
-        _logger.LogDebug($"Average per image: {parallelDuration.TotalMilliseconds / cards.Count:F0} ms");
-        
-        if (cards.Count > 1)
-        {
-            var theoreticalSequentialTime = cards.Count * 3.7; // Based on your previous 3.7s per card
-            var speedupRatio = theoreticalSequentialTime / parallelDuration.TotalSeconds;
-            _logger.LogDebug($"Estimated speedup: {speedupRatio:F1}x faster than sequential processing");
-        }
-    }
-    catch (Exception ex)
-    {
-        _logger.LogCritical($"ERROR: Parallel.ForEach failed: {ex.Message}");
-        _logger.LogCritical($"Stack trace: {ex.StackTrace}");
-        throw;
-    }
     
-    return new Dictionary<string, byte[]>(processedImages);
-}
+            return new Dictionary<string, byte[]>(processedImages);
+        }
 
 // ✅ NEW: FAST DRAWING METHOD USING PRE-PROCESSED IMAGES
         private void DrawCardGridWithPreProcessedImages(XGraphics gfx, List<Card> pageCards, 
@@ -875,13 +875,13 @@ namespace ProxyStudio.Services
                 var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
                 var targetHeight = (int)(CARD_HEIGHT_INCHES * targetDpi);
 
-                // If bleed is enabled, crop 2mm from all sides of source image
+                // If bleed is enabled, crop 3mm from all sides of source image
                 if (enableBleed)
                 {
                     // Calculate 2mm in pixels based on the current image resolution
                     // Assume source image represents a 63mm × 88mm card with bleed
                     var sourcePixelsPerMm = Math.Min(image.Width / (CARD_WIDTH_MM), image.Height / (CARD_HEIGHT_MM));
-                    var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
+                    var cropPixels = (int)(3.0 * sourcePixelsPerMm); // 3mm in pixels
 
                     _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 
@@ -959,12 +959,177 @@ namespace ProxyStudio.Services
             }
         }
 
+        // private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
+        // {
+        //     _logger.BeginScope("CreateSimplePreview");
+        //     try
+        //     {
+        //         
+        //         _logger.LogDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
+        //
+        //         // Use the user's orientation choice, not automatic layout
+        //         var actualCardsPerRow = options.IsPortrait ? 3 : 4;
+        //         var actualCardsPerColumn = options.IsPortrait ? 3 : 2;
+        //         var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
+        //         var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
+        //
+        //         
+        //         _logger.LogDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
+        //
+        //         // Get page dimensions based on selected page size and USER'S orientation choice
+        //         var pageDimensions =
+        //             GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
+        //
+        //         // Calculate preview scale to fit in a reasonable screen size
+        //         var maxPreviewWidth = 1200;
+        //         var maxPreviewHeight = 900;
+        //         var scaleX = maxPreviewWidth / pageDimensions.Width;
+        //         var scaleY = maxPreviewHeight / pageDimensions.Height;
+        //         var pageScale = Math.Min(scaleX, scaleY);
+        //
+        //         // Calculate preview dimensions maintaining page aspect ratio
+        //         var previewWidth = (int)(pageDimensions.Width * pageScale);
+        //         var previewHeight = (int)(pageDimensions.Height * pageScale);
+        //
+        //         
+        //         _logger.LogDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
+        //         // Ensure we have a valid page scale
+        //         _logger.LogDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+        //
+        //         using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
+        //         using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        //
+        //         graphics.Clear(System.Drawing.Color.White);
+        //         graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        //
+        //         // // Draw title
+        //         // using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
+        //         // var titleText =
+        //         //     $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
+        //         // graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
+        //         //     new System.Drawing.PointF(10, 10));
+        //         //
+        //         //
+        //         // _logger.LogDebug($"Drew title: {titleText}");
+        //
+        //         if (pageCards.Count == 0)
+        //         {
+        //             
+        //             _logger.LogDebug("No cards to draw, returning empty preview");
+        //             using var ms = new MemoryStream();
+        //             bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+        //             ms.Position = 0;
+        //             return new Bitmap(ms);
+        //         }
+        //
+        //         // FIXED CARD DIMENSIONS: Always in mm, but scaled for preview
+        //         var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
+        //         var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
+        //         var spacingPreview = (float)(options.CardSpacing * pageScale);
+        //
+        //         
+        //         _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+        //
+        //         // Calculate total grid size
+        //         var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
+        //         var totalGridHeight = actualCardsPerColumn * cardHeightPreview +
+        //                               (actualCardsPerColumn - 1) * spacingPreview;
+        //
+        //         // Calculate available space for grid (scaled margins)
+        //         var marginLeftScaled = options.LeftMargin * pageScale;
+        //         var marginRightScaled = options.RightMargin * pageScale;
+        //         var marginTopScaled = options.TopMargin * pageScale;
+        //         var marginBottomScaled = options.BottomMargin * pageScale;
+        //         //var titleSpaceScaled = 30 * pageScale; // Space for title
+        //
+        //         var availableWidth = previewWidth - marginLeftScaled - marginRightScaled;
+        //         var availableHeight = previewHeight - marginTopScaled - marginBottomScaled ;
+        //
+        //         // Center the grid on the page
+        //         var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
+        //         var gridStartY = marginTopScaled +  (availableHeight - totalGridHeight) / 2;
+        //
+        //         
+        //         _logger.LogDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
+        //
+        //         // Check if grid fits
+        //         if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
+        //         {
+        //             
+        //             _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+        //         }
+        //         else
+        //         {
+        //             
+        //             _logger.LogDebug("SUCCESS: Preview grid fits within page margins");
+        //         }
+        //
+        //         // Draw cards with FIXED spacing
+        //         for (int row = 0; row < actualCardsPerColumn; row++)
+        //         {
+        //             for (int col = 0; col < actualCardsPerRow; col++)
+        //             {
+        //                 var cardIndex = row * actualCardsPerRow + col;
+        //
+        //                 if (cardIndex < pageCards.Count)
+        //                 {
+        //                     var card = pageCards[cardIndex];
+        //
+        //                     // Calculate exact position with spacing
+        //                     var exactX = gridStartX + col * (cardWidthPreview + spacingPreview);
+        //                     var exactY = gridStartY + row * (cardHeightPreview + spacingPreview);
+        //
+        //                     // Round for display
+        //                     var x = (int)Math.Round(exactX);
+        //                     var y = (int)Math.Round(exactY);
+        //
+        //                     
+        //                     _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
+        //                     
+        //                     _logger.LogDebug($"  Position: ({x}, {y})");
+        //
+        //                     DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
+        //                         (int)Math.Round(cardHeightPreview));
+        //                 }
+        //             }
+        //         }
+        //
+        //         // Draw cutting lines for the entire grid (outside card areas)
+        //         if (options.ShowCuttingLines)
+        //         {
+        //             DrawPreviewGridCuttingLines(graphics, options, (float)gridStartX, (float)gridStartY,
+        //                 actualCardsPerRow, actualCardsPerColumn, cardWidthPreview, cardHeightPreview, spacingPreview);
+        //         }
+        //
+        //         
+        //         _logger.LogDebug($"Finished drawing cards, converting to Avalonia Bitmap");
+        //
+        //         // Convert to Avalonia Bitmap
+        //         using var outputStream = new MemoryStream();
+        //         bitmap.Save(outputStream, System.Drawing.Imaging.ImageFormat.Png);
+        //         outputStream.Position = 0;
+        //
+        //         var avaloniaB = new Bitmap(outputStream);
+        //         
+        //         _logger.LogDebug($"Successfully created Avalonia Bitmap");
+        //
+        //         return avaloniaB;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         
+        //         _logger.LogError(ex,$"Error creating simple preview.");
+        //         return CreateFallbackPreview(cards, options);
+        //     }
+        // }
+
+        // Update preview drawing to handle bleed
+        
         private Bitmap CreateSimplePreview(CardCollection cards, PdfGenerationOptions options, int previewDpi)
         {
             _logger.BeginScope("CreateSimplePreview");
             try
             {
-                
                 _logger.LogDebug($"CreateSimplePreview called with {cards?.Count ?? 0} cards at {previewDpi} DPI for preview (print will be {options.PrintDpi} DPI)");
 
                 // Use the user's orientation choice, not automatic layout
@@ -973,28 +1138,22 @@ namespace ProxyStudio.Services
                 var cardsPerPage = actualCardsPerRow * actualCardsPerColumn;
                 var pageCards = cards?.Take(cardsPerPage).ToList() ?? new List<Card>();
 
-                
                 _logger.LogDebug($"Page cards: {pageCards.Count} in {actualCardsPerRow}x{actualCardsPerColumn} grid with {options.CardSpacing}pt spacing");
 
                 // Get page dimensions based on selected page size and USER'S orientation choice
-                var pageDimensions =
-                    GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
+                var pageDimensions = GetPageDimensions(options.PageSize, !options.IsPortrait); // !IsPortrait = IsLandscape
 
-                // Calculate preview scale to fit in a reasonable screen size
-                var maxPreviewWidth = 1200;
-                var maxPreviewHeight = 900;
-                var scaleX = maxPreviewWidth / pageDimensions.Width;
-                var scaleY = maxPreviewHeight / pageDimensions.Height;
-                var pageScale = Math.Min(scaleX, scaleY);
+                // ✅ FIXED SCALING LOGIC: Maintain exact aspect ratio
+                var targetPreviewSize = CalculateOptimalPreviewSize(pageDimensions.Width, pageDimensions.Height);
+                var previewWidth = targetPreviewSize.Width;
+                var previewHeight = targetPreviewSize.Height;
+                var pageScale = targetPreviewSize.Scale;
 
-                // Calculate preview dimensions maintaining page aspect ratio
-                var previewWidth = (int)(pageDimensions.Width * pageScale);
-                var previewHeight = (int)(pageDimensions.Height * pageScale);
-
-                
-                _logger.LogDebug($"Preview dimensions: {previewWidth}x{previewHeight} (PDF: {pageDimensions.Width:F0}x{pageDimensions.Height:F0})");
-                // Ensure we have a valid page scale
-                _logger.LogDebug($"Page: {options.PageSize} {(options.IsPortrait ? "Portrait" : "Landscape")}, Scale: {pageScale:F3}");
+                _logger.LogDebug($"✅ FIXED SCALING:");
+                _logger.LogDebug($"  Page dimensions: {pageDimensions.Width:F0}×{pageDimensions.Height:F0} pt");
+                _logger.LogDebug($"  Preview dimensions: {previewWidth}×{previewHeight} px");
+                _logger.LogDebug($"  Scale factor: {pageScale:F3}");
+                _logger.LogDebug($"  Aspect ratio preserved: {Math.Abs((double)previewWidth / previewHeight - pageDimensions.Width / pageDimensions.Height) < 0.001}");
 
                 using var bitmap = new System.Drawing.Bitmap(previewWidth, previewHeight);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
@@ -1002,19 +1161,8 @@ namespace ProxyStudio.Services
                 graphics.Clear(System.Drawing.Color.White);
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                // // Draw title
-                // using var titleFont = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
-                // var titleText =
-                //     $"Card Collection - {cards?.Count ?? 0} cards ({actualCardsPerRow}x{actualCardsPerColumn}) {(options.IsPortrait ? "Portrait" : "Landscape")} {options.PageSize}";
-                // graphics.DrawString(titleText, titleFont, System.Drawing.Brushes.Black,
-                //     new System.Drawing.PointF(10, 10));
-                //
-                //
-                // _logger.LogDebug($"Drew title: {titleText}");
-
                 if (pageCards.Count == 0)
                 {
-                    
                     _logger.LogDebug("No cards to draw, returning empty preview");
                     using var ms = new MemoryStream();
                     bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
@@ -1022,46 +1170,43 @@ namespace ProxyStudio.Services
                     return new Bitmap(ms);
                 }
 
-                // FIXED CARD DIMENSIONS: Always in mm, but scaled for preview
+                // FIXED CARD DIMENSIONS: Always 2.4" x 3.4" scaled for preview
                 var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
 
-                
-                _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}x{cardHeightPreview:F1} (EXACTLY 2.5\" x 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                _logger.LogDebug($"FIXED Preview card layout: {cardWidthPreview:F1}×{cardHeightPreview:F1} (EXACTLY 2.5\" × 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
 
                 // Calculate total grid size
                 var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
-                var totalGridHeight = actualCardsPerColumn * cardHeightPreview +
-                                      (actualCardsPerColumn - 1) * spacingPreview;
+                var totalGridHeight = actualCardsPerColumn * cardHeightPreview + (actualCardsPerColumn - 1) * spacingPreview;
 
-                // Calculate available space for grid (scaled margins)
+                // Use ONLY print margins, no title space
                 var marginLeftScaled = options.LeftMargin * pageScale;
                 var marginRightScaled = options.RightMargin * pageScale;
                 var marginTopScaled = options.TopMargin * pageScale;
                 var marginBottomScaled = options.BottomMargin * pageScale;
-                //var titleSpaceScaled = 30 * pageScale; // Space for title
 
                 var availableWidth = previewWidth - marginLeftScaled - marginRightScaled;
-                var availableHeight = previewHeight - marginTopScaled - marginBottomScaled ;
+                var availableHeight = previewHeight - marginTopScaled - marginBottomScaled;
 
-                // Center the grid on the page
+                // Center the grid on the page using ONLY the configured margins
                 var gridStartX = marginLeftScaled + (availableWidth - totalGridWidth) / 2;
-                var gridStartY = marginTopScaled +  (availableHeight - totalGridHeight) / 2;
+                var gridStartY = marginTopScaled + (availableHeight - totalGridHeight) / 2;
 
-                
-                _logger.LogDebug($"  Grid start: {gridStartX:F1}, {gridStartY:F1}");
+                _logger.LogDebug($"Grid positioning:");
+                _logger.LogDebug($"  Available space: {availableWidth:F1}×{availableHeight:F1}");
+                _logger.LogDebug($"  Grid size: {totalGridWidth:F1}×{totalGridHeight:F1}");
+                _logger.LogDebug($"  Grid start: ({gridStartX:F1}, {gridStartY:F1})");
 
-                // Check if grid fits
+                // Check if grid fits (this should always pass now with proper scaling)
                 if (totalGridWidth > availableWidth || totalGridHeight > availableHeight)
                 {
-                    
-                    _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1} x {totalGridHeight:F1}) is larger than available space ({availableWidth:F1} x {availableHeight:F1})");
+                    _logger.LogWarning($"WARNING: Preview grid ({totalGridWidth:F1}×{totalGridHeight:F1}) is larger than available space ({availableWidth:F1}×{availableHeight:F1})");
                 }
                 else
                 {
-                    
-                    _logger.LogDebug("SUCCESS: Preview grid fits within page margins");
+                    _logger.LogDebug("✅ SUCCESS: Preview grid fits perfectly within page margins");
                 }
 
                 // Draw cards with FIXED spacing
@@ -1083,10 +1228,7 @@ namespace ProxyStudio.Services
                             var x = (int)Math.Round(exactX);
                             var y = (int)Math.Round(exactY);
 
-                            
-                            _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"}");
-                            
-                            _logger.LogDebug($"  Position: ({x}, {y})");
+                            _logger.LogDebug($"Preview card {cardIndex}: {card?.Name ?? "NULL"} at ({x}, {y})");
 
                             DrawPreviewCard(graphics, card, options, x, y, (int)Math.Round(cardWidthPreview),
                                 (int)Math.Round(cardHeightPreview));
@@ -1094,14 +1236,13 @@ namespace ProxyStudio.Services
                     }
                 }
 
-                // Draw cutting lines for the entire grid (outside card areas)
+                // Draw cutting lines with proper boundaries
                 if (options.ShowCuttingLines)
                 {
                     DrawPreviewGridCuttingLines(graphics, options, (float)gridStartX, (float)gridStartY,
                         actualCardsPerRow, actualCardsPerColumn, cardWidthPreview, cardHeightPreview, spacingPreview);
                 }
 
-                
                 _logger.LogDebug($"Finished drawing cards, converting to Avalonia Bitmap");
 
                 // Convert to Avalonia Bitmap
@@ -1110,20 +1251,140 @@ namespace ProxyStudio.Services
                 outputStream.Position = 0;
 
                 var avaloniaB = new Bitmap(outputStream);
-                
-                _logger.LogDebug($"Successfully created Avalonia Bitmap");
+                _logger.LogDebug($"✅ Successfully created Avalonia Bitmap with proper aspect ratio");
 
                 return avaloniaB;
             }
             catch (Exception ex)
             {
-                
-                _logger.LogError(ex,$"Error creating simple preview.");
+                _logger.LogError(ex, $"Error creating simple preview.");
                 return CreateFallbackPreview(cards, options);
             }
         }
+        
+        /// <summary>
+        /// Calculates optimal preview dimensions that maintain exact aspect ratio
+        /// while fitting within reasonable screen bounds
+        /// </summary>
+        private (int Width, int Height, double Scale) CalculateOptimalPreviewSize(double pageWidthPt, double pageHeightPt)
+        {
+            // Define reasonable preview size limits
+            const int minPreviewDimension = 400;  // Minimum for readability
+            const int maxPreviewDimension = 1400; // Maximum for screen fit
+            const int idealMinDimension = 800;    // Preferred minimum
+    
+            _logger.LogDebug($"Calculating optimal preview size for page: {pageWidthPt:F0}×{pageHeightPt:F0} pt");
+    
+            // Calculate page aspect ratio
+            var pageAspectRatio = pageWidthPt / pageHeightPt;
+            _logger.LogDebug($"Page aspect ratio: {pageAspectRatio:F3} ({(pageAspectRatio > 1 ? "landscape" : "portrait")})");
+    
+            int previewWidth, previewHeight;
+            double scale;
+    
+            // Strategy: Size the longer dimension to idealMinDimension, 
+            // then check if shorter dimension fits within maxPreviewDimension
+            if (pageWidthPt >= pageHeightPt)
+            {
+                // Landscape or square - width is longer
+                previewWidth = idealMinDimension;
+                previewHeight = (int)Math.Round(idealMinDimension / pageAspectRatio);
+        
+                // Check if height exceeds maximum
+                if (previewHeight > maxPreviewDimension)
+                {
+                    previewHeight = maxPreviewDimension;
+                    previewWidth = (int)Math.Round(maxPreviewDimension * pageAspectRatio);
+                }
+        
+                scale = (double)previewWidth / pageWidthPt;
+            }
+            else
+            {
+                // Portrait - height is longer
+                previewHeight = idealMinDimension;
+                previewWidth = (int)Math.Round(idealMinDimension * pageAspectRatio);
+        
+                // Check if width exceeds maximum
+                if (previewWidth > maxPreviewDimension)
+                {
+                    previewWidth = maxPreviewDimension;
+                    previewHeight = (int)Math.Round(maxPreviewDimension / pageAspectRatio);
+                }
+        
+                scale = (double)previewHeight / pageHeightPt;
+            }
+    
+            // Ensure minimum dimensions for usability
+            if (previewWidth < minPreviewDimension)
+            {
+                var adjustmentFactor = (double)minPreviewDimension / previewWidth;
+                previewWidth = minPreviewDimension;
+                previewHeight = (int)Math.Round(previewHeight * adjustmentFactor);
+                scale *= adjustmentFactor;
+            }
+    
+            if (previewHeight < minPreviewDimension)
+            {
+                var adjustmentFactor = (double)minPreviewDimension / previewHeight;
+                previewHeight = minPreviewDimension;
+                previewWidth = (int)Math.Round(previewWidth * adjustmentFactor);
+                scale *= adjustmentFactor;
+            }
+    
+            // Verify aspect ratio is maintained (within rounding tolerance)
+            var previewAspectRatio = (double)previewWidth / previewHeight;
+            var aspectRatioError = Math.Abs(previewAspectRatio - pageAspectRatio);
+    
+            _logger.LogDebug($"Preview calculation results:");
+            _logger.LogDebug($"  Preview size: {previewWidth}×{previewHeight} px");
+            _logger.LogDebug($"  Scale factor: {scale:F4}");
+            _logger.LogDebug($"  Preview aspect ratio: {previewAspectRatio:F3}");
+            _logger.LogDebug($"  Aspect ratio error: {aspectRatioError:F6} (should be < 0.001)");
+    
+            if (aspectRatioError > 0.001)
+            {
+                _logger.LogWarning($"⚠️  Aspect ratio error {aspectRatioError:F6} exceeds tolerance!");
+            }
+            else
+            {
+                _logger.LogDebug($"✅ Aspect ratio perfectly preserved");
+            }
+    
+            return (previewWidth, previewHeight, scale);
+        }
 
-        // Update preview drawing to handle bleed
+        /// <summary>
+        /// Alternative method: Fixed maximum dimensions with perfect aspect ratio preservation
+        /// Use this if you prefer consistent maximum sizes
+        /// </summary>
+        private (int Width, int Height, double Scale) CalculateOptimalPreviewSizeFixed(double pageWidthPt, double pageHeightPt)
+        {
+            // Fixed maximum dimensions
+            const int maxWidth = 1200;
+            const int maxHeight = 900;
+    
+            // Calculate scales for each dimension
+            var scaleX = (double)maxWidth / pageWidthPt;
+            var scaleY = (double)maxHeight / pageHeightPt;
+    
+            // Use the smaller scale to ensure both dimensions fit
+            var scale = Math.Min(scaleX, scaleY);
+    
+            // Calculate actual preview dimensions (will be smaller than max in one dimension)
+            var previewWidth = (int)Math.Round(pageWidthPt * scale);
+            var previewHeight = (int)Math.Round(pageHeightPt * scale);
+    
+            _logger.LogDebug($"Fixed scaling calculation:");
+            _logger.LogDebug($"  Page: {pageWidthPt:F0}×{pageHeightPt:F0} pt");
+            _logger.LogDebug($"  Max bounds: {maxWidth}×{maxHeight} px");
+            _logger.LogDebug($"  Scale factors: X={scaleX:F3}, Y={scaleY:F3}, chosen={scale:F3}");
+            _logger.LogDebug($"  Result: {previewWidth}×{previewHeight} px");
+            _logger.LogDebug($"  Utilization: {(double)previewWidth / maxWidth * 100:F1}% width, {(double)previewHeight / maxHeight * 100:F1}% height");
+    
+            return (previewWidth, previewHeight, scale);
+        }
+        
         private void DrawPreviewCard(System.Drawing.Graphics graphics, Card card, PdfGenerationOptions options, int x,
             int y, int width, int height)
         {
