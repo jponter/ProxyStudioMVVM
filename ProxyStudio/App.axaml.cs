@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
@@ -89,6 +91,8 @@ public partial class App : Application
             
             throw;
         }
+        
+       
 
         base.OnFrameworkInitializationCompleted();
     }
@@ -213,8 +217,12 @@ public partial class App : Application
             
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                //get our version from reflection
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                DisableAvaloniaDataAnnotationValidation();
                 var mainWindow = new Views.MainView(_singleConfigManager, 
                     Services.GetRequiredService<ILogger<Views.MainView>>());
+                mainWindow.Title = $"ProxyStudio {version}";
                 
                 var mainViewModel = Services.GetRequiredService<MainViewModel>();
                 mainWindow.DataContext = mainViewModel;
@@ -434,6 +442,18 @@ private static void InitializeLogging(LogEventLevel initialLevel = LogEventLevel
                 //Console.WriteLine($"Found {files.Length} log files");
                 Log.Debug("Found {FilesLength} log files",files.Length);
             }
+        }
+    }
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        // Get an array of plugins to remove
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        // remove each entry found
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
         }
     }
 }

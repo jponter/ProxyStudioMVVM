@@ -891,14 +891,16 @@ namespace ProxyStudio.Services
                 // If bleed is enabled, crop 3mm from all sides of source image
                 if (enableBleed)
                 {
-                    // Calculate 2mm in pixels based on the current image resolution
+                    // Calculate 3mm in pixels based on the current image resolution
                     // Assume source image represents a 63mm × 88mm card with bleed
                     var sourcePixelsPerMm = Math.Min(image.Width / CARD_WIDTH_MM, image.Height / CARD_HEIGHT_MM);
-                    var cropPixels = (int)(3.0 * sourcePixelsPerMm); // 3mm in pixels
+                    var cropPixelsFloat = (3.0 * sourcePixelsPerMm); // 3mm in pixels
+                    var cropPixels = (int) Math.Ceiling( cropPixelsFloat); // Round up to ensure we remove enough bleed
+                    
 
                     _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 
-                    // Crop the image (remove 2mm bleed from all sides)
+                    // Crop the image (remove 3mm bleed from all sides)
                     var cropRect = new Rectangle(
                         cropPixels,
                         cropPixels,
@@ -1534,10 +1536,10 @@ namespace ProxyStudio.Services
                 // Apply bleed cropping if enabled
                 if (enableBleed)
                 {
-                    // Calculate 2mm crop in pixels based on current image resolution
+                    // Calculate 3mm crop in pixels based on current image resolution
                     // Assume source image represents a 63mm × 88mm card with bleed
                     var sourcePixelsPerMm = Math.Min(image.Width / CARD_WIDTH_MM, image.Height / CARD_HEIGHT_MM);
-                    var cropPixels = (int)(2.0 * sourcePixelsPerMm); // 2mm in pixels
+                    var cropPixels = (int)(3.0 * sourcePixelsPerMm); // 3mm in pixels
 
                     _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 

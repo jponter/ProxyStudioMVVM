@@ -13,7 +13,9 @@
         Background="{StaticResource BackgroundPrimaryBrush}"
         x:Class="ProxyStudio.Views.MainView"
         x:DataType="vm:MainViewModel"
-        Title="ProxyStudio">
+        Title="ProxyStudio"
+        Icon="/Resources/Proxy Studio Logo.png"
+        >
 
     <!-- Design-time DataContext -->
     <Design.DataContext>

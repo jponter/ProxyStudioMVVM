@@ -52,6 +52,19 @@ namespace ProxyStudio.Services
         private readonly string _cacheFolder;
         // NEW: Use SemaphoreSlim per cardId for thread-safe downloads
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _downloadSemaphores = new();
+        
+        // Card dimensions in points (72 DPI standard) - FIXED at exactly 2.5" x 3.5"
+        // UPDATED: Card dimensions in points (72 DPI standard) - FIXED at exactly 63mm × 88mm
+        private const double CARD_WIDTH_MM = 63.0;
+        private const double CARD_HEIGHT_MM = 88.0;
+
+        // Convert mm to inches, then to points (1 inch = 25.4mm, 1 inch = 72 points)
+        private const double CARD_WIDTH_INCHES = CARD_WIDTH_MM / 25.4; // 2.480 inches
+        private const double CARD_HEIGHT_INCHES = CARD_HEIGHT_MM / 25.4; // 3.465 inches
+        private const double CARD_BLEED_INCHES = 0.12; // almost 1/8 inch bleed
+
+        private const double CARD_WIDTH_POINTS = CARD_WIDTH_INCHES * 72; // 178.583 points
+        private const double CARD_HEIGHT_POINTS = CARD_HEIGHT_INCHES * 72; // 249.449 points
 
         // Add this to your constructor for debugging
         public MpcFillService(HttpClient httpClient, IConfigManager configManager, ILogger<MpcFillService> logger, IErrorHandlingService errorHandlingService)  
@@ -463,8 +476,8 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
         
         // Process to high resolution ONCE during caching
         const int baseDpi = 600;
-        var baseWidth = (int)(2.5 * baseDpi);   // 1500 pixels
-        var baseHeight = (int)(3.5 * baseDpi);  // 2100 pixels
+        var baseWidth = (int)((CARD_WIDTH_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);   // 1632 pixels
+        var baseHeight = (int)((CARD_HEIGHT_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);  // 2222 pixels
 
         image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
         {

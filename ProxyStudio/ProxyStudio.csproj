@@ -105,4 +105,16 @@
       <None Remove="Resources\Proxy Studio Logo.png" />
       <AvaloniaResource Include="Resources\Proxy Studio Logo.png" />
     </ItemGroup>
+
+    <PropertyGroup>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <!-- Format the build number to be within valid range -->
+        <BuildNumber Condition="'$(BuildNumber)' == ''">$([System.DateTime]::UtcNow.ToString('MMdd'))</BuildNumber>
+        <Version>0.0.1.$(BuildNumber)</Version>
+        <AssemblyVersion>0.0.1.$(BuildNumber)</AssemblyVersion>
+        <FileVersion>0.0.1.$(BuildNumber)</FileVersion>
+        <InformationalVersion>0.0.1+$(BuildNumber)</InformationalVersion>
+    </PropertyGroup>
+    
+    
 </Project>
