@@ -882,7 +882,7 @@ namespace ProxyStudio.Services
                 using var image = Image.Load<Rgba32>(imageData);
                 var originalSize = $"{image.Width}x{image.Height}";
 
-                _logger.LogDebug($"  Source: {originalSize}");
+                _logger.LogDebug($"{cardName}:  Source: {originalSize}");
 
                 // Calculate target dimensions for exact 2.48" × 3.46" at target DPI
                 var targetWidth = (int)(CARD_WIDTH_INCHES * targetDpi);
@@ -898,7 +898,7 @@ namespace ProxyStudio.Services
                     var cropPixels = (int) Math.Ceiling( cropPixelsFloat); // Round up to ensure we remove enough bleed
                     
 
-                    _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
+                    _logger.LogDebug($"{cardName}:  Bleed crop: {cropPixels} pixels from each edge");
 
                     // Crop the image (remove 3mm bleed from all sides)
                     var cropRect = new Rectangle(
@@ -909,18 +909,18 @@ namespace ProxyStudio.Services
                     );
 
                     image.Mutate(x => x.Crop(cropRect));
-                    _logger.LogDebug($"  After crop: {image.Width}x{image.Height}");
+                    _logger.LogDebug($"{cardName}:  After crop: {image.Width}x{image.Height}");
                 }
 
                 _logger.LogDebug(
-                    $"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_INCHES}\"×{CARD_HEIGHT_INCHES}\" at {targetDpi} DPI");
+                    $"  Target: {targetWidth}x{targetHeight} pixels for {CARD_WIDTH_MM}mm × {CARD_HEIGHT_MM}mm at {targetDpi} DPI");
 
                 // Resize to exact target dimensions (this stretches the cropped image to full card size)
                 if (image.Width != targetWidth || image.Height != targetHeight)
                 {
                     var scaleX = (double)targetWidth / image.Width;
                     var scaleY = (double)targetHeight / image.Height;
-                    _logger.LogDebug($"  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
+                    _logger.LogDebug($"{cardName}:  Scaling: {scaleX:F3}x horizontally, {scaleY:F3}x vertically");
 
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
@@ -961,7 +961,7 @@ namespace ProxyStudio.Services
                 var processedData = outputStream.ToArray();
                 outputStream.Dispose();
 
-                _logger.LogDebug($"  Output: {processedData.Length} bytes as {format}");
+                _logger.LogDebug($"{cardName}:  Output: {processedData.Length} bytes as {format}");
                 _logger.LogDebug(
                     $"SUCCESS: ProcessImageForHighDpiPdf completed for {cardName} - Bleed {(enableBleed ? "removed" : "preserved")}");
 
@@ -1192,13 +1192,13 @@ namespace ProxyStudio.Services
                     return new Bitmap(ms);
                 }
 
-                // FIXED CARD DIMENSIONS: Always 2.5" x 3.5" scaled for preview
+                // FIXED CARD DIMENSIONS: Always 63mm x 88mm scaled for preview
                 var cardWidthPreview = (float)(CARD_WIDTH_POINTS * pageScale);
                 var cardHeightPreview = (float)(CARD_HEIGHT_POINTS * pageScale);
                 var spacingPreview = (float)(options.CardSpacing * pageScale);
 
                 _logger.LogDebug(
-                    $"FIXED Preview card layout: {cardWidthPreview:F1}×{cardHeightPreview:F1} (EXACTLY 2.5\" × 3.5\" scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
+                    $"FIXED Preview card layout: {cardWidthPreview:F1}×{cardHeightPreview:F1} (EXACTLY 63mm x 88mm scaled by {pageScale:F3}) - spacing: {spacingPreview:F1}");
 
                 // Calculate total grid size
                 var totalGridWidth = actualCardsPerRow * cardWidthPreview + (actualCardsPerRow - 1) * spacingPreview;
@@ -1539,11 +1539,11 @@ namespace ProxyStudio.Services
                     // Calculate 3mm crop in pixels based on current image resolution
                     // Assume source image represents a 63mm × 88mm card with bleed
                     var sourcePixelsPerMm = Math.Min(image.Width / CARD_WIDTH_MM, image.Height / CARD_HEIGHT_MM);
-                    var cropPixels = (int)(3.0 * sourcePixelsPerMm); // 3mm in pixels
+                    var cropPixels = (int)Math.Ceiling((3.0 * sourcePixelsPerMm)); // 3mm in pixels
 
                     _logger.LogDebug($"  Bleed crop: {cropPixels} pixels from each edge");
 
-                    // Crop the image (remove 2mm bleed from all sides)
+                    // Crop the image (remove 3mm bleed from all sides)
                     var cropRect = new Rectangle(
                         cropPixels,
                         cropPixels,

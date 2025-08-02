@@ -390,7 +390,7 @@ public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgres
             }
             
             _logger.LogDebug($"THREAD {threadId}: Cache save failed for {cardName}, processing in memory");
-            return ProcessImageToHighResolution(imageData);
+            return ProcessImageToHighResolution(imageData, true);
         }
         catch (Exception ex)
         {
@@ -620,21 +620,44 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
         }
 
 
-        private byte[] ProcessImageToHighResolution(byte[] imageData)
+        private byte[] ProcessImageToHighResolution(byte[] imageData, bool? MpcFillBleed = null)
         {
             const int baseDpi = 600;
-            var baseWidth = (int)(2.5 * baseDpi); // 1500 pixels
-            var baseHeight = (int)(3.5 * baseDpi); // 2100 pixels
-
             using var image = SixLabors.ImageSharp.Image.Load<Rgba32>(imageData);
-
-            // FIXED: Explicitly specify the generic type to resolve ambiguity
-            image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
+            
+            if(MpcFillBleed !=null && MpcFillBleed.Value)
             {
-                Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
-                Mode = ResizeMode.Stretch,
-                Sampler = KnownResamplers.Lanczos3
-            }));
+                // If bleed is enabled, add bleed area
+                // Calculate dimensions with bleed
+                var baseWidth = (int)(CARD_WIDTH_INCHES + 2 * CARD_BLEED_INCHES) * baseDpi; // 1632 pixels
+                var baseHeight = (int)(CARD_HEIGHT_INCHES + 2 * CARD_BLEED_INCHES) * baseDpi; // 2222 pixels
+
+                _logger.LogDebug($"Processing image with bleed: {baseWidth}x{baseHeight} pixels at {baseDpi} DPI");
+                // FIXED: Explicitly specify the generic type to resolve ambiguity
+                
+                
+                image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
+                {
+                    Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+                    Mode = ResizeMode.Stretch,
+                    Sampler = KnownResamplers.Lanczos3
+                }));
+            }
+            else
+            {
+                var baseWidth = (int)(CARD_WIDTH_INCHES * baseDpi); // 1500 pixels
+                var baseHeight = (int)(CARD_HEIGHT_INCHES * baseDpi); // 2100 pixels
+
+                
+
+                // FIXED: Explicitly specify the generic type to resolve ambiguity
+                image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
+                {
+                    Size = new SixLabors.ImageSharp.Size(baseWidth, baseHeight),
+                    Mode = ResizeMode.Stretch,
+                    Sampler = KnownResamplers.Lanczos3
+                }));
+            }
 
             var pngEncoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder
             {

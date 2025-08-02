@@ -507,6 +507,8 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     private byte[] ProcessImageToHighResolution(byte[] imageData)
     {
+        //todo - we could check here to see if the aspect ration indicates bleed is needed
+        
         const int baseDpi = 600;
         var baseWidth = (int)(CARD_WIDTH_INCHES * baseDpi);   // 1500 pixels
         var baseHeight = (int)(CARD_HEIGHT_INCHES * baseDpi);  // 2100 pixels
