@@ -260,7 +260,7 @@ namespace ProxyStudio.Services
                     progressInfo.EstimatedRemainingTime = TimeSpan.Zero;
                     progress?.Report(progressInfo);
 
-                    _logger.LogDebug($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
+                    _logger.LogInformation($"=== PDF GENERATION COMPLETE (PARALLEL) ===");
                     _logger.LogDebug($"Final PDF size: {pdfBytes.Length / (1024.0 * 1024.0):F2} MB");
                     _logger.LogDebug($"Total generation time: {duration.TotalSeconds:F1} seconds");
                     _logger.LogDebug($"Average per card: {duration.TotalMilliseconds / cards.Count:F1} ms");

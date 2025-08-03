@@ -141,6 +141,8 @@ public partial class App : Application
         {
             var logger = serviceProvider.GetService<ILogger<HttpClient>>();
             logger?.LogInformation("Creating optimized global HTTP client");
+            // Add instance ID to help track multiple instances
+            
 
             var handler = new HttpClientHandler()
             {
@@ -171,16 +173,26 @@ public partial class App : Application
             client.DefaultRequestHeaders.ConnectionClose = false; // Keep connections alive for reuse
 
             logger?.LogInformation("Global HTTP client configured: MaxConnections=20, Timeout=45s, Compression=Enabled");
-        
+            
             return client;
         });
-        
-        
-        
-        
-        
-        
-        services.AddSingleton<IMpcFillService, MpcFillService>();
+
+
+        var logger = services.BuildServiceProvider().GetRequiredService<ILogger<App>>();
+
+
+        try
+        {
+            services.AddSingleton<IMpcFillService, MpcFillService>();
+        }
+        catch (Exception ex)
+        {
+            // Log and handle any exceptions during MpcFillService registration
+            
+            logger.LogError(ex, "Failed to register MpcFillService");
+            throw new InvalidOperationException("Failed to register MpcFillService", ex);
+        }
+
         services.AddSingleton<IThemeService,ThemeService>();
         
         // Register ViewModels
@@ -191,7 +203,7 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
         
         // Get logger and log startup
-        var logger = Services.GetRequiredService<ILogger<App>>();
+        //var logger = Services.GetRequiredService<ILogger<App>>();
         logger.LogInformation("=== PROXYSTUDIO SINGLE STARTUP {StartTime} (PID: {ProcessId}) ===", 
             DateTime.Now, Environment.ProcessId);
         logger.LogInformation("Initial log level set to: {LogLevel}", initialLogLevel);

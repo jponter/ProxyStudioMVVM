@@ -633,7 +633,7 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             
-            _logger.LogDebug($"Loading MPC Fill XML: {fileName}");
+            _logger.LogInformation($"Loading MPC Fill XML: {fileName}");
             IsBusy = true;
             IsLoadingMpcFill = true;
             ShowMpcFillProgress = true;
@@ -770,7 +770,7 @@ public partial class MainViewModel : ViewModelBase
                 PrintViewModel?.GeneratePreviewCommand.Execute(null);
 
                
-                _logger.LogDebug($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
+                _logger.LogInformation($"Successfully loaded {newCards.Count} cards from MPC Fill XML");
                 // Hide progress after a delay
                 await Task.Delay(2000);
                 ShowMpcFillProgress = false;

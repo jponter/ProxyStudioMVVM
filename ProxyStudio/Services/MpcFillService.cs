@@ -95,9 +95,11 @@ namespace ProxyStudio.Services
                 logger.LogCritical($"Error creating cache directory: {ex.Message}");
                 
                 // synchronously handle the exception
-                _ = Task.Run(async () =>
-                errorHandlingService.HandleExceptionAsync(ex,"Error creating cache directory","Failed to create cache directory for MPC Fill images."));
-                    
+                // _ = Task.Run(async () =>
+                // errorHandlingService.HandleExceptionAsync(ex,"Error creating cache directory","Failed to create cache directory for MPC Fill images."));
+                //     
+                // pass the error up the stack
+                throw new InvalidOperationException("Failed to create cache directory for MPC Fill images.", ex);
             }
         }
         
@@ -476,8 +478,10 @@ private void SaveImageToCacheSync(byte[] imageData, string cacheFilePath)
         
         // Process to high resolution ONCE during caching
         const int baseDpi = 600;
-        var baseWidth = (int)((CARD_WIDTH_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);   // 1632 pixels
-        var baseHeight = (int)((CARD_HEIGHT_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);  // 2222 pixels
+        //var baseWidth = (int)((CARD_WIDTH_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);   // 1632 pixels
+        //var baseHeight = (int)((CARD_HEIGHT_INCHES + (2*CARD_BLEED_INCHES)) * baseDpi);  // 2222 pixels
+        var baseWidth = (int)1632; // fixed width to avoid rounding issues with bleed
+        var baseHeight = (int)2220; // fixed height to avoid rounding issues with bleed
 
         image.Mutate<Rgba32>(x => x.Resize(new ResizeOptions
         {
