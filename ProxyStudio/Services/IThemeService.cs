@@ -33,5 +33,20 @@ namespace ProxyStudio.Services
         ThemeType LoadThemePreference(); // Remove async
     
         event EventHandler<ThemeType> ThemeChanged;
+        
+        /// <summary>
+        /// Applies a custom theme from XAML content
+        /// </summary>
+        Task ApplyCustomThemeAsync(string themeXaml, string themeName);
+    
+        /// <summary>
+        /// Replaces an existing theme file with new content
+        /// </summary>
+        Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml);
+    
+        /// <summary>
+        /// Gets the themes directory path
+        /// </summary>
+        string GetThemesDirectory();
     }
 }

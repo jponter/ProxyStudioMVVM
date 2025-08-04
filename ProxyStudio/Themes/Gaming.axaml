@@ -1,167 +1,317 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Gaming Theme -->
+  <!-- Description: Vibrant theme with gaming-inspired RGB lighting -->
+  <!-- Author: ProxyStudio Theme Editor -->
+  <!-- Version: 1.0.0 -->
   
   <Styles.Resources>
-    <!-- Gaming RGB Colors -->
-    <Color x:Key="PrimaryColor">#FF00FF</Color> <!-- Magenta -->
-    <Color x:Key="PrimaryHoverColor">#E600E6</Color>
-    <Color x:Key="PrimaryPressedColor">#CC00CC</Color>
-    
-    <!-- Neon Accents -->
-    <Color x:Key="AccentCyan">#00FFFF</Color>
-    <Color x:Key="AccentGreen">#00FF00</Color>
-    <Color x:Key="AccentOrange">#FF6600</Color>
-    
-    <!-- Dark Gaming Background -->
-    <Color x:Key="BackgroundColor">#0A0A0A</Color>
-    <Color x:Key="SurfaceColor">#1A1A1A</Color>
-    <Color x:Key="CardColor">#2A2A2A</Color>
-    
-    <!-- Neon Text -->
-    <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
-    <Color x:Key="TextSecondaryColor">#CCCCCC</Color>
-    <Color x:Key="TextDisabledColor">#666666</Color>
-    
+
+    <!-- Primary Colors -->
+    <Color x:Key="PrimaryColor">#ff6b35</Color>
+    <Color x:Key="PrimaryHoverColor">#e55a2b</Color>
+    <Color x:Key="SecondaryColor">#00d4ff</Color>
+    <Color x:Key="SecondaryHoverColor">#00bde6</Color>
+
+    <!-- Background Colors -->
+    <Color x:Key="BackgroundPrimaryColor">#0a0a0a</Color>
+    <Color x:Key="BackgroundSecondaryColor">#1a1a1a</Color>
+    <Color x:Key="BackgroundTertiaryColor">#2a2a2a</Color>
+    <Color x:Key="CardBackgroundColor">#1a1a1a</Color>
+    <Color x:Key="SurfaceColor">#2a2a2a</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimaryColor">#ffffff</Color>
+    <Color x:Key="TextSecondaryColor">#cccccc</Color>
+    <Color x:Key="TextTertiaryColor">#999999</Color>
+    <Color x:Key="TextOnPrimaryColor">#ffffff</Color>
+
     <!-- Status Colors -->
-    <Color x:Key="SuccessColor">#00FF00</Color>
-    <Color x:Key="WarningColor">#FFFF00</Color>
-    <Color x:Key="ErrorColor">#FF0040</Color>
-    
-    <!-- Glowing Borders -->
-    <Color x:Key="BorderColor">#333333</Color>
-    <Color x:Key="FocusBorderColor">#00FFFF</Color>
-    
-    <!-- Gradients -->
-    <LinearGradientBrush x:Key="GamingGradient" StartPoint="0,0" EndPoint="1,1">
-      <GradientStop Color="#FF00FF" Offset="0"/>
-      <GradientStop Color="#00FFFF" Offset="0.5"/>
-      <GradientStop Color="#00FF00" Offset="1"/>
-    </LinearGradientBrush>
-    
-    <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="1,1">
-      <GradientStop Color="#2A2A2A" Offset="0"/>
-      <GradientStop Color="#1A1A1A" Offset="1"/>
-    </LinearGradientBrush>
+    <Color x:Key="SuccessColor">#00ff88</Color>
+    <Color x:Key="SuccessHoverColor">#00e67a</Color>
+    <Color x:Key="WarningColor">#ffaa00</Color>
+    <Color x:Key="WarningHoverColor">#e69900</Color>
+    <Color x:Key="ErrorColor">#ff3366</Color>
+    <Color x:Key="ErrorHoverColor">#e62e5c</Color>
+    <Color x:Key="InfoColor">#00d4ff</Color>
+    <Color x:Key="InfoHoverColor">#00bde6</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}"/>
+    <SolidColorBrush x:Key="SecondaryHoverBrush" Color="{DynamicResource SecondaryHoverColor}"/>
+    <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="{DynamicResource BackgroundPrimaryColor}"/>
+    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="{DynamicResource BackgroundSecondaryColor}"/>
+    <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="{DynamicResource BackgroundTertiaryColor}"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackgroundColor}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="{DynamicResource TextTertiaryColor}"/>
+    <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{DynamicResource TextOnPrimaryColor}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}"/>
+    <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}"/>
+    <SolidColorBrush x:Key="WarningHoverBrush" Color="{DynamicResource WarningHoverColor}"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}"/>
+    <SolidColorBrush x:Key="ErrorHoverBrush" Color="{DynamicResource ErrorHoverColor}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}"/>
+    <SolidColorBrush x:Key="InfoHoverBrush" Color="{DynamicResource InfoHoverColor}"/>
+
+    <!-- Border Brush -->
+    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BackgroundTertiaryColor}"/>
+
   </Styles.Resources>
 
-  <!-- Gaming Window -->
+  <!-- Control Styles -->
+
   <Style Selector="Window">
-    <Setter Property="Background" Value="{DynamicResource BackgroundColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
+    <Setter Property="Background" Value="{DynamicResource BackgroundPrimaryBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
   </Style>
 
-  <!-- Neon Buttons -->
-  <Style Selector="Button">
-    <Setter Property="Background" Value="{DynamicResource GamingGradient}"/>
-    <Setter Property="Foreground" Value="{DynamicResource BackgroundColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
-    <Setter Property="BorderThickness" Value="2"/>
-    <Setter Property="CornerRadius" Value="8"/>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
     <Setter Property="Padding" Value="16,8"/>
-    <Setter Property="FontWeight" Value="Bold"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#ff6b35" Opacity="0.3" BlurRadius="8" OffsetX="0" OffsetY="2"/>
+    </Setter>
   </Style>
 
-  <Style Selector="Button:pointerover">
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentGreen}"/>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#ff6b35" Opacity="0.5" BlurRadius="12" OffsetX="0" OffsetY="2"/>
+    </Setter>
   </Style>
 
-  <Style Selector="Button:pressed">
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentOrange}"/>
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="{DynamicResource SecondaryBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="16,8"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00d4ff" Opacity="0.3" BlurRadius="8" OffsetX="0" OffsetY="2"/>
+    </Setter>
   </Style>
 
-  <Style Selector="Button.danger">
-    <Setter Property="Background" Value="{DynamicResource ErrorColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource ErrorColor}"/>
+  <Style Selector="Button.secondary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SecondaryHoverBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryHoverBrush}"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00d4ff" Opacity="0.5" BlurRadius="12" OffsetX="0" OffsetY="2"/>
+    </Setter>
   </Style>
 
   <Style Selector="Button.success">
-    <Setter Property="Background" Value="{DynamicResource SuccessColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource SuccessColor}"/>
+    <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="16,8"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00ff88" Opacity="0.3" BlurRadius="8" OffsetX="0" OffsetY="2"/>
+    </Setter>
   </Style>
 
-  <!-- Cyberpunk TextBoxes -->
-  <Style Selector="TextBox">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource AccentCyan}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+  <Style Selector="Button.success:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessHoverBrush}"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00ff88" Opacity="0.5" BlurRadius="12" OffsetX="0" OffsetY="2"/>
+    </Setter>
+  </Style>
+
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="{DynamicResource BackgroundTertiaryBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="50"/>
+    <Setter Property="Width" Value="40"/>
+    <Setter Property="Height" Value="40"/>
+    <Setter Property="Padding" Value="0"/>
+  </Style>
+
+  <Style Selector="Button.icon:pointerover">
+    <Setter Property="Background" Value="{DynamicResource SecondaryBrush}"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00d4ff" Opacity="0.4" BlurRadius="10" OffsetX="0" OffsetY="2"/>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="16"/>
+  </Style>
+
+  <Style Selector="Border.card-compact">
+    <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="6"/>
+    <Setter Property="Padding" Value="12"/>
+  </Style>
+
+  <Style Selector="Border.card-elevated">
+    <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="16"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#000000" Opacity="0.5" BlurRadius="16" OffsetX="0" OffsetY="4"/>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.sidebar">
+    <Setter Property="Background" Value="{DynamicResource BackgroundSecondaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+    <Setter Property="Padding" Value="20"/>
+  </Style>
+
+  <Style Selector="TextBox.modern">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="4"/>
     <Setter Property="Padding" Value="8"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
   </Style>
 
-  <Style Selector="TextBox:focus">
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentGreen}"/>
+  <Style Selector="TextBox.modern:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
     <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#ff6b35" Opacity="0.3" BlurRadius="8" OffsetX="0" OffsetY="0"/>
+    </Setter>
   </Style>
 
-  <!-- ComboBox Styles -->
-  <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+  <Style Selector="ComboBox.modern">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="4"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
+    <Setter Property="Padding" Value="8"/>
   </Style>
 
-  <!-- CheckBox Styles -->
-  <Style Selector="CheckBox">
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
-  </Style>
-
-  <!-- Gaming Cards -->
-  <Style Selector="Border.card">
-    <Setter Property="Background" Value="{DynamicResource CardGradient}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="12"/>
-  </Style>
-
-  <!-- Progress Bars with RGB -->
-  <Style Selector="ProgressBar">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource GamingGradient}"/>
-    <Setter Property="CornerRadius" Value="10"/>
-    <Setter Property="Height" Value="8"/>
-  </Style>
-
-  <!-- Animated Tab Headers -->
-  <Style Selector="TabItem">
-    <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryColor}"/>
-    <Setter Property="Padding" Value="20,10"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
-    <Setter Property="FontWeight" Value="Bold"/>
-  </Style>
-
-  <Style Selector="TabItem:selected">
-    <Setter Property="Background" Value="{DynamicResource CardGradient}"/>
-    <Setter Property="Foreground" Value="{DynamicResource AccentCyan}"/>
-  </Style>
-
-  <Style Selector="TabItem:pointerover">
-    <Setter Property="Foreground" Value="{DynamicResource AccentGreen}"/>
-  </Style>
-
-  <!-- Expander Styles -->
-  <Style Selector="Expander">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="8"/>
-    <Setter Property="FontFamily" Value="Consolas, monospace"/>
-  </Style>
-
-  <!-- Progress Section Style -->
-  <Style Selector="Border.progress-section">
-    <Setter Property="Background" Value="{DynamicResource SurfaceColor}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource GamingGradient}"/>
+  <Style Selector="ComboBox.modern:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBrush}"/>
     <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00d4ff" Opacity="0.3" BlurRadius="8" OffsetX="0" OffsetY="0"/>
+    </Setter>
+  </Style>
+
+  <Style Selector="Slider.modern">
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="ProgressBar.modern-thick">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource BackgroundTertiaryBrush}"/>
+    <Setter Property="Height" Value="8"/>
+    <Setter Property="CornerRadius" Value="4"/>
+  </Style>
+
+  <!-- Gaming-specific highlight effects -->
+  <Style Selector="Border.highlight-primary">
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#ff6b35" Opacity="0.2" BlurRadius="12" OffsetX="0" OffsetY="0"/>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.highlight-success">
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="Effect">
+      <DropShadowEffect Color="#00ff88" Opacity="0.2" BlurRadius="12" OffsetX="0" OffsetY="0"/>
+    </Setter>
+  </Style>
+
+  <!-- Status Badges -->
+  <Style Selector="Border.badge-success">
+    <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
     <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="8,4"/>
+  </Style>
+
+  <Style Selector="Border.badge-error">
+    <Setter Property="Background" Value="{DynamicResource ErrorBrush}"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="8,4"/>
+  </Style>
+
+  <Style Selector="Border.badge-warning">
+    <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="8,4"/>
+  </Style>
+
+  <Style Selector="Border.badge-info">
+    <Setter Property="Background" Value="{DynamicResource InfoBrush}"/>
+    <Setter Property="CornerRadius" Value="12"/>
+    <Setter Property="Padding" Value="8,4"/>
+  </Style>
+
+  <!-- Typography Classes -->
+  <Style Selector="TextBlock.heading-large">
+    <Setter Property="FontSize" Value="32"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.heading-medium">
+    <Setter Property="FontSize" Value="24"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.heading-small">
+    <Setter Property="FontSize" Value="18"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.body-large">
+    <Setter Property="FontSize" Value="16"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.body-medium">
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.body-small">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+  </Style>
+
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}"/>
   </Style>
 
 </Styles>

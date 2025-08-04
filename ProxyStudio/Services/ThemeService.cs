@@ -64,6 +64,20 @@ namespace ProxyStudio.Services
         };
 
         public event EventHandler<ThemeType>? ThemeChanged;
+        public Task ApplyCustomThemeAsync(string themeXaml, string themeName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetThemesDirectory()
+        {
+            throw new NotImplementedException();
+        }
 
         public ThemeService(IConfigManager configManager, ILogger<ThemeService> logger, IErrorHandlingService errorHandlingService)
         {

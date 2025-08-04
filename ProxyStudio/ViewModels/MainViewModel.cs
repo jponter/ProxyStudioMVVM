@@ -52,7 +52,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IServiceProvider _serviceProvider;
     
     public ThemeSettingsViewModel? ThemeSettingsViewModel { get; private set; }
-    
+    public ThemeEditorViewModel? ThemeEditorViewModel { get; private set; }
     
     
     
@@ -125,6 +125,13 @@ public partial class MainViewModel : ViewModelBase
         
        
         ThemeSettingsViewModel = new ThemeSettingsViewModel(themeService, loggerFactory.CreateLogger<ThemeSettingsViewModel>(), errorHandler);
+        
+        ThemeEditorViewModel = new ThemeEditorViewModel(
+            themeService, 
+            _configManager, 
+            loggerFactory.CreateLogger<ThemeEditorViewModel>(), 
+            errorHandler
+        );
 
         if (Design.IsDesignMode)
         {
@@ -202,6 +209,20 @@ public partial class MainViewModel : ViewModelBase
         }
 
         public event EventHandler<ThemeType>? ThemeChanged;
+        public Task ApplyCustomThemeAsync(string themeXaml, string themeName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetThemesDirectory()
+        {
+            throw new NotImplementedException();
+        }
 
         public Task ApplyThemeAsync(ThemeType theme)
         {

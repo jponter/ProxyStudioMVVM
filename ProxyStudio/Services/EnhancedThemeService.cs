@@ -1,6 +1,7 @@
 ﻿// ProxyStudio/Services/EnhancedThemeService.cs
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -294,6 +295,119 @@ namespace ProxyStudio.Services
                 return ThemeType.DarkProfessional;
             }
         }
+        
+        // Add these methods to your IThemeService interface and EnhancedThemeService class
+
+public interface IThemeService
+{
+    // ... existing methods ...
+    
+    /// <summary>
+    /// Applies a custom theme from XAML content
+    /// </summary>
+    Task ApplyCustomThemeAsync(string themeXaml, string themeName);
+    
+    /// <summary>
+    /// Replaces an existing theme file with new content
+    /// </summary>
+    Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml);
+    
+    /// <summary>
+    /// Gets the themes directory path
+    /// </summary>
+    string GetThemesDirectory();
+}
+
+// Implementation in EnhancedThemeService.cs
+public async Task ApplyCustomThemeAsync(string themeXaml, string themeName)
+{
+    try
+    {
+        _logger.LogInformation("Applying custom theme: {ThemeName}", themeName);
+        
+        // Create temporary theme file
+        var tempDir = Path.Combine(Path.GetTempPath(), "ProxyStudio", "Themes");
+        Directory.CreateDirectory(tempDir);
+        var tempThemeFile = Path.Combine(tempDir, $"{themeName}.axaml");
+        
+        await File.WriteAllTextAsync(tempThemeFile, themeXaml);
+        
+        // Remove existing custom themes
+        var app = Application.Current;
+        if (app?.Styles != null)
+        {
+            var customThemes = app.Styles
+                .OfType<StyleInclude>()
+                .Where(s => s.Source?.ToString().Contains("temp") == true)
+                .ToList();
+
+            foreach (var customTheme in customThemes)
+            {
+                app.Styles.Remove(customTheme);
+            }
+        }
+
+        // Apply new custom theme
+        var styleInclude = new StyleInclude(new Uri("file:///"))
+        {
+            Source = new Uri($"file:///{tempThemeFile}")
+        };
+
+        app?.Styles.Add(styleInclude);
+        
+        _logger.LogInformation("Successfully applied custom theme: {ThemeName}", themeName);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to apply custom theme: {ThemeName}", themeName);
+        throw;
+    }
+}
+
+public async Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml)
+{
+    try
+    {
+        var themeDefinition = AvailableThemes.FirstOrDefault(t => t.Type == themeType);
+        if (themeDefinition == null)
+        {
+            throw new ArgumentException($"Theme type {themeType} not found");
+        }
+
+        // Get the themes directory in the project
+        var themesDir = GetThemesDirectory();
+        var themeFileName = Path.GetFileName(new Uri(themeDefinition.ResourcePath).LocalPath);
+        var themeFilePath = Path.Combine(themesDir, themeFileName);
+
+        // Backup existing theme
+        var backupPath = $"{themeFilePath}.backup.{DateTime.Now:yyyyMMdd_HHmmss}";
+        if (File.Exists(themeFilePath))
+        {
+            File.Copy(themeFilePath, backupPath);
+            _logger.LogInformation("Backed up existing theme to: {BackupPath}", backupPath);
+        }
+
+        // Write new theme content
+        await File.WriteAllTextAsync(themeFilePath, themeXaml);
+        
+        _logger.LogInformation("Replaced theme file: {ThemeFilePath}", themeFilePath);
+        
+        // Apply the updated theme
+        await ApplyThemeAsync(themeType);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to replace theme file for: {ThemeType}", themeType);
+        throw;
+    }
+}
+
+public string GetThemesDirectory()
+{
+    // Get the application's themes directory
+    var appDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+    return Path.Combine(appDir ?? ".", "Themes");
+}
     }
 
     public class ThemeTransitionManager

@@ -193,7 +193,7 @@ public partial class App : Application
             throw new InvalidOperationException("Failed to register MpcFillService", ex);
         }
 
-        services.AddSingleton<IThemeService,ThemeService>();
+        services.AddSingleton<IThemeService,EnhancedThemeService>();
         
         // Register ViewModels
         services.AddTransient<MainViewModel>();
