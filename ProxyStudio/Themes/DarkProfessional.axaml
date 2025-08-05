@@ -5,7 +5,7 @@
   <!-- Description: A custom theme created with ProxyStudio Theme Editor -->
   <!-- Author: james -->
   <!-- Version: 1.0.0 -->
-  <!-- Generated: 2025-08-05 10:31:32 -->
+  <!-- Generated: 2025-08-05 16:50:46 -->
 
   <Styles.Resources>
 
@@ -21,13 +21,30 @@
     <Color x:Key="BackgroundTertiaryColor">#3c4f66</Color>
     <Color x:Key="CardBackgroundColor">#34495e</Color>
     <Color x:Key="SurfaceColor">#3c4f66</Color>
+    <Color x:Key="AccentBackgroundColor">#1e3a5f</Color>
+    <Color x:Key="HoverBackgroundColor">#404040</Color>
+    <Color x:Key="ActiveBackgroundColor">#4a4a4a</Color>
+    <Color x:Key="ModalBackgroundColor">#2c3e50</Color>
+    <Color x:Key="OverlayBackgroundColor">#000000</Color>
+    <Color x:Key="PreviewBackgroundColor">#2c3e50</Color>
     <Color x:Key="BorderColor">#556983</Color>
+    <Color x:Key="PanelBackgroundColor">#34495e</Color>
+    <Color x:Key="ContentAreaColor">#2c3e50</Color>
+    <Color x:Key="HeaderBackgroundColor">#34495e</Color>
+    <Color x:Key="SeparatorColor">#556983</Color>
+    <Color x:Key="InputBackgroundColor">#34495e</Color>
+    <Color x:Key="ButtonShadowColor">#000000</Color>
 
     <!-- Text Colors -->
     <Color x:Key="TextPrimaryColor">#ffffff</Color>
     <Color x:Key="TextSecondaryColor">#bdc3c7</Color>
     <Color x:Key="TextTertiaryColor">#95a5a6</Color>
     <Color x:Key="TextOnPrimaryColor">#ffffff</Color>
+    <Color x:Key="CaptionTextColor">#95a5a6</Color>
+    <Color x:Key="DisabledTextColor">#7f8c8d</Color>
+    <Color x:Key="InverseTextColor">#2c3e50</Color>
+    <Color x:Key="TextMutedColor">#95a5a6</Color>
+    <Color x:Key="TextLinkColor">#3498db</Color>
 
     <!-- Status Colors -->
     <Color x:Key="SuccessColor">#27ae60</Color>
@@ -38,6 +55,10 @@
     <Color x:Key="ErrorHoverColor">#c0392b</Color>
     <Color x:Key="InfoColor">#3498db</Color>
     <Color x:Key="InfoHoverColor">#2980b9</Color>
+    <Color x:Key="InfoLightColor">#1e3a5f</Color>
+    <Color x:Key="SuccessLightColor">#1e4d2b</Color>
+    <Color x:Key="WarningLightColor">#4d3319</Color>
+    <Color x:Key="ErrorLightColor">#4d1f23</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
@@ -49,11 +70,28 @@
     <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="{DynamicResource BackgroundTertiaryColor}"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackgroundColor}"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="AccentBackgroundBrush" Color="{DynamicResource AccentBackgroundColor}"/>
+    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="{DynamicResource HoverBackgroundColor}"/>
+    <SolidColorBrush x:Key="ActiveBackgroundBrush" Color="{DynamicResource ActiveBackgroundColor}"/>
+    <SolidColorBrush x:Key="ModalBackgroundBrush" Color="{DynamicResource ModalBackgroundColor}"/>
+    <SolidColorBrush x:Key="OverlayBackgroundBrush" Color="{DynamicResource OverlayBackgroundColor}"/>
+    <SolidColorBrush x:Key="PreviewBackgroundBrush" Color="{DynamicResource PreviewBackgroundColor}"/>
     <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}"/>
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="{DynamicResource PanelBackgroundColor}"/>
+    <SolidColorBrush x:Key="ContentAreaBrush" Color="{DynamicResource ContentAreaColor}"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="{DynamicResource HeaderBackgroundColor}"/>
+    <SolidColorBrush x:Key="SeparatorBrush" Color="{DynamicResource SeparatorColor}"/>
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="{DynamicResource InputBackgroundColor}"/>
+    <SolidColorBrush x:Key="ButtonShadowBrush" Color="{DynamicResource ButtonShadowColor}"/>
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}"/>
     <SolidColorBrush x:Key="TextTertiaryBrush" Color="{DynamicResource TextTertiaryColor}"/>
     <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{DynamicResource TextOnPrimaryColor}"/>
+    <SolidColorBrush x:Key="CaptionTextBrush" Color="{DynamicResource CaptionTextColor}"/>
+    <SolidColorBrush x:Key="DisabledTextBrush" Color="{DynamicResource DisabledTextColor}"/>
+    <SolidColorBrush x:Key="InverseTextBrush" Color="{DynamicResource InverseTextColor}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextLinkBrush" Color="{DynamicResource TextLinkColor}"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}"/>
     <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}"/>
     <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}"/>
@@ -62,6 +100,10 @@
     <SolidColorBrush x:Key="ErrorHoverBrush" Color="{DynamicResource ErrorHoverColor}"/>
     <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}"/>
     <SolidColorBrush x:Key="InfoHoverBrush" Color="{DynamicResource InfoHoverColor}"/>
+    <SolidColorBrush x:Key="InfoLightBrush" Color="{DynamicResource InfoLightColor}"/>
+    <SolidColorBrush x:Key="SuccessLightBrush" Color="{DynamicResource SuccessLightColor}"/>
+    <SolidColorBrush x:Key="WarningLightBrush" Color="{DynamicResource WarningLightColor}"/>
+    <SolidColorBrush x:Key="ErrorLightBrush" Color="{DynamicResource ErrorLightColor}"/>
 
   </Styles.Resources>
 

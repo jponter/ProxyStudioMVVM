@@ -146,17 +146,18 @@
                     
                     <!-- Main Card Grid View -->
                     <Border Grid.Column="1"
-                            Background="{DynamicResource BackgroundSecondaryBrush}"
+                            Classes="card"
+                            
                             Margin="24,20,24,20">
-                        <DockPanel Background="{DynamicResource BackgroundSecondaryBrush}">
+                        <DockPanel >
                             
                             <!-- Grid Header -->
                             <Border DockPanel.Dock="Top" 
                                     Padding="0,0,0,16" 
-                                    Background="{DynamicResource BackgroundSecondaryBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="0,0,0,1"
-                                    Margin="0,0,0,16">
-                                <Grid Background="{DynamicResource BackgroundSecondaryBrush}">
+                                    >
+                                <Grid >
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -176,7 +177,11 @@
                             </Border>
                             
                             <!-- Card Grid -->
-                            <ScrollViewer>
+                            <ScrollViewer Classes="preview" 
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          Background="{DynamicResource PreviewBackgroundBrush}"
+                                          Padding="40">
                                 <Panel>
                                     <!-- Card Grid -->
                                     <ListBox x:Name="CardGrid"
