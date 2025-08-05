@@ -77,7 +77,7 @@
                                               
                                 <TextBlock Classes="body-small" 
                                            Text="{Binding TimeRemaining}" 
-                                           Foreground="{StaticResource SuccessBrush}"
+                                           Foreground="{DynamicResource SuccessBrush}"
                                            IsVisible="{Binding TimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
                         </StackPanel>
@@ -93,7 +93,7 @@
                     <Border Classes="card highlight-primary" 
                             IsVisible="{Binding IsGeneratingPreview}">
                         <StackPanel Spacing="12" HorizontalAlignment="Center">
-                            <li:LoadingIndicator Foreground="{StaticResource PrimaryBrush}" 
+                            <li:LoadingIndicator Foreground="{DynamicResource PrimaryBrush}" 
                                                  IsActive="{Binding IsGeneratingPreview}" 
                                                  Mode="ThreeDots" 
                                                  SpeedRatio="1.2"/>
@@ -113,7 +113,7 @@
                 <!-- Preview Header -->
                 <Border DockPanel.Dock="Top" 
                         Padding="20,16" 
-                        BorderBrush="{StaticResource BorderBrush}" 
+                        BorderBrush="{DynamicResource BorderBrush}" 
                         BorderThickness="0,0,0,1">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -177,13 +177,13 @@
                 <!-- Preview Content -->
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" 
                               VerticalScrollBarVisibility="Auto"
-                              Background="{StaticResource BackgroundSecondaryBrush}" 
+                              Background="{DynamicResource BackgroundSecondaryBrush}" 
                               Padding="40">
                     <Panel>
                         
                         <!-- Preview Image -->
                         <Border Background="White" 
-                                BorderBrush="{StaticResource BorderBrush}" 
+                                BorderBrush="{DynamicResource BorderBrush}" 
                                 BorderThickness="1"
                                 BoxShadow="0 4 6 0 #1A000000"
                                 HorizontalAlignment="Center" 

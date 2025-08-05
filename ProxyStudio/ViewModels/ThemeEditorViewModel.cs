@@ -986,6 +986,30 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 _logger.LogDebug("Created Border.empty-state style with background: {SurfaceColor}", colors["SurfaceColor"]);
             }
             
+            // Create TabControl background style - FIXES TAB AREA BACKGROUND
+            if (colors.ContainsKey("BackgroundPrimaryColor"))
+            {
+                var tabControlStyle = new Style(x => x.OfType<TabControl>());
+                tabControlStyle.Setters.Add(new Setter(
+                    TabControl.BackgroundProperty, 
+                    new SolidColorBrush(colors["BackgroundPrimaryColor"])));
+    
+                styles.Add(tabControlStyle);
+                _logger.LogDebug("Created TabControl style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
+            }
+
+// Create Grid background style - FIXES GRID CONTAINERS
+            if (colors.ContainsKey("BackgroundPrimaryColor"))
+            {
+                var gridStyle = new Style(x => x.OfType<Grid>());
+                gridStyle.Setters.Add(new Setter(
+                    Grid.BackgroundProperty, 
+                    new SolidColorBrush(colors["BackgroundPrimaryColor"])));
+    
+                styles.Add(gridStyle);
+                _logger.LogDebug("Created Grid style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
+            }
+            
             
             // Create Button.primary style
             if (colors.ContainsKey("PrimaryColor"))
@@ -1512,93 +1536,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         }
     }
     
-    private void CreateLayoutStyles(List<IStyle> styles, Dictionary<string, Color> colors)
-    {
-        // Create Border.sidebar style - THIS IS THE KEY FIX
-        if (colors.ContainsKey("BackgroundSecondaryColor") && colors.ContainsKey("BorderColor"))
-        {
-            var sidebarStyle = new Style(x => x.OfType<Border>().Class("sidebar"));
-            sidebarStyle.Setters.Add(new Setter(
-                Border.BackgroundProperty, 
-                new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-            sidebarStyle.Setters.Add(new Setter(
-                Border.BorderBrushProperty, 
-                new SolidColorBrush(colors["BorderColor"])));
-            sidebarStyle.Setters.Add(new Setter(
-                Border.BorderThicknessProperty, 
-                new Thickness(0, 0, 1, 0)));
-            sidebarStyle.Setters.Add(new Setter(
-                Border.PaddingProperty, 
-                new Thickness(16)));
-        
-            styles.Add(sidebarStyle);
-        }
-
-        // Create Border.editor-panel style
-        if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("BorderColor"))
-        {
-            var editorPanelStyle = new Style(x => x.OfType<Border>().Class("editor-panel"));
-            editorPanelStyle.Setters.Add(new Setter(
-                Border.BackgroundProperty, 
-                new SolidColorBrush(colors["SurfaceColor"])));
-            editorPanelStyle.Setters.Add(new Setter(
-                Border.BorderBrushProperty, 
-                new SolidColorBrush(colors["BorderColor"])));
-            editorPanelStyle.Setters.Add(new Setter(
-                Border.BorderThicknessProperty, 
-                new Thickness(1, 0, 0, 0)));
-            editorPanelStyle.Setters.Add(new Setter(
-                Border.PaddingProperty, 
-                new Thickness(16)));
-        
-            styles.Add(editorPanelStyle);
-        }
-
-        // Create TabControl background style - Fixes main background issues
-        if (colors.ContainsKey("BackgroundPrimaryColor"))
-        {
-            var tabControlStyle = new Style(x => x.OfType<TabControl>());
-            tabControlStyle.Setters.Add(new Setter(
-                TabControl.BackgroundProperty, 
-                new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-        
-            styles.Add(tabControlStyle);
-        }
-
-        // Create Window background style - Fixes modal dialog backgrounds
-        if (colors.ContainsKey("BackgroundPrimaryColor"))
-        {
-            var windowStyle = new Style(x => x.OfType<Window>());
-            windowStyle.Setters.Add(new Setter(
-                Window.BackgroundProperty, 
-                new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-        
-            styles.Add(windowStyle);
-        }
-
-        // Create empty state style - Fixes "No cards in collection" modal
-        if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("BorderColor"))
-        {
-            var emptyStateStyle = new Style(x => x.OfType<Border>().Class("empty-state"));
-            emptyStateStyle.Setters.Add(new Setter(
-                Border.BackgroundProperty, 
-                new SolidColorBrush(colors["SurfaceColor"])));
-            emptyStateStyle.Setters.Add(new Setter(
-                Border.BorderBrushProperty, 
-                new SolidColorBrush(colors["BorderColor"])));
-            emptyStateStyle.Setters.Add(new Setter(
-                Border.BorderThicknessProperty, 
-                new Thickness(1)));
-            emptyStateStyle.Setters.Add(new Setter(
-                Border.CornerRadiusProperty, 
-                new CornerRadius(8)));
-            emptyStateStyle.Setters.Add(new Setter(
-                Border.PaddingProperty, 
-                new Thickness(32)));
-        
-            styles.Add(emptyStateStyle);
-        }
-    }
+    
 
     partial void OnThemeNameChanged(string value)
     {
