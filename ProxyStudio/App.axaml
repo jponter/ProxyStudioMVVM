@@ -10,6 +10,7 @@
         
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <!-- Add your modern design system here -->
+         <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
         
         <!-- Test styles directly here first -->
         <!-- Then your theme -->

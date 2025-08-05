@@ -125,6 +125,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         BackgroundColors.Add(new ColorProperty("Background Tertiary", "#3c4f66", "Tertiary background"));
         BackgroundColors.Add(new ColorProperty("Card Background", "#ffffff", "Card background"));
         BackgroundColors.Add(new ColorProperty("Surface", "#f8f9fa", "Surface color"));
+        BackgroundColors.Add(new ColorProperty("Border", "#556983", "Border color for panels and separators"));
 
         // Text Colors
         TextColors.Add(new ColorProperty("Text Primary", "#2c3e50", "Primary text color"));
@@ -361,6 +362,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#3c4f66");
         SetColorValue(BackgroundColors, "Card Background", "#34495e");  // Fixed: Dark theme should have dark cards
         SetColorValue(BackgroundColors, "Surface", "#3c4f66");  // Fixed: Dark theme should have dark surface
+        SetColorValue(BackgroundColors, "Border", "#556983");
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#bdc3c7");
@@ -389,6 +391,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#e9ecef");
         SetColorValue(BackgroundColors, "Card Background", "#ffffff");
         SetColorValue(BackgroundColors, "Surface", "#f8f9fa");
+        SetColorValue(BackgroundColors, "Border", "#dee2e6");
 
         SetColorValue(TextColors, "Text Primary", "#212529");
         SetColorValue(TextColors, "Text Secondary", "#6c757d");
@@ -417,6 +420,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#2a2a2a");
         SetColorValue(BackgroundColors, "Card Background", "#1a1a1a");  // Fixed: Consistent with background
         SetColorValue(BackgroundColors, "Surface", "#2a2a2a");
+        SetColorValue(BackgroundColors, "Border", "#3a3a3a");
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#cccccc");
@@ -445,6 +449,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#333333");
         SetColorValue(BackgroundColors, "Card Background", "#000000");  // Fixed: High contrast should be pure black
         SetColorValue(BackgroundColors, "Surface", "#1a1a1a");
+        SetColorValue(BackgroundColors, "Border", "#4a4a4a");
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#ffff00");
@@ -473,6 +478,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#f5f5f5");
         SetColorValue(BackgroundColors, "Card Background", "#ffffff");
         SetColorValue(BackgroundColors, "Surface", "#fafafa");
+        SetColorValue(BackgroundColors, "Border", "#e9ecef");
 
         SetColorValue(TextColors, "Text Primary", "#333333");
         SetColorValue(TextColors, "Text Secondary", "#666666");
@@ -867,18 +873,119 @@ public partial class ThemeEditorViewModel : ViewModelBase
             
             _logger.LogDebug("Extracted {ColorCount} colors for style creation", colors.Count);
             
-            // Create Window style
-            if (colors.ContainsKey("BackgroundPrimaryColor") && colors.ContainsKey("TextPrimaryColor"))
+            // Create Window style - FIXED: Only require BackgroundPrimaryColor
+            if (colors.ContainsKey("BackgroundPrimaryColor"))
             {
                 var windowStyle = new Style(x => x.OfType<Window>());
                 windowStyle.Setters.Add(new Setter(
                     Window.BackgroundProperty, 
                     new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-                windowStyle.Setters.Add(new Setter(
-                    Window.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
+                
+                // Add text color if available, but don't require it
+                if (colors.ContainsKey("TextPrimaryColor"))
+                {
+                    windowStyle.Setters.Add(new Setter(
+                        Window.ForegroundProperty, 
+                        new SolidColorBrush(colors["TextPrimaryColor"])));
+                }
+                
                 styles.Add(windowStyle);
+                _logger.LogDebug("Created Window style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
             }
+            
+            // Create Border.sidebar style - THIS IS THE KEY FIX FOR YOUR SIDEBAR BACKGROUNDS
+            if (colors.ContainsKey("BackgroundSecondaryColor"))
+            {
+                var sidebarStyle = new Style(x => x.OfType<Border>().Class("sidebar"));
+                sidebarStyle.Setters.Add(new Setter(
+                    Border.BackgroundProperty, 
+                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
+    
+                // Use Background Tertiary as border color (fallback to text tertiary)
+                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
+                    ? colors["BackgroundTertiaryColor"] 
+                    : colors.ContainsKey("TextTertiaryColor")
+                        ? colors["TextTertiaryColor"]
+                        : colors["BackgroundSecondaryColor"];
+    
+                sidebarStyle.Setters.Add(new Setter(
+                    Border.BorderBrushProperty, 
+                    new SolidColorBrush(borderColor)));
+                sidebarStyle.Setters.Add(new Setter(
+                    Border.BorderThicknessProperty, 
+                    new Thickness(0, 0, 1, 0))); // Right border only
+    
+                sidebarStyle.Setters.Add(new Setter(
+                    Border.PaddingProperty, 
+                    new Thickness(16)));
+    
+                styles.Add(sidebarStyle);
+                _logger.LogDebug("Created Border.sidebar style with background: {BackgroundColor}", colors["BackgroundSecondaryColor"]);
+            }
+
+// Create Border.editor-panel style (for right panels)
+            if (colors.ContainsKey("SurfaceColor"))
+            {
+                var editorPanelStyle = new Style(x => x.OfType<Border>().Class("editor-panel"));
+                editorPanelStyle.Setters.Add(new Setter(
+                    Border.BackgroundProperty, 
+                    new SolidColorBrush(colors["SurfaceColor"])));
+    
+                // Use Background Tertiary as border color (fallback to text tertiary)
+                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
+                    ? colors["BackgroundTertiaryColor"] 
+                    : colors.ContainsKey("TextTertiaryColor")
+                        ? colors["TextTertiaryColor"]
+                        : colors["SurfaceColor"];
+    
+                editorPanelStyle.Setters.Add(new Setter(
+                    Border.BorderBrushProperty, 
+                    new SolidColorBrush(borderColor)));
+                editorPanelStyle.Setters.Add(new Setter(
+                    Border.BorderThicknessProperty, 
+                    new Thickness(1, 0, 0, 0))); // Left border only
+    
+                editorPanelStyle.Setters.Add(new Setter(
+                    Border.PaddingProperty, 
+                    new Thickness(16)));
+    
+                styles.Add(editorPanelStyle);
+                _logger.LogDebug("Created Border.editor-panel style with background: {SurfaceColor}", colors["SurfaceColor"]);
+            }
+
+// Create Border.empty-state style (fixes modal dialogs like "No cards in collection")
+            if (colors.ContainsKey("SurfaceColor"))
+            {
+                var emptyStateStyle = new Style(x => x.OfType<Border>().Class("empty-state"));
+                emptyStateStyle.Setters.Add(new Setter(
+                    Border.BackgroundProperty, 
+                    new SolidColorBrush(colors["SurfaceColor"])));
+    
+                // Use Background Tertiary as border color (fallback to text tertiary)
+                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
+                    ? colors["BackgroundTertiaryColor"] 
+                    : colors.ContainsKey("TextTertiaryColor")
+                        ? colors["TextTertiaryColor"]
+                        : colors["SurfaceColor"];
+    
+                emptyStateStyle.Setters.Add(new Setter(
+                    Border.BorderBrushProperty, 
+                    new SolidColorBrush(borderColor)));
+                emptyStateStyle.Setters.Add(new Setter(
+                    Border.BorderThicknessProperty, 
+                    new Thickness(1)));
+    
+                emptyStateStyle.Setters.Add(new Setter(
+                    Border.CornerRadiusProperty, 
+                    new CornerRadius(8)));
+                emptyStateStyle.Setters.Add(new Setter(
+                    Border.PaddingProperty, 
+                    new Thickness(32)));
+    
+                styles.Add(emptyStateStyle);
+                _logger.LogDebug("Created Border.empty-state style with background: {SurfaceColor}", colors["SurfaceColor"]);
+            }
+            
             
             // Create Button.primary style
             if (colors.ContainsKey("PrimaryColor"))
@@ -1402,6 +1509,94 @@ public partial class ThemeEditorViewModel : ViewModelBase
             {
                 _logger.LogDebug("Skipping color update - collections not yet initialized");
             }
+        }
+    }
+    
+    private void CreateLayoutStyles(List<IStyle> styles, Dictionary<string, Color> colors)
+    {
+        // Create Border.sidebar style - THIS IS THE KEY FIX
+        if (colors.ContainsKey("BackgroundSecondaryColor") && colors.ContainsKey("BorderColor"))
+        {
+            var sidebarStyle = new Style(x => x.OfType<Border>().Class("sidebar"));
+            sidebarStyle.Setters.Add(new Setter(
+                Border.BackgroundProperty, 
+                new SolidColorBrush(colors["BackgroundSecondaryColor"])));
+            sidebarStyle.Setters.Add(new Setter(
+                Border.BorderBrushProperty, 
+                new SolidColorBrush(colors["BorderColor"])));
+            sidebarStyle.Setters.Add(new Setter(
+                Border.BorderThicknessProperty, 
+                new Thickness(0, 0, 1, 0)));
+            sidebarStyle.Setters.Add(new Setter(
+                Border.PaddingProperty, 
+                new Thickness(16)));
+        
+            styles.Add(sidebarStyle);
+        }
+
+        // Create Border.editor-panel style
+        if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("BorderColor"))
+        {
+            var editorPanelStyle = new Style(x => x.OfType<Border>().Class("editor-panel"));
+            editorPanelStyle.Setters.Add(new Setter(
+                Border.BackgroundProperty, 
+                new SolidColorBrush(colors["SurfaceColor"])));
+            editorPanelStyle.Setters.Add(new Setter(
+                Border.BorderBrushProperty, 
+                new SolidColorBrush(colors["BorderColor"])));
+            editorPanelStyle.Setters.Add(new Setter(
+                Border.BorderThicknessProperty, 
+                new Thickness(1, 0, 0, 0)));
+            editorPanelStyle.Setters.Add(new Setter(
+                Border.PaddingProperty, 
+                new Thickness(16)));
+        
+            styles.Add(editorPanelStyle);
+        }
+
+        // Create TabControl background style - Fixes main background issues
+        if (colors.ContainsKey("BackgroundPrimaryColor"))
+        {
+            var tabControlStyle = new Style(x => x.OfType<TabControl>());
+            tabControlStyle.Setters.Add(new Setter(
+                TabControl.BackgroundProperty, 
+                new SolidColorBrush(colors["BackgroundPrimaryColor"])));
+        
+            styles.Add(tabControlStyle);
+        }
+
+        // Create Window background style - Fixes modal dialog backgrounds
+        if (colors.ContainsKey("BackgroundPrimaryColor"))
+        {
+            var windowStyle = new Style(x => x.OfType<Window>());
+            windowStyle.Setters.Add(new Setter(
+                Window.BackgroundProperty, 
+                new SolidColorBrush(colors["BackgroundPrimaryColor"])));
+        
+            styles.Add(windowStyle);
+        }
+
+        // Create empty state style - Fixes "No cards in collection" modal
+        if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("BorderColor"))
+        {
+            var emptyStateStyle = new Style(x => x.OfType<Border>().Class("empty-state"));
+            emptyStateStyle.Setters.Add(new Setter(
+                Border.BackgroundProperty, 
+                new SolidColorBrush(colors["SurfaceColor"])));
+            emptyStateStyle.Setters.Add(new Setter(
+                Border.BorderBrushProperty, 
+                new SolidColorBrush(colors["BorderColor"])));
+            emptyStateStyle.Setters.Add(new Setter(
+                Border.BorderThicknessProperty, 
+                new Thickness(1)));
+            emptyStateStyle.Setters.Add(new Setter(
+                Border.CornerRadiusProperty, 
+                new CornerRadius(8)));
+            emptyStateStyle.Setters.Add(new Setter(
+                Border.PaddingProperty, 
+                new Thickness(32)));
+        
+            styles.Add(emptyStateStyle);
         }
     }
 

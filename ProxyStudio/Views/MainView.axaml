@@ -10,7 +10,7 @@
         mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
         Width="1400" Height="900"
         MinWidth="1000" MinHeight="600"
-        Background="{StaticResource BackgroundPrimaryBrush}"
+        Background="{DynamicResource BackgroundPrimaryBrush}"
         x:Class="ProxyStudio.Views.MainView"
         x:DataType="vm:MainViewModel"
         Title="ProxyStudio"
@@ -22,7 +22,7 @@
         <vm:DesignTimeMainViewModel />
     </Design.DataContext>
 
-    <Grid Background="{StaticResource BackgroundPrimaryBrush}" >
+    <Grid Background="{DynamicResource BackgroundPrimaryBrush}" >
         
         <!-- Modern Tab Control -->
         <TabControl>
@@ -80,7 +80,7 @@
                                     <!--         Command="{Binding AddTestCardsRelayCommand}"/> -->
                                     
                                     <Button Classes="secondary"
-                                            Background="{StaticResource ErrorBrush}"
+                                            Background="{DynamicResource ErrorBrush}"
                                             Foreground="White"
                                             Content="🗑️ Delete All Cards"
                                             HorizontalAlignment="Stretch"
@@ -221,7 +221,7 @@
                                                                    Spacing="8">
                                                             <Button Classes="icon"
                                                                     Content="🗑️" 
-                                                                    Background="{StaticResource ErrorBrush}"
+                                                                    Background="{DynamicResource ErrorBrush}"
                                                                     Foreground="White"
                                                                     Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).DeleteCardCommand}"
                                                                     CommandParameter="{Binding}"
@@ -577,7 +577,7 @@
                                                         <!-- Theme Preview Image -->
                                                         <Border Height="80" 
                                                                 CornerRadius="8" 
-                                                                Background="{StaticResource BackgroundSecondaryBrush}"
+                                                                Background="{DynamicResource BackgroundSecondaryBrush}"
                                                                 ClipToBounds="True">
                                                             <Image Source="{Binding PreviewImagePath}" 
                                                                    Stretch="UniformToFill"/>
@@ -860,7 +860,7 @@
                                                         <DataTemplate>
                                                             <Border Classes="card-compact" 
                                                                     Margin="0,0,0,8"
-                                                                    Background="{StaticResource BackgroundSecondaryBrush}">
+                                                                    Background="{DynamicResource BackgroundSecondaryBrush}">
                                                                 <StackPanel Spacing="6">
                                                                     <!-- Error Header -->
                                                                     <StackPanel Orientation="Horizontal" Spacing="12">
