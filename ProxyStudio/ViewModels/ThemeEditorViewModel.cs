@@ -126,6 +126,13 @@ public partial class ThemeEditorViewModel : ViewModelBase
         BackgroundColors.Add(new ColorProperty("Card Background", "#ffffff", "Card background"));
         BackgroundColors.Add(new ColorProperty("Surface", "#f8f9fa", "Surface color"));
         
+        // Background Fine-Tuning
+        BackgroundColors.Add(new ColorProperty("Accent Background", "#e3f2fd", "Accent areas and highlights"));
+        BackgroundColors.Add(new ColorProperty("Hover Background", "#f5f5f5", "Button and item hover states")); 
+        BackgroundColors.Add(new ColorProperty("Active Background", "#e0e0e0", "Active/pressed states"));
+        BackgroundColors.Add(new ColorProperty("Modal Background", "#ffffff", "Modal dialog backgrounds"));
+        BackgroundColors.Add(new ColorProperty("Overlay Background", "#000000", "Semi-transparent overlays"));
+        
         // NEW: Fine-tuning colors for specific areas
         BackgroundColors.Add(new ColorProperty("Preview Background", "#f8f9fa", "PDF preview area background"));
         BackgroundColors.Add(new ColorProperty("Border", "#dee2e6", "Border and separator color"));
@@ -138,6 +145,11 @@ public partial class ThemeEditorViewModel : ViewModelBase
         TextColors.Add(new ColorProperty("Text Secondary", "#7f8c8d", "Secondary text color"));
         TextColors.Add(new ColorProperty("Text Tertiary", "#bdc3c7", "Tertiary text color"));
         TextColors.Add(new ColorProperty("Text On Primary", "#ffffff", "Text on primary background"));
+        
+        // Text Fine-Tuning
+        TextColors.Add(new ColorProperty("Caption Text", "#757575", "Captions and metadata"));
+        TextColors.Add(new ColorProperty("Disabled Text", "#bdbdbd", "Disabled text and placeholders"));
+        TextColors.Add(new ColorProperty("Inverse Text", "#ffffff", "Text on dark backgrounds"));
         
         // NEW: Fine-tuning text colors
         TextColors.Add(new ColorProperty("Text Muted", "#6c757d", "Muted text for hints and placeholders"));
@@ -152,6 +164,17 @@ public partial class ThemeEditorViewModel : ViewModelBase
         StatusColors.Add(new ColorProperty("Error Hover", "#c0392b", "Error color on hover"));
         StatusColors.Add(new ColorProperty("Info", "#3498db", "Info states"));
         StatusColors.Add(new ColorProperty("Info Hover", "#2980b9", "Info color on hover"));
+        
+        // Status Fine-Tuning (based on your ErrorHandlingService)
+        StatusColors.Add(new ColorProperty("Info Light", "#e3f2fd", "Light info backgrounds"));
+        StatusColors.Add(new ColorProperty("Success Light", "#e8f5e8", "Light success backgrounds"));
+        StatusColors.Add(new ColorProperty("Warning Light", "#fff8e1", "Light warning backgrounds"));
+        StatusColors.Add(new ColorProperty("Error Light", "#ffebee", "Light error backgrounds"));
+        
+        // UI Element Colors
+        BackgroundColors.Add(new ColorProperty("Separator", "#e0e0e0", "Lines and separators"));
+        BackgroundColors.Add(new ColorProperty("Input Background", "#fafafa", "Form input backgrounds"));
+        BackgroundColors.Add(new ColorProperty("Button Shadow", "#000000", "Button drop shadows"));
     }
 
     private void OnColorPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -397,6 +420,27 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(StatusColors, "Error Hover", "#c0392b");
         SetColorValue(StatusColors, "Info", "#3498db");
         SetColorValue(StatusColors, "Info Hover", "#2980b9");
+        
+        // Fine-tuning for dark theme
+        SetColorValue(BackgroundColors, "Accent Background", "#1e3a5f");
+        SetColorValue(BackgroundColors, "Hover Background", "#404040");
+        SetColorValue(BackgroundColors, "Active Background", "#4a4a4a");
+        SetColorValue(BackgroundColors, "Modal Background", "#2c3e50");
+        SetColorValue(BackgroundColors, "Overlay Background", "#000000");
+        SetColorValue(BackgroundColors, "Separator", "#556983");
+        SetColorValue(BackgroundColors, "Input Background", "#34495e");
+        SetColorValue(BackgroundColors, "Button Shadow", "#000000");
+    
+        SetColorValue(TextColors, "Caption Text", "#95a5a6");
+        SetColorValue(TextColors, "Disabled Text", "#7f8c8d");
+        SetColorValue(TextColors, "Inverse Text", "#2c3e50");
+    
+        SetColorValue(StatusColors, "Info Light", "#1e3a5f");
+        SetColorValue(StatusColors, "Success Light", "#1e4d2b");
+        SetColorValue(StatusColors, "Warning Light", "#4d3319");
+        SetColorValue(StatusColors, "Error Light", "#4d1f23");
+        
+        
     }
 
     private void SetLightClassicColors()
@@ -412,11 +456,24 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Card Background", "#ffffff");
         SetColorValue(BackgroundColors, "Surface", "#f8f9fa");
         SetColorValue(BackgroundColors, "Border", "#dee2e6");
+        
+        
+        // NEW: Add the fine-tuning colors
+        SetColorValue(BackgroundColors, "Preview Background", "#2c3e50");  // Same as primary for dark theme
+        SetColorValue(BackgroundColors, "Border", "#556983");              // Lighter than secondary
+        SetColorValue(BackgroundColors, "Panel Background", "#34495e");    // Same as secondary
+        SetColorValue(BackgroundColors, "Content Area", "#2c3e50");        // Same as primary
+        SetColorValue(BackgroundColors, "Header Background", "#34495e");   // Same as secondary
+
 
         SetColorValue(TextColors, "Text Primary", "#212529");
         SetColorValue(TextColors, "Text Secondary", "#6c757d");
         SetColorValue(TextColors, "Text Tertiary", "#adb5bd");
         SetColorValue(TextColors, "Text On Primary", "#ffffff");
+        
+        // NEW: Fine-tuning text colors
+        SetColorValue(TextColors, "Text Muted", "#95a5a6");
+        SetColorValue(TextColors, "Text Link", "#3498db");
 
         SetColorValue(StatusColors, "Success", "#28a745");
         SetColorValue(StatusColors, "Success Hover", "#218838");
@@ -426,6 +483,25 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(StatusColors, "Error Hover", "#c82333");
         SetColorValue(StatusColors, "Info", "#17a2b8");
         SetColorValue(StatusColors, "Info Hover", "#138496");
+        
+        // Fine-tuning for light theme
+        SetColorValue(BackgroundColors, "Accent Background", "#e3f2fd");
+        SetColorValue(BackgroundColors, "Hover Background", "#f5f5f5");
+        SetColorValue(BackgroundColors, "Active Background", "#e0e0e0");
+        SetColorValue(BackgroundColors, "Modal Background", "#ffffff");
+        SetColorValue(BackgroundColors, "Overlay Background", "#000000");
+        SetColorValue(BackgroundColors, "Separator", "#e0e0e0");
+        SetColorValue(BackgroundColors, "Input Background", "#fafafa");
+        SetColorValue(BackgroundColors, "Button Shadow", "#000000");
+    
+        SetColorValue(TextColors, "Caption Text", "#757575");
+        SetColorValue(TextColors, "Disabled Text", "#bdbdbd");
+        SetColorValue(TextColors, "Inverse Text", "#ffffff");
+    
+        SetColorValue(StatusColors, "Info Light", "#e3f2fd");
+        SetColorValue(StatusColors, "Success Light", "#e8f5e8");
+        SetColorValue(StatusColors, "Warning Light", "#fff8e1");
+        SetColorValue(StatusColors, "Error Light", "#ffebee");
     }
 
     private void SetGamingColors()
@@ -924,6 +1000,17 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 styles.Add(scrollViewerStyle);
             }
             
+            // Create ScrollViewer style for preview areas
+            if (colors.ContainsKey("BackgroundSecondaryColor"))
+            {
+                var scrollViewerStyle = new Style(x => x.OfType<ScrollViewer>().Class("sidebar"));
+                scrollViewerStyle.Setters.Add(new Setter(
+                    ScrollViewer.BackgroundProperty, 
+                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
+    
+                styles.Add(scrollViewerStyle);
+            }
+            
             // Create Border style for main borders
             if (colors.ContainsKey("BorderColor"))
             {
@@ -1040,7 +1127,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 _logger.LogDebug("Created TabControl style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
             }
 
-// Create Grid background style - FIXES GRID CONTAINERS
+            // Create Grid background style - FIXES GRID CONTAINERS
             if (colors.ContainsKey("BackgroundPrimaryColor"))
             {
                 var gridStyle = new Style(x => x.OfType<Grid>());
@@ -1050,6 +1137,17 @@ public partial class ThemeEditorViewModel : ViewModelBase
     
                 styles.Add(gridStyle);
                 _logger.LogDebug("Created Grid style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
+            }
+            
+            // Create Grid style for preview areas
+            if (colors.ContainsKey("BackgroundSecondaryColor"))
+            {
+                var gridstyle = new Style(x => x.OfType<Grid>().Class("sidebar"));
+                gridstyle.Setters.Add(new Setter(
+                    Grid.BackgroundProperty, 
+                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
+    
+                styles.Add(gridstyle);
             }
             
             

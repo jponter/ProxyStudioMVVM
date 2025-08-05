@@ -45,7 +45,7 @@
                                       DisplayMemberBinding="{Binding Name}"/>
                             <TextBlock Classes="body-small" 
                                       Text="Choose a base theme to start with"
-                                      Foreground="{StaticResource TextSecondaryBrush}"/>
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </Border>
                     
@@ -76,7 +76,7 @@
                                                         Width="40" Height="24"
                                                         CornerRadius="4"
                                                         Background="{Binding ColorBrush}"
-                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
                                                         BorderThickness="1"
                                                         Margin="0,0,8,0"/>
                                                         
@@ -113,7 +113,7 @@
                                                         Width="40" Height="24"
                                                         CornerRadius="4"
                                                         Background="{Binding ColorBrush}"
-                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
                                                         BorderThickness="1"
                                                         Margin="0,0,8,0"/>
                                                         
@@ -150,7 +150,7 @@
                                                         Width="40" Height="24"
                                                         CornerRadius="4"
                                                         Background="{Binding ColorBrush}"
-                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
                                                         BorderThickness="1"
                                                         Margin="0,0,8,0"/>
                                                         
@@ -187,7 +187,7 @@
                                                         Width="40" Height="24"
                                                         CornerRadius="4"
                                                         Background="{Binding ColorBrush}"
-                                                        BorderBrush="{StaticResource BorderBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
                                                         BorderThickness="1"
                                                         Margin="0,0,8,0"/>
                                                         
@@ -242,7 +242,7 @@
                         <TextBlock Classes="heading-large" Text="Live Theme Preview"/>
                         <TextBlock Classes="body-medium" 
                                   Text="See how your theme looks with all ProxyStudio components"
-                                  Foreground="{StaticResource TextSecondaryBrush}"/>
+                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                     
                     <!-- Typography Preview -->

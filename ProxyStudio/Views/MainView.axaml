@@ -46,7 +46,7 @@
                     
                     <!-- Modern Sidebar -->
                     <Border Grid.Column="0" Classes="sidebar">
-                        <ScrollViewer>
+                        <ScrollViewer Classes="sidebar">
                             <StackPanel Spacing="8">
                                 
                                 <!-- Header -->
@@ -120,7 +120,7 @@
                                             
                                             <TextBlock Classes="body-small" 
                                                       Text="{Binding MpcFillTimeRemaining}"
-                                                      Foreground="{StaticResource SuccessBrush}"
+                                                      Foreground="{DynamicResource SuccessBrush}"
                                                       IsVisible="{Binding MpcFillTimeRemaining, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -130,7 +130,7 @@
                                 <Border Classes="card highlight-primary" 
                                         IsVisible="{Binding IsBusy}">
                                     <StackPanel Spacing="12" HorizontalAlignment="Center">
-                                        <li:LoadingIndicator Foreground="{StaticResource PrimaryBrush}" 
+                                        <li:LoadingIndicator Foreground="{DynamicResource PrimaryBrush}" 
                                                            IsActive="{Binding IsBusy}" 
                                                            Mode="ThreeDots" 
                                                            SpeedRatio="1.2"/>
@@ -145,16 +145,18 @@
                     </Border>
                     
                     <!-- Main Card Grid View -->
-                    <Border Grid.Column="1" Classes="card" Margin="24,20,24,20">
-                        <DockPanel>
+                    <Border Grid.Column="1"
+                            Background="{DynamicResource BackgroundSecondaryBrush}"
+                            Margin="24,20,24,20">
+                        <DockPanel Background="{DynamicResource BackgroundSecondaryBrush}">
                             
                             <!-- Grid Header -->
                             <Border DockPanel.Dock="Top" 
                                     Padding="0,0,0,16" 
-                                    BorderBrush="{StaticResource BorderBrush}" 
+                                    Background="{DynamicResource BackgroundSecondaryBrush}"
                                     BorderThickness="0,0,0,1"
                                     Margin="0,0,0,16">
-                                <Grid>
+                                <Grid Background="{DynamicResource BackgroundSecondaryBrush}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -270,7 +272,7 @@
                     
                     <!-- Modern Card Editor Panel -->
                     <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0">
-                        <ScrollViewer>
+                        <ScrollViewer Classes="sidebar">
                             <StackPanel Spacing="20">
                                 
                                 <!-- ProxyStudio Branding -->
@@ -590,7 +592,7 @@
                                                                       FontWeight="SemiBold"/>
                                                             <TextBlock Classes="body-small" 
                                                                       Text="{Binding Description}" 
-                                                                      Foreground="{StaticResource TextSecondaryBrush}"
+                                                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                                                       TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         
@@ -623,10 +625,10 @@
                                             <TextBlock Classes="body-medium" 
                                                       Text="{Binding ThemeSettingsViewModel.SelectedTheme.Name}"
                                                       FontWeight="Bold"
-                                                      Foreground="{StaticResource PrimaryBrush}"/>
+                                                      Foreground="{DynamicResource PrimaryBrush}"/>
                                             <TextBlock Classes="body-small" 
                                                       Text="{Binding ThemeSettingsViewModel.SelectedTheme.Description}"
-                                                      Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                        
                                             <Button Classes="secondary" 
                                                     Content="Reset to Saved Theme"
@@ -816,21 +818,21 @@
                                         <TextBlock Grid.Row="0" Grid.Column="1" 
                                                   Classes="body-small"
                                                   Text="{Binding LoggingSettingsViewModel.CurrentLogLevelName}"
-                                                  Foreground="{StaticResource PrimaryBrush}"/>
+                                                  Foreground="{DynamicResource PrimaryBrush}"/>
                                         
                                         <TextBlock Grid.Row="1" Grid.Column="0" 
                                                   Classes="body-small" Text="Log File Size:" FontWeight="SemiBold"/>
                                         <TextBlock Grid.Row="1" Grid.Column="1" 
                                                   Classes="body-small"
                                                   Text="{Binding LoggingSettingsViewModel.CurrentLogFileSizeFormatted}"
-                                                  Foreground="{StaticResource SuccessBrush}"/>
+                                                  Foreground="{DynamicResource SuccessBrush}"/>
                                         
                                         <TextBlock Grid.Row="2" Grid.Column="0" 
                                                   Classes="body-small" Text="Recent Errors:" FontWeight="SemiBold"/>
                                         <TextBlock Grid.Row="2" Grid.Column="1" 
                                                   Classes="body-small"
                                                   Text="{Binding LoggingSettingsViewModel.RecentErrors.Count, StringFormat='{}{0} errors logged'}"
-                                                  Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -845,11 +847,11 @@
                                     
                                     <TextBlock Classes="body-small" 
                                               Text="Recent errors and warnings from the application"
-                                              Foreground="{StaticResource TextSecondaryBrush}"/>
+                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     
                                     <!-- Errors List -->
                                     <Border Classes="card-compact" 
-                                            BorderBrush="{StaticResource BorderBrush}" 
+                                            BorderBrush="{DynamicResource BorderBrush}" 
                                             BorderThickness="1"
                                             MaxHeight="400">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -869,34 +871,34 @@
                                                                                 Padding="6,2">
                                                                             <TextBlock Classes="caption" 
                                                                                       Text="{Binding Severity}"
-                                                                                      Foreground="{StaticResource ErrorBrush}"
+                                                                                      Foreground="{DynamicResource ErrorBrush}"
                                                                                       FontWeight="SemiBold"/>
                                                                         </Border>
                                                                         
                                                                         <!-- Timestamp -->
                                                                         <TextBlock Classes="caption" 
                                                                                   Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
-                                                                                  Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                                     </StackPanel>
                                                                     
                                                                     <!-- Error Title -->
                                                                     <TextBlock Classes="body-medium" 
                                                                               Text="{Binding Title}"
                                                                               FontWeight="SemiBold"
-                                                                              Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                                              Foreground="{DynamicResource TextPrimaryBrush}"/>
                                                                     
                                                                     <!-- Error Message -->
                                                                     <TextBlock Classes="body-small" 
                                                                               Text="{Binding Message}"
                                                                               TextWrapping="Wrap"
-                                                                              Foreground="{StaticResource TextSecondaryBrush}"
+                                                                              Foreground="{DynamicResource TextSecondaryBrush}"
                                                                               MaxWidth="500"/>
                                                                     
                                                                     <!-- Operation Context -->
                                                                     <TextBlock Classes="caption" 
                                                                               Text="{Binding OperationContext}"
                                                                               FontStyle="Italic"
-                                                                              Foreground="{StaticResource TextTertiary}"
+                                                                              Foreground="{DynamicResource TextTertiary}"
                                                                               IsVisible="{Binding OperationContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                                                 </StackPanel>
                                                             </Border>
@@ -917,12 +919,12 @@
                                                         <TextBlock Classes="body-medium" 
                                                                   Text="No recent errors found"
                                                                   HorizontalAlignment="Center"
-                                                                  Foreground="{StaticResource SuccessBrush}"
+                                                                  Foreground="{DynamicResource SuccessBrush}"
                                                                   FontWeight="SemiBold"/>
                                                         <TextBlock Classes="body-small" 
                                                                   Text="The application is running smoothly"
                                                                   HorizontalAlignment="Center"
-                                                                  Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
                                                     </StackPanel>
                                                 </Border>
                                             </Panel>
