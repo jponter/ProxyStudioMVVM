@@ -125,13 +125,23 @@ public partial class ThemeEditorViewModel : ViewModelBase
         BackgroundColors.Add(new ColorProperty("Background Tertiary", "#3c4f66", "Tertiary background"));
         BackgroundColors.Add(new ColorProperty("Card Background", "#ffffff", "Card background"));
         BackgroundColors.Add(new ColorProperty("Surface", "#f8f9fa", "Surface color"));
-        BackgroundColors.Add(new ColorProperty("Border", "#556983", "Border color for panels and separators"));
+        
+        // NEW: Fine-tuning colors for specific areas
+        BackgroundColors.Add(new ColorProperty("Preview Background", "#f8f9fa", "PDF preview area background"));
+        BackgroundColors.Add(new ColorProperty("Border", "#dee2e6", "Border and separator color"));
+        BackgroundColors.Add(new ColorProperty("Panel Background", "#ffffff", "Side panel backgrounds"));
+        BackgroundColors.Add(new ColorProperty("Content Area", "#ffffff", "Main content area background"));
+        BackgroundColors.Add(new ColorProperty("Header Background", "#f8f9fa", "Header and toolbar backgrounds"));
 
         // Text Colors
         TextColors.Add(new ColorProperty("Text Primary", "#2c3e50", "Primary text color"));
         TextColors.Add(new ColorProperty("Text Secondary", "#7f8c8d", "Secondary text color"));
         TextColors.Add(new ColorProperty("Text Tertiary", "#bdc3c7", "Tertiary text color"));
         TextColors.Add(new ColorProperty("Text On Primary", "#ffffff", "Text on primary background"));
+        
+        // NEW: Fine-tuning text colors
+        TextColors.Add(new ColorProperty("Text Muted", "#6c757d", "Muted text for hints and placeholders"));
+        TextColors.Add(new ColorProperty("Text Link", "#007bff", "Link text color"));
 
         // Status Colors
         StatusColors.Add(new ColorProperty("Success", "#27ae60", "Success/positive states"));
@@ -362,12 +372,22 @@ public partial class ThemeEditorViewModel : ViewModelBase
         SetColorValue(BackgroundColors, "Background Tertiary", "#3c4f66");
         SetColorValue(BackgroundColors, "Card Background", "#34495e");  // Fixed: Dark theme should have dark cards
         SetColorValue(BackgroundColors, "Surface", "#3c4f66");  // Fixed: Dark theme should have dark surface
-        SetColorValue(BackgroundColors, "Border", "#556983");
+        
+        // NEW: Add the fine-tuning colors
+        SetColorValue(BackgroundColors, "Preview Background", "#2c3e50");  // Same as primary for dark theme
+        SetColorValue(BackgroundColors, "Border", "#556983");              // Lighter than secondary
+        SetColorValue(BackgroundColors, "Panel Background", "#34495e");    // Same as secondary
+        SetColorValue(BackgroundColors, "Content Area", "#2c3e50");        // Same as primary
+        SetColorValue(BackgroundColors, "Header Background", "#34495e");   // Same as secondary
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#bdc3c7");
         SetColorValue(TextColors, "Text Tertiary", "#95a5a6");
         SetColorValue(TextColors, "Text On Primary", "#ffffff");
+        
+        // NEW: Fine-tuning text colors
+        SetColorValue(TextColors, "Text Muted", "#95a5a6");
+        SetColorValue(TextColors, "Text Link", "#3498db");
 
         SetColorValue(StatusColors, "Success", "#27ae60");
         SetColorValue(StatusColors, "Success Hover", "#229954");
@@ -891,6 +911,28 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 
                 styles.Add(windowStyle);
                 _logger.LogDebug("Created Window style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
+            }
+            
+            // Create ScrollViewer style for preview areas
+            if (colors.ContainsKey("PreviewBackgroundColor"))
+            {
+                var scrollViewerStyle = new Style(x => x.OfType<ScrollViewer>().Class("preview"));
+                scrollViewerStyle.Setters.Add(new Setter(
+                    ScrollViewer.BackgroundProperty, 
+                    new SolidColorBrush(colors["PreviewBackgroundColor"])));
+    
+                styles.Add(scrollViewerStyle);
+            }
+            
+            // Create Border style for main borders
+            if (colors.ContainsKey("BorderColor"))
+            {
+                var borderStyle = new Style(x => x.OfType<Border>().Class("main-border"));
+                borderStyle.Setters.Add(new Setter(
+                    Border.BorderBrushProperty, 
+                    new SolidColorBrush(colors["BorderColor"])));
+    
+                styles.Add(borderStyle);
             }
             
             // Create Border.sidebar style - THIS IS THE KEY FIX FOR YOUR SIDEBAR BACKGROUNDS

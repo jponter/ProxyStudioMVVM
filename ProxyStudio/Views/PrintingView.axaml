@@ -175,9 +175,9 @@
                 </Border>
                 
                 <!-- Preview Content -->
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                <ScrollViewer  HorizontalScrollBarVisibility="Auto" 
                               VerticalScrollBarVisibility="Auto"
-                              Background="{DynamicResource BackgroundSecondaryBrush}" 
+                              Background="{DynamicResource PreviewBackgroundBrush}"
                               Padding="40">
                     <Panel>
                         
@@ -231,7 +231,7 @@
         </Border>
         
         
-        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0">
+        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0" Background="{DynamicResource PanelBackgroundBrush}">
             <ScrollViewer>
                 <StackPanel Spacing="20">
                                 
