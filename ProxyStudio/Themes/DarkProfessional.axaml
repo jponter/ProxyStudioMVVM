@@ -24,6 +24,7 @@
         <!-- Dark Theme Borders -->
         <Color x:Key="BorderColor">#6B7280</Color>         <!-- Gray -->
         <Color x:Key="BorderHover">#9CA3AF</Color>         <!-- Lighter Gray -->
+        <Color x:Key="BorderBackground">#111827</Color>    <!-- Almost Black --> 
         
         <!-- Status Colors (same across themes) -->
         <Color x:Key="SuccessColor">#059669</Color>        <!-- Green -->
@@ -41,6 +42,7 @@
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
         <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="BorderBackgroundBrush" Color="{StaticResource BorderBackground}"/> 
         <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
         <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
     </Styles.Resources>
@@ -266,5 +268,14 @@
         <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
         <Setter Property="Height" Value="20"/>
     </Style>
+    
+    <!-- ~1~ Border Classes @1@ -->
+    <!-- <Style Selector="Border"> -->
+    <!--     <Setter Property="Background" Value="{StaticResource BorderBackgroundBrush}"/> -->
+    <!-- </Style> -->
+    
+    <!-- <Style Selector="Grid"> -->
+    <!--    <Setter Property="Background" Value="{StaticResource BackgroundPrimaryBrush}"/>  -->
+    <!-- </Style> -->
 
 </Styles>

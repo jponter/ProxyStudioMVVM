@@ -96,7 +96,7 @@ namespace ProxyStudio.Services
 
         public async Task ApplyThemeAsync(ThemeType theme)
         {
-            bool animated = true;
+            bool animated = false;
             try
             {
                 _logger.LogInformation("Applying theme: {ThemeName}", theme);
@@ -197,7 +197,7 @@ namespace ProxyStudio.Services
             if (app?.Styles == null) return;
 
             // Remove existing seasonal themes
-            RemoveSeasonalOverlay();
+            //RemoveSeasonalOverlay();
 
             var seasonalPath = seasonal switch
             {

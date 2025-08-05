@@ -6,7 +6,7 @@
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Styles>
-        <FluentTheme />
+         <FluentTheme /> <!-- FluentTheme is the default theme for Avalonia, providing a modern look and feel. -->
         
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <!-- Add your modern design system here -->

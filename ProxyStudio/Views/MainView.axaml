@@ -22,7 +22,7 @@
         <vm:DesignTimeMainViewModel />
     </Design.DataContext>
 
-    <Grid Background="{StaticResource BackgroundPrimaryBrush}">
+    <Grid Background="{StaticResource BackgroundPrimaryBrush}" >
         
         <!-- Modern Tab Control -->
         <TabControl>
