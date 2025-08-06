@@ -60,7 +60,7 @@ namespace ProxyStudio.Services
                 Name = "Dark Red",
                 Description = "Clean light theme with traditional styling",
                 ResourcePath = "avares://ProxyStudio/Themes/DarkRed.axaml",
-                IsDark = false,
+                IsDark = true,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/DarkRed.png"
             },
             

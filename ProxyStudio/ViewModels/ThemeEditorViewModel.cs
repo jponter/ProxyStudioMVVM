@@ -171,6 +171,9 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 case ThemeType.LightClassic:
                     SetLightClassicColors();
                     break;
+                case ThemeType.DarkRed:
+                    SetDarkRedColors();
+                    break;
                 default:
                     SetDarkProfessionalColors();
                     break;
@@ -200,6 +203,25 @@ public partial class ThemeEditorViewModel : ViewModelBase
 
         SetColorValue(SurfaceColors, "Background", "#2c3e50");
         SetColorValue(SurfaceColors, "Surface Elevated", "#34495e");
+
+        SetColorValue(TextColors, "Text Primary", "#ffffff");
+        SetColorValue(TextColors, "Text Secondary", "#bdc3c7");
+    }
+    
+    private void SetDarkRedColors()
+    {
+        SetColorValue(FoundationColors, "Primary", "#3498db");
+        SetColorValue(FoundationColors, "Secondary", "#ffa5a6");
+        SetColorValue(FoundationColors, "Surface", "#550000");
+        SetColorValue(FoundationColors, "Border", "#556983");
+
+        SetColorValue(SemanticColors, "Success", "#27ae60");
+        SetColorValue(SemanticColors, "Warning", "#f39c12");
+        SetColorValue(SemanticColors, "Error", "#e74c3c");
+        SetColorValue(SemanticColors, "Info", "#3498db");
+
+        SetColorValue(SurfaceColors, "Background", "#330000");
+        SetColorValue(SurfaceColors, "Surface Elevated", "#440000");
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#bdc3c7");
