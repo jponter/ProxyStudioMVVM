@@ -9,6 +9,10 @@
              x:Class="ProxyStudio.Views.PrintingView"
              x:DataType="vm:PrintViewModel">
     
+    
+    <!-- todo modify the view to use the new theme system -->
+    
+    
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="340"/>
