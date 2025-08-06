@@ -193,7 +193,7 @@ public partial class App : Application
             throw new InvalidOperationException("Failed to register MpcFillService", ex);
         }
 
-        services.AddSingleton<IThemeService,EnhancedThemeService>();
+        services.AddSingleton<IThemeService,UpdatedEnhancedThemeService>();
         
         // Register ViewModels
         services.AddTransient<MainViewModel>();
@@ -220,6 +220,7 @@ public partial class App : Application
                 var themeService = Services.GetRequiredService<IThemeService>();
                 var savedTheme = themeService.LoadThemePreference();
                 await themeService.ApplyThemeAsync(savedTheme);
+                logger.LogInformation("Theme applied successfully");
             }
             catch (Exception ex)
             {

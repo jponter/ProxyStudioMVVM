@@ -81,6 +81,17 @@
       <None Include="Backups\ModernDesignSystem.axaml" />
       <Compile Remove="Backups\MpcFillService.cs" />
       <None Include="Backups\MpcFillService.cs" />
+      <Compile Remove="Backups\ThemeEditorViewModel.cs" />
+      <None Include="Backups\ThemeEditorViewModel.cs" />
+      <AvaloniaXaml Remove="Backups\ThemeEditorView.axaml" />
+      <None Include="Backups\ThemeEditorView.axaml" />
+      <Compile Remove="Backups\ThemeEditorView.axaml.cs" />
+      <None Include="Backups\ThemeEditorView.axaml.cs">
+        <DependentUpon>ThemeEditorView.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </None>
+      <Compile Remove="Services\EnhancedThemeService.cs" />
+      <None Include="Services\EnhancedThemeService.cs" />
     </ItemGroup>
 
    

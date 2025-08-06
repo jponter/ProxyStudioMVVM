@@ -1,0 +1,42 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- DarkRed -->
+  <!-- Description: A custom theme created with ProxyStudio Theme Editor -->
+  <!-- Author: james -->
+  <!-- Version: 1.0.0 -->
+  <!-- Generated: 2025-08-06 10:17:44 -->
+
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <Color x:Key="PrimaryColor">#3498db</Color>
+          <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+          <Color x:Key="SecondaryColor">#ffa5a6</Color>
+          <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}"/>
+          <Color x:Key="SurfaceColor">#550000</Color>
+          <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+          <Color x:Key="BorderColor">#556983</Color>
+          <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+          <Color x:Key="SuccessColor">#27ae60</Color>
+          <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+          <Color x:Key="WarningColor">#f39c12</Color>
+          <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+          <Color x:Key="ErrorColor">#e74c3c</Color>
+          <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+          <Color x:Key="InfoColor">#3498db</Color>
+          <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}"/>
+          <Color x:Key="BackgroundColor">#330000</Color>
+          <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+          <Color x:Key="SurfaceElevatedColor">#440000</Color>
+          <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}"/>
+          <Color x:Key="TextPrimaryColor">#ffffff</Color>
+          <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+          <Color x:Key="TextSecondaryColor">#bdc3c7</Color>
+          <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Styles.Resources>
+</Styles>

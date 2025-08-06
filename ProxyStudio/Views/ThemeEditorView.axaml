@@ -1,500 +1,597 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+﻿<!-- Updated ThemeEditorView.axaml - Simplified 12-Color System -->
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
              x:Class="ProxyStudio.Views.ThemeEditorView"
              x:DataType="vm:ThemeEditorViewModel">
 
-    <Grid>
+    <Grid Background="{DynamicResource BackgroundBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="350"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         
-        <!-- Color Editor Panel -->
-        <Border Grid.Column="0" Classes="sidebar">
+        <!-- Simplified Color Editor Panel -->
+        <Border Grid.Column="0" 
+                Background="{DynamicResource SurfaceElevatedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0">
             <ScrollViewer>
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="16" Margin="16">
                     
                     <!-- Header -->
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="heading-medium" Text="Theme Editor"/>
-                        <TextBlock Classes="body-medium" Text="Create and customize your own themes"/>
+                        <TextBlock Classes="heading-medium" 
+                                 Text="Theme Editor"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Classes="body-medium" 
+                                 Text="Create custom themes with just 12 core colors"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                     
-                    <!-- Theme Name -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="caption" Text="THEME NAME"/>
-                            <TextBox Classes="modern"
-                                     Text="{Binding ThemeName}"
-                                     Watermark="Enter theme name..."/>
+                    <!-- Theme Metadata -->
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" 
+                                     Text="Theme Information"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="caption" 
+                                         Text="THEME NAME"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBox Text="{Binding ThemeName}"
+                                       Background="{DynamicResource SurfaceBrush}"
+                                       BorderBrush="{DynamicResource BorderBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Watermark="Enter theme name..."/>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="caption" 
+                                         Text="DESCRIPTION"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBox Text="{Binding ThemeDescription}"
+                                       Background="{DynamicResource SurfaceBrush}"
+                                       BorderBrush="{DynamicResource BorderBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Watermark="Describe your theme..."/>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="caption" 
+                                         Text="AUTHOR"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBox Text="{Binding ThemeAuthor}"
+                                       Background="{DynamicResource SurfaceBrush}"
+                                       BorderBrush="{DynamicResource BorderBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Watermark="Your name"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                     
                     <!-- Base Theme Selection -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="caption" Text="BASE THEME"/>
-                            <ComboBox Classes="modern"
-                                      ItemsSource="{Binding BaseThemes}"
-                                      SelectedItem="{Binding SelectedBaseTheme}"
-                                      DisplayMemberBinding="{Binding Name}"/>
-                            <TextBlock Classes="body-small" 
-                                      Text="Choose a base theme to start with"
-                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" 
+                                     Text="Base Theme"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="caption" 
+                                         Text="START WITH"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <ComboBox ItemsSource="{Binding BaseThemes}"
+                                        SelectedItem="{Binding SelectedBaseTheme}"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        DisplayMemberBinding="{Binding Name}"/>
+                            </StackPanel>
+                            
+                            <Button Classes="secondary" 
+                                    Content="Reset to Base Theme"
+                                    Background="{DynamicResource SecondaryBrush}"
+                                    Command="{Binding ResetToBaseCommand}"/>
                         </StackPanel>
                     </Border>
                     
-                    <!-- Color Categories -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-small" Text="Color Palette"/>
-                            
-                            <!-- Primary Colors -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="body-medium" Text="Primary Colors" FontWeight="SemiBold"/>
-                                <ItemsControl ItemsSource="{Binding PrimaryColors}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="120"/>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <TextBlock Grid.Column="0" 
-                                                          Classes="body-small" 
-                                                          Text="{Binding Name}"
-                                                          VerticalAlignment="Center"/>
-                                                          
-                                                <Border Grid.Column="1" 
-                                                        Width="40" Height="24"
-                                                        CornerRadius="4"
-                                                        Background="{Binding ColorBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
-                                                        BorderThickness="1"
-                                                        Margin="0,0,8,0"/>
-                                                        
-                                                <TextBox Grid.Column="2"
-                                                         Classes="modern"
-                                                         Text="{Binding HexValue}"
-                                                         FontFamily="Consolas"
-                                                         FontSize="12"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                            
-                            <!-- Background Colors -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="body-medium" Text="Background Colors" FontWeight="SemiBold"/>
-                                <ItemsControl ItemsSource="{Binding BackgroundColors}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="120"/>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <TextBlock Grid.Column="0" 
-                                                          Classes="body-small" 
-                                                          Text="{Binding Name}"
-                                                          VerticalAlignment="Center"/>
-                                                          
-                                                <Border Grid.Column="1" 
-                                                        Width="40" Height="24"
-                                                        CornerRadius="4"
-                                                        Background="{Binding ColorBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
-                                                        BorderThickness="1"
-                                                        Margin="0,0,8,0"/>
-                                                        
-                                                <TextBox Grid.Column="2"
-                                                         Classes="modern"
-                                                         Text="{Binding HexValue}"
-                                                         FontFamily="Consolas"
-                                                         FontSize="12"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                            
-                            <!-- Text Colors -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="body-medium" Text="Text Colors" FontWeight="SemiBold"/>
-                                <ItemsControl ItemsSource="{Binding TextColors}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="120"/>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <TextBlock Grid.Column="0" 
-                                                          Classes="body-small" 
-                                                          Text="{Binding Name}"
-                                                          VerticalAlignment="Center"/>
-                                                          
-                                                <Border Grid.Column="1" 
-                                                        Width="40" Height="24"
-                                                        CornerRadius="4"
-                                                        Background="{Binding ColorBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
-                                                        BorderThickness="1"
-                                                        Margin="0,0,8,0"/>
-                                                        
-                                                <TextBox Grid.Column="2"
-                                                         Classes="modern"
-                                                         Text="{Binding HexValue}"
-                                                         FontFamily="Consolas"
-                                                         FontSize="12"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                            
-                            <!-- Status Colors -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="body-medium" Text="Status Colors" FontWeight="SemiBold"/>
-                                <ItemsControl ItemsSource="{Binding StatusColors}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="120"/>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <TextBlock Grid.Column="0" 
-                                                          Classes="body-small" 
-                                                          Text="{Binding Name}"
-                                                          VerticalAlignment="Center"/>
-                                                          
-                                                <Border Grid.Column="1" 
-                                                        Width="40" Height="24"
-                                                        CornerRadius="4"
-                                                        Background="{Binding ColorBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
-                                                        BorderThickness="1"
-                                                        Margin="0,0,8,0"/>
-                                                        
-                                                <TextBox Grid.Column="2"
-                                                         Classes="modern"
-                                                         Text="{Binding HexValue}"
-                                                         FontFamily="Consolas"
-                                                         FontSize="12"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Actions -->
+                    <!-- Action Buttons -->
                     <StackPanel Spacing="8">
                         <Button Classes="primary"
-                                Content="🎨 Apply Preview"
-                                Command="{Binding ApplyPreviewCommand}"
-                                HorizontalAlignment="Stretch"/>
-                                
-                        <Button Classes="success"
-                                Content="💾 Save Theme"
+                                Content="Save Theme"
+                                Background="{DynamicResource PrimaryBrush}"
+                                Foreground="{DynamicResource TextOnPrimaryBrush}"
                                 Command="{Binding SaveThemeCommand}"
-                                HorizontalAlignment="Stretch"
                                 IsEnabled="{Binding CanSaveTheme}"/>
-                                
-                        <Button Classes="secondary"
-                                Content="🔄 Reset to Base"
-                                Command="{Binding ResetToBaseCommand}"
-                                HorizontalAlignment="Stretch"/>
-                                
-                        <Button Classes="secondary"
-                                Content="📂 Export Theme File"
-                                Command="{Binding ExportThemeCommand}"
-                                HorizontalAlignment="Stretch"/>
+                        
+                        <Button Content="Export Theme"
+                                Background="{DynamicResource SuccessBrush}"
+                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                Command="{Binding ExportThemeCommand}"/>
+                        
+                        <!-- Preview Controls -->
+                        <StackPanel Spacing="4">
+                            <Button Classes="secondary"
+                                    Content="Preview Theme"
+                                    Background="{DynamicResource InfoBrush}"
+                                    Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                    Command="{Binding PreviewThemeCommand}"
+                                    IsVisible="{Binding !IsPreviewActive}"/>
+                            
+                            <Button Content="Stop Preview"
+                                    Background="{DynamicResource WarningBrush}"
+                                    Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                    Command="{Binding StopPreviewCommand}"
+                                    IsVisible="{Binding IsPreviewActive}"/>
+                            
+                            <!-- Preview Status Indicator -->
+                            <Border Background="{DynamicResource InfoLightBrush}"
+                                    BorderBrush="{DynamicResource InfoBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8"
+                                    IsVisible="{Binding IsPreviewActive}">
+                                <StackPanel Spacing="4" Orientation="Horizontal">
+                                    <TextBlock Text="👁️" FontSize="14"/>
+                                    <TextBlock Classes="body-small"
+                                             Text="Preview Active"
+                                             Foreground="{DynamicResource InfoBrush}"
+                                             FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
                     
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-        
-        <!-- Live Preview Panel -->
-        <Border Grid.Column="1" Classes="card" Margin="24,20,24,20">
-            <ScrollViewer>
-                <StackPanel Spacing="24" Margin="20">
-                    
-                    <!-- Preview Header -->
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="heading-large" Text="Live Theme Preview"/>
-                        <TextBlock Classes="body-medium" 
-                                  Text="See how your theme looks with all ProxyStudio components"
-                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                    
-                    <!-- Typography Preview -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-medium" Text="Typography"/>
-                            
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="heading-large" Text="Heading Large - Main Titles"/>
-                                <TextBlock Classes="heading-medium" Text="Heading Medium - Section Headers"/>
-                                <TextBlock Classes="heading-small" Text="Heading Small - Subsection Headers"/>
-                                <TextBlock Classes="body-large" Text="Body Large - Important content"/>
-                                <TextBlock Classes="body-medium" Text="Body Medium - Regular content"/>
-                                <TextBlock Classes="body-small" Text="Body Small - Secondary information"/>
-                                <TextBlock Classes="caption" Text="Caption - Labels and metadata"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Button Preview -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-medium" Text="Buttons"/>
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Button Classes="primary" Content="Primary Button"/>
-                                <Button Classes="secondary" Content="Secondary Button"/>
-                                <Button Classes="success" Content="Success Button"/>
-                                <Button Classes="icon" Content="🎨"/>
-                            </StackPanel>
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Button Classes="primary" Content="Disabled Primary" IsEnabled="False"/>
-                                <Button Classes="secondary" Content="Disabled Secondary" IsEnabled="False"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Input Controls Preview -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-medium" Text="Input Controls"/>
-                            
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                
-                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,12,12">
-                                    <TextBlock Classes="caption" Text="TEXT INPUT"/>
-                                    <TextBox Classes="modern" 
-                                            Text="Sample text input"
-                                            Watermark="Enter text here..."/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="12,0,0,12">
-                                    <TextBlock Classes="caption" Text="COMBO BOX"/>
-                                    <ComboBox Classes="modern">
-                                        <ComboBoxItem Content="Option 1"/>
-                                        <ComboBoxItem Content="Option 2" IsSelected="True"/>
-                                        <ComboBoxItem Content="Option 3"/>
-                                    </ComboBox>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,12,12">
-                                    <TextBlock Classes="caption" Text="SLIDER"/>
-                                    <Slider Classes="modern" Value="65" Minimum="0" Maximum="100"/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="12,0,0,12">
-                                    <TextBlock Classes="caption" Text="PROGRESS BAR"/>
-                                    <ProgressBar Classes="modern-thick" Value="75" Minimum="0" Maximum="100"/>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="8" Margin="0,12,0,0">
-                                    <TextBlock Classes="caption" Text="CHECKBOXES"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <CheckBox Content="Checked option" IsChecked="True"/>
-                                        <CheckBox Content="Unchecked option" IsChecked="False"/>
-                                        <CheckBox Content="Disabled option" IsChecked="True" IsEnabled="False"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Card Styles Preview -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-medium" Text="Card Styles"/>
-                            
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <Border Grid.Column="0" Classes="card-compact" Margin="0,0,8,0">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Classes="body-medium" Text="Card Compact" FontWeight="SemiBold"/>
-                                        <TextBlock Classes="body-small" Text="Minimal padding and spacing"/>
-                                    </StackPanel>
-                                </Border>
-                                
-                                <Border Grid.Column="1" Classes="card" Margin="4,0">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Classes="body-medium" Text="Standard Card" FontWeight="SemiBold"/>
-                                        <TextBlock Classes="body-small" Text="Regular padding and spacing"/>
-                                    </StackPanel>
-                                </Border>
-                                
-                                <Border Grid.Column="2" Classes="card-elevated" Margin="8,0,0,0">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Classes="body-medium" Text="Card Elevated" FontWeight="SemiBold"/>
-                                        <TextBlock Classes="body-small" Text="Elevated with shadow"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Status Badges Preview -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-medium" Text="Status Badges"/>
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Border Classes="badge-success">
-                                    <TextBlock Classes="body-small" Text="Success" Foreground="White"/>
-                                </Border>
-                                <Border Classes="badge-error">
-                                    <TextBlock Classes="body-small" Text="Error" Foreground="White"/>
-                                </Border>
-                                <Border Classes="badge-warning">
-                                    <TextBlock Classes="body-small" Text="Warning" Foreground="White"/>
-                                </Border>
-                                <Border Classes="badge-info">
-                                    <TextBlock Classes="body-small" Text="Info" Foreground="White"/>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Highlight Cards Preview -->
-                    <Border Classes="card highlight-primary">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="heading-small" Text="Primary Highlight Card"/>
-                            <TextBlock Classes="body-medium" Text="This card uses the primary highlight styling"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border Classes="card highlight-success">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="heading-small" Text="Success Highlight Card"/>
-                            <TextBlock Classes="body-medium" Text="This card uses the success highlight styling"/>
-                        </StackPanel>
-                    </Border>
-                    
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-        
-        <!-- Actions & Export Panel -->
-        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0">
-            <ScrollViewer>
-                <StackPanel Spacing="16">
-                    
-                    <!-- Export Options -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="heading-small" Text="Export Options"/>
-                            
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="caption" Text="THEME TYPE"/>
-                                <ComboBox Classes="modern" SelectedIndex="0">
-                                    <ComboBoxItem Content="Replace Gaming Theme"/>
-                                    <ComboBoxItem Content="Replace High Contrast Theme"/>
-                                    <ComboBoxItem Content="Replace Minimal Theme"/>
-                                    <ComboBoxItem Content="Create New Theme"/>
-                                </ComboBox>
-                            </StackPanel>
-                            
-                            <CheckBox Content="Include in theme selector"
-                                     IsChecked="True"/>
-                                     
-                            <CheckBox Content="Set as default theme"
-                                     IsChecked="False"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Theme Info -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="heading-small" Text="Theme Information"/>
-                            
-                            <StackPanel Spacing="8">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="DESCRIPTION"/>
-                                    <TextBox Classes="modern"
-                                            Text="{Binding ThemeDescription}"
-                                            AcceptsReturn="True"
-                                            Height="60"
-                                            TextWrapping="Wrap"
-                                            Watermark="Describe your theme..."/>
-                                </StackPanel>
-                                
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="AUTHOR"/>
-                                    <TextBox Classes="modern"
-                                            Text="{Binding ThemeAuthor}"
-                                            Watermark="Your name"/>
-                                </StackPanel>
-                                
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="caption" Text="VERSION"/>
-                                    <TextBox Classes="modern"
-                                            Text="{Binding ThemeVersion}"
-                                            Watermark="1.0.0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Current Status -->
-                    <Border Classes="card highlight-primary">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="heading-small" Text="Current Status"/>
+                    <!-- Status -->
+                    <Border Background="{DynamicResource InfoLightBrush}"
+                            BorderBrush="{DynamicResource InfoBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12">
+                        <StackPanel Spacing="4">
                             <TextBlock Classes="body-small" 
-                                      Text="{Binding StatusMessage}"
-                                      TextWrapping="Wrap"/>
+                                     Text="Status"
+                                     Foreground="{DynamicResource InfoBrush}"
+                                     FontWeight="SemiBold"/>
+                            <TextBlock Classes="body-small" 
+                                     Text="{Binding StatusMessage}"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
                     
-                    <!-- Help -->
-                    <Border Classes="card">
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+        <!-- Simplified Color Sections -->
+        <ScrollViewer Grid.Column="1" Background="{DynamicResource BackgroundBrush}">
+            <StackPanel Spacing="24" Margin="24">
+                
+                <!-- Foundation Colors Section -->
+                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="heading-medium" 
+                                     Text="🎨 Foundation Colors"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Classes="body-medium" 
+                                     Text="Core brand colors that define your theme's personality"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding FoundationColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Margin="4"
+                                            Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <!-- Color Preview -->
+                                            <Border Height="60"
+                                                    Background="{Binding ColorBrush}"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"/>
+                                            
+                                            <!-- Color Name -->
+                                            <TextBlock Classes="body-medium" 
+                                                     Text="{Binding Name}"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                                     FontWeight="SemiBold"
+                                                     TextAlignment="Center"/>
+                                            
+                                            <!-- Color Input -->
+                                            <TextBox Text="{Binding HexValue}"
+                                                   Background="{DynamicResource SurfaceBrush}"
+                                                   BorderBrush="{DynamicResource BorderBrush}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   FontFamily="Consolas, Monaco, monospace"
+                                                   TextAlignment="Center"/>
+                                            
+                                            <!-- Description -->
+                                            <TextBlock Classes="body-small" 
+                                                     Text="{Binding Description}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                                     TextWrapping="Wrap"
+                                                     TextAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Semantic Colors Section -->
+                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="heading-medium" 
+                                     Text="📊 Semantic Colors"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Classes="body-medium" 
+                                     Text="Colors with specific meanings for consistent user experience"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding SemanticColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Margin="4"
+                                            Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <Border Height="60"
+                                                    Background="{Binding ColorBrush}"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"/>
+                                            
+                                            <TextBlock Classes="body-medium" 
+                                                     Text="{Binding Name}"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                                     FontWeight="SemiBold"
+                                                     TextAlignment="Center"/>
+                                            
+                                            <TextBox Text="{Binding HexValue}"
+                                                   Background="{DynamicResource SurfaceBrush}"
+                                                   BorderBrush="{DynamicResource BorderBrush}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   FontFamily="Consolas, Monaco, monospace"
+                                                   TextAlignment="Center"/>
+                                            
+                                            <TextBlock Classes="body-small" 
+                                                     Text="{Binding Description}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                                     TextWrapping="Wrap"
+                                                     TextAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Surface Colors Section -->
+                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="heading-medium" 
+                                     Text="🏢 Surface Colors"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Classes="body-medium" 
+                                     Text="Background colors that create visual depth and hierarchy"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding SurfaceColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Margin="4"
+                                            Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <Border Height="60"
+                                                    Background="{Binding ColorBrush}"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"/>
+                                            
+                                            <TextBlock Classes="body-medium" 
+                                                     Text="{Binding Name}"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                                     FontWeight="SemiBold"
+                                                     TextAlignment="Center"/>
+                                            
+                                            <TextBox Text="{Binding HexValue}"
+                                                   Background="{DynamicResource SurfaceBrush}"
+                                                   BorderBrush="{DynamicResource BorderBrush}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   FontFamily="Consolas, Monaco, monospace"
+                                                   TextAlignment="Center"/>
+                                            
+                                            <TextBlock Classes="body-small" 
+                                                     Text="{Binding Description}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                                     TextWrapping="Wrap"
+                                                     TextAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Text Colors Section -->
+                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="heading-medium" 
+                                     Text="📝 Text Colors"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Classes="body-medium" 
+                                     Text="Typography colors for readable and accessible text"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        
+                        <ItemsControl ItemsSource="{Binding TextColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Margin="4"
+                                            Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <Border Height="60"
+                                                    Background="{Binding ColorBrush}"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1"/>
+                                            
+                                            <TextBlock Classes="body-medium" 
+                                                     Text="{Binding Name}"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                                     FontWeight="SemiBold"
+                                                     TextAlignment="Center"/>
+                                            
+                                            <TextBox Text="{Binding HexValue}"
+                                                   Background="{DynamicResource SurfaceBrush}"
+                                                   BorderBrush="{DynamicResource BorderBrush}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   FontFamily="Consolas, Monaco, monospace"
+                                                   TextAlignment="Center"/>
+                                            
+                                            <TextBlock Classes="body-small" 
+                                                     Text="{Binding Description}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                                     TextWrapping="Wrap"
+                                                     TextAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Preview and Help Panel -->
+        <Border Grid.Column="2" 
+                Background="{DynamicResource SurfaceElevatedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1,0,0,0">
+            <ScrollViewer>
+                <StackPanel Spacing="16" Margin="16">
+                    
+                    <!-- Live Preview -->
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" 
+                                     Text="Live Preview"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            
+                            <!-- Sample UI Elements -->
+                            <StackPanel Spacing="12">
+                                <!-- Typography Preview -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="heading-medium" 
+                                             Text="Sample Heading"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Classes="body-medium" 
+                                             Text="This is body text showing primary text color."
+                                             Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock Classes="body-small" 
+                                             Text="This is secondary text for descriptions."
+                                             Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
+                                
+                                <!-- Button Preview -->
+                                <StackPanel Spacing="8">
+                                    <TextBlock Classes="body-medium" 
+                                             Text="Buttons:"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Primary"
+                                                Background="{DynamicResource PrimaryBrush}"
+                                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                                Padding="12,6"/>
+                                        <Button Content="Secondary"
+                                                Background="{DynamicResource SecondaryBrush}"
+                                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                                Padding="12,6"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                
+                                <!-- Status Preview -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body-medium" 
+                                             Text="Status Colors:"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    
+                                    <Border Background="{DynamicResource SuccessLightBrush}"
+                                            BorderBrush="{DynamicResource SuccessBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="6">
+                                        <TextBlock Classes="body-small" 
+                                                 Text="✓ Success message"
+                                                 Foreground="{DynamicResource SuccessBrush}"/>
+                                    </Border>
+                                    
+                                    <Border Background="{DynamicResource ErrorLightBrush}"
+                                            BorderBrush="{DynamicResource ErrorBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="6">
+                                        <TextBlock Classes="body-small" 
+                                                 Text="✕ Error message"
+                                                 Foreground="{DynamicResource ErrorBrush}"/>
+                                    </Border>
+                                    
+                                    <Border Background="{DynamicResource WarningLightBrush}"
+                                            BorderBrush="{DynamicResource WarningBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="6">
+                                        <TextBlock Classes="body-small" 
+                                                 Text="⚠ Warning message"
+                                                 Foreground="{DynamicResource WarningBrush}"/>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Quick Tips -->
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="heading-small" Text="Quick Help"/>
+                            <TextBlock Classes="heading-small" 
+                                     Text="💡 Quick Tips"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
                             
                             <StackPanel Spacing="6">
-                                <TextBlock Classes="body-small" Text="💡 Tips:" FontWeight="SemiBold"/>
-                                <TextBlock Classes="caption" Text="• Use hex colors (#RRGGBB format)"/>
-                                <TextBlock Classes="caption" Text="• Preview updates automatically"/>
-                                <TextBlock Classes="caption" Text="• Save creates .axaml theme file"/>
-                                <TextBlock Classes="caption" Text="• Export replaces existing themes"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Only 12 colors to customize instead of 39+"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Hover states are auto-generated"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Light variants created automatically"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Supports both Dark and Light themes"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Use hex colors (#RRGGBB format)"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Auto-Generated Colors Info -->
+                    <Border Background="{DynamicResource InfoLightBrush}"
+                            BorderBrush="{DynamicResource InfoBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="heading-small" 
+                                     Text="🤖 Auto-Generated"
+                                     Foreground="{DynamicResource InfoBrush}"/>
+                            
+                            <TextBlock Classes="body-small" 
+                                     Text="These colors are automatically created from your 12 core colors:"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     TextWrapping="Wrap"/>
+                            
+                            <StackPanel Spacing="2">
+                                <TextBlock Classes="body-small" 
+                                         Text="• Hover states (15% darker)"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Light backgrounds for status"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Contrasting text colors"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="body-small" 
+                                         Text="• Surface variations"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

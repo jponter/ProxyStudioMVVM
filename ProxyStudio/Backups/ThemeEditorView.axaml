@@ -1,0 +1,507 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="ProxyStudio.Views.ThemeEditorView"
+             x:DataType="vm:ThemeEditorViewModel">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Color Editor Panel -->
+        <Border Grid.Column="0" Classes="sidebar">
+            <ScrollViewer>
+                <StackPanel Spacing="16">
+                    
+                    <!-- Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading-medium" Text="Theme Editor"/>
+                        <TextBlock Classes="body-medium" Text="Create and customize your own themes"/>
+                    </StackPanel>
+                    
+                    <!-- Theme Name -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="caption" Text="THEME NAME"/>
+                            <TextBox Classes="modern"
+                                     Text="{Binding ThemeName}"
+                                     Watermark="Enter theme name..."/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Base Theme Selection -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="caption" Text="BASE THEME"/>
+                            <ComboBox Classes="modern"
+                                      ItemsSource="{Binding BaseThemes}"
+                                      SelectedItem="{Binding SelectedBaseTheme}"
+                                      DisplayMemberBinding="{Binding Name}"/>
+                            <TextBlock Classes="body-small" 
+                                      Text="Choose a base theme to start with"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Color Categories -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Color Palette"/>
+                            
+                            <!-- Primary Colors -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-medium" Text="Primary Colors" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding PrimaryColors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" 
+                                                          Classes="body-small" 
+                                                          Text="{Binding Name}"
+                                                          VerticalAlignment="Center"/>
+                                                          
+                                                <Border Grid.Column="1" 
+                                                        Width="40" Height="24"
+                                                        CornerRadius="4"
+                                                        Background="{Binding ColorBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="0,0,8,0"/>
+                                                        
+                                                <TextBox Grid.Column="2"
+                                                         Classes="modern"
+                                                         Text="{Binding HexValue}"
+                                                         FontFamily="Consolas"
+                                                         FontSize="12"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            
+                            <!-- Background Colors -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-medium" Text="Background Colors" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding BackgroundColors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" 
+                                                          Classes="body-small" 
+                                                          Text="{Binding Name}"
+                                                          VerticalAlignment="Center"/>
+                                                          
+                                                <Border Grid.Column="1" 
+                                                        Width="40" Height="24"
+                                                        CornerRadius="4"
+                                                        Background="{Binding ColorBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="0,0,8,0"/>
+                                                        
+                                                <TextBox Grid.Column="2"
+                                                         Classes="modern"
+                                                         Text="{Binding HexValue}"
+                                                         FontFamily="Consolas"
+                                                         FontSize="12"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            
+                            <!-- Text Colors -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-medium" Text="Text Colors" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding TextColors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" 
+                                                          Classes="body-small" 
+                                                          Text="{Binding Name}"
+                                                          VerticalAlignment="Center"/>
+                                                          
+                                                <Border Grid.Column="1" 
+                                                        Width="40" Height="24"
+                                                        CornerRadius="4"
+                                                        Background="{Binding ColorBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="0,0,8,0"/>
+                                                        
+                                                <TextBox Grid.Column="2"
+                                                         Classes="modern"
+                                                         Text="{Binding HexValue}"
+                                                         FontFamily="Consolas"
+                                                         FontSize="12"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            
+                            <!-- Status Colors -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-medium" Text="Status Colors" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding StatusColors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <TextBlock Grid.Column="0" 
+                                                          Classes="body-small" 
+                                                          Text="{Binding Name}"
+                                                          VerticalAlignment="Center"/>
+                                                          
+                                                <Border Grid.Column="1" 
+                                                        Width="40" Height="24"
+                                                        CornerRadius="4"
+                                                        Background="{Binding ColorBrush}"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                        BorderThickness="1"
+                                                        Margin="0,0,8,0"/>
+                                                        
+                                                <TextBox Grid.Column="2"
+                                                         Classes="modern"
+                                                         Text="{Binding HexValue}"
+                                                         FontFamily="Consolas"
+                                                         FontSize="12"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Actions -->
+                    <StackPanel Spacing="8">
+                        <Button Classes="primary"
+                                Content="🎨 Apply Preview"
+                                Command="{Binding ApplyPreviewCommand}"
+                                HorizontalAlignment="Stretch"/>
+                                
+                        <Button Classes="success"
+                                Content="💾 Save Theme"
+                                Command="{Binding SaveThemeCommand}"
+                                HorizontalAlignment="Stretch"
+                                IsEnabled="{Binding CanSaveTheme}"/>
+                                
+                        <Button Classes="secondary"
+                                Content="🔄 Reset to Base"
+                                Command="{Binding ResetToBaseCommand}"
+                                HorizontalAlignment="Stretch"/>
+                                
+                        <Button Classes="secondary"
+                                Content="📂 Export Theme File"
+                                Command="{Binding ExportThemeCommand}"
+                                HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+        <!-- Live Preview Panel -->
+        <Border Grid.Column="1" Classes="card" Margin="24,20,24,20">
+            <ScrollViewer>
+                <StackPanel Spacing="24" Margin="20">
+                    
+                    <!-- Preview Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading-large" Text="Live Theme Preview"/>
+                        <TextBlock Classes="body-medium" 
+                                  Text="See how your theme looks with all ProxyStudio components"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Typography Preview -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-medium" Text="Typography"/>
+                            
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="heading-large" Text="Heading Large - Main Titles"/>
+                                <TextBlock Classes="heading-medium" Text="Heading Medium - Section Headers"/>
+                                <TextBlock Classes="heading-small" Text="Heading Small - Subsection Headers"/>
+                                <TextBlock Classes="body-large" Text="Body Large - Important content"/>
+                                <TextBlock Classes="body-medium" Text="Body Medium - Regular content"/>
+                                <TextBlock Classes="body-small" Text="Body Small - Secondary information"/>
+                                <TextBlock Classes="caption" Text="Caption - Labels and metadata"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Button Preview -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-medium" Text="Buttons"/>
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button Classes="primary" Content="Primary Button"/>
+                                <Button Classes="secondary" Content="Secondary Button"/>
+                                <Button Classes="success" Content="Success Button"/>
+                                <Button Classes="icon" Content="🎨"/>
+                            </StackPanel>
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button Classes="primary" Content="Disabled Primary" IsEnabled="False"/>
+                                <Button Classes="secondary" Content="Disabled Secondary" IsEnabled="False"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Input Controls Preview -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-medium" Text="Input Controls"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,12,12">
+                                    <TextBlock Classes="caption" Text="TEXT INPUT"/>
+                                    <TextBox Classes="modern" 
+                                            Text="Sample text input"
+                                            Watermark="Enter text here..."/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="12,0,0,12">
+                                    <TextBlock Classes="caption" Text="COMBO BOX"/>
+                                    <ComboBox Classes="modern">
+                                        <ComboBoxItem Content="Option 1"/>
+                                        <ComboBoxItem Content="Option 2" IsSelected="True"/>
+                                        <ComboBoxItem Content="Option 3"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4" Margin="0,0,12,12">
+                                    <TextBlock Classes="caption" Text="SLIDER"/>
+                                    <Slider Classes="modern" Value="65" Minimum="0" Maximum="100"/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="12,0,0,12">
+                                    <TextBlock Classes="caption" Text="PROGRESS BAR"/>
+                                    <ProgressBar Classes="modern-thick" Value="75" Minimum="0" Maximum="100"/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="8" Margin="0,12,0,0">
+                                    <TextBlock Classes="caption" Text="CHECKBOXES"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <CheckBox Content="Checked option" IsChecked="True"/>
+                                        <CheckBox Content="Unchecked option" IsChecked="False"/>
+                                        <CheckBox Content="Disabled option" IsChecked="True" IsEnabled="False"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Card Styles Preview -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-medium" Text="Card Styles"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Border Grid.Column="0" Classes="card-compact" Margin="0,0,8,0">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="body-medium" Text="Card Compact" FontWeight="SemiBold"/>
+                                        <TextBlock Classes="body-small" Text="Minimal padding and spacing"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <Border Grid.Column="1" Classes="card" Margin="4,0">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="body-medium" Text="Standard Card" FontWeight="SemiBold"/>
+                                        <TextBlock Classes="body-small" Text="Regular padding and spacing"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <Border Grid.Column="2" Classes="card-elevated" Margin="8,0,0,0">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="body-medium" Text="Card Elevated" FontWeight="SemiBold"/>
+                                        <TextBlock Classes="body-small" Text="Elevated with shadow"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Status Badges Preview -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-medium" Text="Status Badges"/>
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Border Classes="badge-success">
+                                    <TextBlock Classes="body-small" Text="Success" Foreground="White"/>
+                                </Border>
+                                <Border Classes="badge-error">
+                                    <TextBlock Classes="body-small" Text="Error" Foreground="White"/>
+                                </Border>
+                                <Border Classes="badge-warning">
+                                    <TextBlock Classes="body-small" Text="Warning" Foreground="White"/>
+                                </Border>
+                                <Border Classes="badge-info">
+                                    <TextBlock Classes="body-small" Text="Info" Foreground="White"/>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Highlight Cards Preview -->
+                    <Border Classes="card highlight-primary">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="heading-small" Text="Primary Highlight Card"/>
+                            <TextBlock Classes="body-medium" Text="This card uses the primary highlight styling"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Classes="card highlight-success">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="heading-small" Text="Success Highlight Card"/>
+                            <TextBlock Classes="body-medium" Text="This card uses the success highlight styling"/>
+                        </StackPanel>
+                    </Border>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+        <!-- Actions & Export Panel -->
+        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0">
+            <ScrollViewer>
+                <StackPanel Spacing="16">
+                    
+                    <!-- Export Options -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" Text="Export Options"/>
+                            
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="caption" Text="THEME TYPE"/>
+                                <ComboBox Classes="modern" SelectedIndex="0">
+                                    <ComboBoxItem Content="Replace Gaming Theme"/>
+                                    <ComboBoxItem Content="Replace High Contrast Theme"/>
+                                    <ComboBoxItem Content="Replace Minimal Theme"/>
+                                    <ComboBoxItem Content="Create New Theme"/>
+                                </ComboBox>
+                            </StackPanel>
+                            
+                            <CheckBox Content="Include in theme selector"
+                                     IsChecked="True"/>
+                                     
+                            <CheckBox Content="Set as default theme"
+                                     IsChecked="False"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Theme Info -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" Text="Theme Information"/>
+                            
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="DESCRIPTION"/>
+                                    <TextBox Classes="modern"
+                                            Text="{Binding ThemeDescription}"
+                                            AcceptsReturn="True"
+                                            Height="60"
+                                            TextWrapping="Wrap"
+                                            Watermark="Describe your theme..."/>
+                                </StackPanel>
+                                
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="AUTHOR"/>
+                                    <TextBox Classes="modern"
+                                            Text="{Binding ThemeAuthor}"
+                                            Watermark="Your name"/>
+                                </StackPanel>
+                                
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="VERSION"/>
+                                    <TextBox Classes="modern"
+                                            Text="{Binding ThemeVersion}"
+                                            Watermark="1.0.0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Current Status -->
+                    <Border Classes="card highlight-primary">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="heading-small" Text="Current Status"/>
+                            <TextBlock Classes="body-small" 
+                                      Text="{Binding StatusMessage}"
+                                      TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Help -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" Text="Quick Help"/>
+                            
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="body-small" Text="💡 Tips:" FontWeight="SemiBold"/>
+                                <TextBlock Classes="caption" Text="• Use hex colors (#RRGGBB format)"/>
+                                <TextBlock Classes="caption" Text="• Preview updates automatically"/>
+                                <TextBlock Classes="caption" Text="• Save creates .axaml theme file"/>
+                                <TextBlock Classes="caption" Text="• Export replaces existing themes"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+    </Grid>
+</UserControl>

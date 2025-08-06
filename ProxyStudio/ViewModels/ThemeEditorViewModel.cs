@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Updated ThemeEditorViewModel.cs - Simplified Theme System
+// This replaces the existing complex 39+ color system with 12 core colors
+
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -15,7 +18,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Services;
-using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Threading;
 
@@ -42,7 +44,10 @@ public partial class ColorProperty : ObservableObject
     partial void OnHexValueChanged(string value)
     {
         // Validate hex color format
-        if (IsValidHexColor(value)) OnPropertyChanged(nameof(ColorBrush));
+        if (IsValidHexColor(value)) 
+        {
+            OnPropertyChanged(nameof(ColorBrush));
+        }
     }
 
     private static bool IsValidHexColor(string hex)
@@ -58,7 +63,7 @@ public partial class ColorProperty : ObservableObject
 }
 
 /// <summary>
-/// ViewModel for the Theme Editor that allows users to create and customize themes
+/// Updated ThemeEditorViewModel using simplified 12-color system
 /// </summary>
 public partial class ThemeEditorViewModel : ViewModelBase
 {
@@ -66,7 +71,8 @@ public partial class ThemeEditorViewModel : ViewModelBase
     private readonly IConfigManager _configManager;
     private readonly ILogger<ThemeEditorViewModel> _logger;
     private readonly IErrorHandlingService _errorHandler;
-    private readonly List<IStyle> _currentPreviewStyles = new List<IStyle>();
+    private ThemeType? _originalThemeBeforePreview;
+    private Dictionary<string, object>? _originalResources; // Store original resources for restore
 
     [ObservableProperty] private string _themeName = "My Custom Theme";
     [ObservableProperty] private string _themeDescription = "A custom theme created with ProxyStudio Theme Editor";
@@ -77,278 +83,98 @@ public partial class ThemeEditorViewModel : ViewModelBase
     [ObservableProperty] private bool _isPreviewActive = false;
     [ObservableProperty] private ThemeDefinition? _selectedBaseTheme;
 
-    public ObservableCollection<ThemeDefinition> BaseThemes { get; }
-    public ObservableCollection<ColorProperty> PrimaryColors { get; }
-    public ObservableCollection<ColorProperty> BackgroundColors { get; }
-    public ObservableCollection<ColorProperty> TextColors { get; }
-    public ObservableCollection<ColorProperty> StatusColors { get; }
+    // SIMPLIFIED COLOR COLLECTIONS (12 total instead of 39+)
+    public ObservableCollection<ColorProperty> FoundationColors { get; } = new();
+    public ObservableCollection<ColorProperty> SemanticColors { get; } = new();
+    public ObservableCollection<ColorProperty> SurfaceColors { get; } = new();
+    public ObservableCollection<ColorProperty> TextColors { get; } = new();
 
-    public ThemeEditorViewModel(IThemeService themeService, IConfigManager configManager,
-        ILogger<ThemeEditorViewModel> logger, IErrorHandlingService errorHandler)
+    public IReadOnlyList<ThemeDefinition> BaseThemes => _themeService.AvailableThemes;
+
+    // Commands
+    [RelayCommand] private async Task SaveTheme() => await SaveThemeAsync();
+    [RelayCommand] private async Task ExportTheme() => await ExportThemeAsync();
+    [RelayCommand] private void ResetToBase() => ResetToBaseTheme();
+    [RelayCommand] private async Task PreviewTheme() => await PreviewCurrentThemeAsync();
+    [RelayCommand] private async Task StopPreview() => await StopPreviewAsync();
+
+    public ThemeEditorViewModel(
+        IThemeService themeService,
+        IConfigManager configManager,
+        ILogger<ThemeEditorViewModel> logger,
+        IErrorHandlingService errorHandler)
     {
         _themeService = themeService;
         _configManager = configManager;
         _logger = logger;
         _errorHandler = errorHandler;
 
-        // Initialize base themes
-        BaseThemes = new ObservableCollection<ThemeDefinition>(_themeService.AvailableThemes);
+        InitializeSimplifiedColors();
+        SetupColorChangeHandlers();
 
-        // Initialize color properties FIRST
-        PrimaryColors = new ObservableCollection<ColorProperty>();
-        BackgroundColors = new ObservableCollection<ColorProperty>();
-        TextColors = new ObservableCollection<ColorProperty>();
-        StatusColors = new ObservableCollection<ColorProperty>();
-
-        InitializeColorProperties();
-
-        // Subscribe to property changes AFTER initialization
-        foreach (var colorCollection in new[] { PrimaryColors, BackgroundColors, TextColors, StatusColors })
-        foreach (var color in colorCollection)
-            color.PropertyChanged += OnColorPropertyChanged;
-
-        // Set the default base theme AFTER collections are initialized
-        SelectedBaseTheme = BaseThemes.FirstOrDefault(t => t.Type == ThemeType.DarkProfessional);
-    }
-
-    private void InitializeColorProperties()
-    {
-        // Primary Colors
-        PrimaryColors.Add(new ColorProperty("Primary", "#3498db", "Main brand color"));
-        PrimaryColors.Add(new ColorProperty("Primary Hover", "#2980b9", "Primary color on hover"));
-        PrimaryColors.Add(new ColorProperty("Secondary", "#95a5a6", "Secondary accent color"));
-        PrimaryColors.Add(new ColorProperty("Secondary Hover", "#7f8c8d", "Secondary color on hover"));
-
-        // Background Colors  
-        BackgroundColors.Add(new ColorProperty("Background Primary", "#2c3e50", "Main background"));
-        BackgroundColors.Add(new ColorProperty("Background Secondary", "#34495e", "Secondary background"));
-        BackgroundColors.Add(new ColorProperty("Background Tertiary", "#3c4f66", "Tertiary background"));
-        BackgroundColors.Add(new ColorProperty("Card Background", "#ffffff", "Card background"));
-        BackgroundColors.Add(new ColorProperty("Surface", "#f8f9fa", "Surface color"));
-        
-        // Background Fine-Tuning
-        BackgroundColors.Add(new ColorProperty("Accent Background", "#e3f2fd", "Accent areas and highlights"));
-        BackgroundColors.Add(new ColorProperty("Hover Background", "#f5f5f5", "Button and item hover states")); 
-        BackgroundColors.Add(new ColorProperty("Active Background", "#e0e0e0", "Active/pressed states"));
-        BackgroundColors.Add(new ColorProperty("Modal Background", "#ffffff", "Modal dialog backgrounds"));
-        BackgroundColors.Add(new ColorProperty("Overlay Background", "#000000", "Semi-transparent overlays"));
-        
-        // NEW: Fine-tuning colors for specific areas
-        BackgroundColors.Add(new ColorProperty("Preview Background", "#f8f9fa", "PDF preview area background"));
-        BackgroundColors.Add(new ColorProperty("Border", "#dee2e6", "Border and separator color"));
-        BackgroundColors.Add(new ColorProperty("Panel Background", "#ffffff", "Side panel backgrounds"));
-        BackgroundColors.Add(new ColorProperty("Content Area", "#ffffff", "Main content area background"));
-        BackgroundColors.Add(new ColorProperty("Header Background", "#f8f9fa", "Header and toolbar backgrounds"));
-
-        // Text Colors
-        TextColors.Add(new ColorProperty("Text Primary", "#2c3e50", "Primary text color"));
-        TextColors.Add(new ColorProperty("Text Secondary", "#7f8c8d", "Secondary text color"));
-        TextColors.Add(new ColorProperty("Text Tertiary", "#bdc3c7", "Tertiary text color"));
-        TextColors.Add(new ColorProperty("Text On Primary", "#ffffff", "Text on primary background"));
-        
-        // Text Fine-Tuning
-        TextColors.Add(new ColorProperty("Caption Text", "#757575", "Captions and metadata"));
-        TextColors.Add(new ColorProperty("Disabled Text", "#bdbdbd", "Disabled text and placeholders"));
-        TextColors.Add(new ColorProperty("Inverse Text", "#ffffff", "Text on dark backgrounds"));
-        
-        // NEW: Fine-tuning text colors
-        TextColors.Add(new ColorProperty("Text Muted", "#6c757d", "Muted text for hints and placeholders"));
-        TextColors.Add(new ColorProperty("Text Link", "#007bff", "Link text color"));
-
-        // Status Colors
-        StatusColors.Add(new ColorProperty("Success", "#27ae60", "Success/positive states"));
-        StatusColors.Add(new ColorProperty("Success Hover", "#229954", "Success color on hover"));
-        StatusColors.Add(new ColorProperty("Warning", "#f39c12", "Warning states"));
-        StatusColors.Add(new ColorProperty("Warning Hover", "#e67e22", "Warning color on hover"));
-        StatusColors.Add(new ColorProperty("Error", "#e74c3c", "Error/danger states"));
-        StatusColors.Add(new ColorProperty("Error Hover", "#c0392b", "Error color on hover"));
-        StatusColors.Add(new ColorProperty("Info", "#3498db", "Info states"));
-        StatusColors.Add(new ColorProperty("Info Hover", "#2980b9", "Info color on hover"));
-        
-        // Status Fine-Tuning (based on your ErrorHandlingService)
-        StatusColors.Add(new ColorProperty("Info Light", "#e3f2fd", "Light info backgrounds"));
-        StatusColors.Add(new ColorProperty("Success Light", "#e8f5e8", "Light success backgrounds"));
-        StatusColors.Add(new ColorProperty("Warning Light", "#fff8e1", "Light warning backgrounds"));
-        StatusColors.Add(new ColorProperty("Error Light", "#ffebee", "Light error backgrounds"));
-        
-        // UI Element Colors
-        BackgroundColors.Add(new ColorProperty("Separator", "#e0e0e0", "Lines and separators"));
-        BackgroundColors.Add(new ColorProperty("Input Background", "#fafafa", "Form input backgrounds"));
-        BackgroundColors.Add(new ColorProperty("Button Shadow", "#000000", "Button drop shadows"));
-    }
-
-    private void OnColorPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(ColorProperty.HexValue))
+        _selectedBaseTheme = BaseThemes.FirstOrDefault(t => t.Type == ThemeType.DarkProfessional);
+        if (_selectedBaseTheme != null)
         {
-            CanSaveTheme = true;
-            StatusMessage = "Theme modified - click 'Apply Preview' to see changes";
+            ResetToBaseTheme();
         }
     }
 
-    [RelayCommand]
-    private async Task ApplyPreviewAsync()
+    private void InitializeSimplifiedColors()
     {
-        try
-        {
-            StatusMessage = "Applying preview theme...";
+        FoundationColors.Add(new ColorProperty("Primary", "#3498db", "Main brand color for primary actions and highlights"));
+        FoundationColors.Add(new ColorProperty("Secondary", "#95a5a6", "Secondary accent color for supporting elements"));
+        FoundationColors.Add(new ColorProperty("Surface", "#2c3e50", "Base surface color for backgrounds and cards"));
+        FoundationColors.Add(new ColorProperty("Border", "#556983", "Border and separator color"));
 
-            // Apply the custom theme directly to the application
-            await ApplyCustomThemeToApplicationAsync();
+        SemanticColors.Add(new ColorProperty("Success", "#27ae60", "Success states, confirmations, and positive actions"));
+        SemanticColors.Add(new ColorProperty("Warning", "#f39c12", "Warning states, cautions, and important notices"));
+        SemanticColors.Add(new ColorProperty("Error", "#e74c3c", "Error states, failures, and destructive actions"));
+        SemanticColors.Add(new ColorProperty("Info", "#3498db", "Informational messages, hints, and neutral notices"));
 
-            IsPreviewActive = true;
-            StatusMessage = "Preview applied successfully";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to apply theme preview");
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to apply theme preview", "Theme Editor");
-            StatusMessage = "Failed to apply preview";
-        }
+        SurfaceColors.Add(new ColorProperty("Background", "#2c3e50", "Main application background color"));
+        SurfaceColors.Add(new ColorProperty("Surface Elevated", "#34495e", "Elevated surfaces like cards, modals, and panels"));
+
+        TextColors.Add(new ColorProperty("Text Primary", "#ffffff", "Primary text color for headings and important content"));
+        TextColors.Add(new ColorProperty("Text Secondary", "#bdc3c7", "Secondary text color for descriptions and labels"));
     }
 
-    [RelayCommand]
-    private async Task ClearPreviewAsync()
+    private void SetupColorChangeHandlers()
     {
-        try
+        foreach (var color in FoundationColors.Concat(SemanticColors).Concat(SurfaceColors).Concat(TextColors))
         {
-            StatusMessage = "Clearing preview theme...";
-
-            // Remove current preview styles and restore original theme
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                var app = Avalonia.Application.Current;
-                if (app?.Styles == null) return;
-
-                // Remove all preview styles
-                foreach (var style in _currentPreviewStyles)
+            color.PropertyChanged += async (s, e) => {
+                if (e.PropertyName == nameof(ColorProperty.HexValue))
                 {
-                    app.Styles.Remove(style);
-                }
-                _currentPreviewStyles.Clear();
+                    CanSaveTheme = true;
+                    StatusMessage = "Theme modified - ready to save";
 
-                // Restore the saved theme
-                var savedTheme = _themeService.LoadThemePreference();
-                _ = Task.Run(async () => await _themeService.ApplyThemeAsync(savedTheme));
-            });
-
-            IsPreviewActive = false;
-            StatusMessage = "Preview cleared";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to clear theme preview");
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to clear theme preview", "Theme Editor");
-            StatusMessage = "Failed to clear preview";
-        }
-    }
-
-    [RelayCommand]
-    private async Task SaveThemeAsync()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(ThemeName))
-            {
-                await _errorHandler.ShowErrorAsync("Invalid Theme Name",
-                    "Please enter a valid theme name.", ErrorSeverity.Warning);
-                return;
-            }
-
-            StatusMessage = "Saving theme...";
-
-            // Generate theme XAML
-            var themeXaml = GenerateThemeXaml();
-
-            // Save to custom themes directory
-            var customThemesDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "ProxyStudio", "CustomThemes");
-
-            Directory.CreateDirectory(customThemesDir);
-
-            var fileName = $"{ThemeName.Replace(" ", "_")}.axaml";
-            var filePath = Path.Combine(customThemesDir, fileName);
-
-            await File.WriteAllTextAsync(filePath, themeXaml);
-
-            _logger.LogInformation("Custom theme saved: {FilePath}", filePath);
-            StatusMessage = $"Theme saved successfully to: {fileName}";
-            CanSaveTheme = false;
-
-            await _errorHandler.ShowErrorAsync("Theme Saved",
-                $"Your custom theme '{ThemeName}' has been saved successfully!",
-                ErrorSeverity.Information);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save custom theme");
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to save custom theme", "Theme Editor");
-            StatusMessage = "Failed to save theme";
-        }
-    }
-
-    [RelayCommand]
-    private async Task ExportThemeAsync()
-    {
-        try
-        {
-            // Get the top-level window for the file dialog
-            var topLevel = App.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-
-            if (topLevel == null) return;
-
-            // Show save file dialog
-            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-            {
-                Title = "Export Theme File",
-                DefaultExtension = "axaml",
-                SuggestedFileName = $"{ThemeName.Replace(" ", "_")}.axaml",
-                FileTypeChoices = new[]
-                {
-                    new FilePickerFileType("XAML Theme Files")
+                    if (IsPreviewActive)
                     {
-                        Patterns = new[] { "*.axaml" }
+                        await UpdatePreviewAsync();
                     }
                 }
-            });
-
-            if (file != null)
-            {
-                StatusMessage = "Exporting theme...";
-
-                var themeXaml = GenerateThemeXaml();
-
-                using var stream = await file.OpenWriteAsync();
-                using var writer = new StreamWriter(stream);
-                await writer.WriteAsync(themeXaml);
-
-                StatusMessage = "Theme exported successfully";
-
-                await _errorHandler.ShowErrorAsync("Theme Exported",
-                    $"Theme exported successfully to: {file.Name}",
-                    ErrorSeverity.Information);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to export theme");
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to export theme", "Theme Editor");
-            StatusMessage = "Failed to export theme";
+            };
         }
     }
 
-    [RelayCommand]
-    private void ResetToBase()
+    private void ResetToBaseTheme()
     {
         if (SelectedBaseTheme == null) return;
 
         try
         {
-            // Reset colors based on base theme
-            ResetColorsFromBaseTheme(SelectedBaseTheme);
+            switch (SelectedBaseTheme.Type)
+            {
+                case ThemeType.DarkProfessional:
+                    SetDarkProfessionalColors();
+                    break;
+                case ThemeType.LightClassic:
+                    SetLightClassicColors();
+                    break;
+                default:
+                    SetDarkProfessionalColors();
+                    break;
+            }
 
             StatusMessage = $"Reset to {SelectedBaseTheme.Name} base colors";
             CanSaveTheme = true;
@@ -360,266 +186,447 @@ public partial class ThemeEditorViewModel : ViewModelBase
         }
     }
 
-    private void ResetColorsFromBaseTheme(ThemeDefinition baseTheme)
-    {
-        // Define color schemes for different base themes
-        switch (baseTheme.Type)
-        {
-            case ThemeType.DarkProfessional:
-                SetDarkProfessionalColors();
-                break;
-            case ThemeType.LightClassic:
-                SetLightClassicColors();
-                break;
-            case ThemeType.Gaming:
-                SetGamingColors();
-                break;
-            case ThemeType.HighContrast:
-                SetHighContrastColors();
-                break;
-            case ThemeType.Minimal:
-                SetMinimalColors();
-                break;
-        }
-    }
-
     private void SetDarkProfessionalColors()
     {
-        SetColorValue(PrimaryColors, "Primary", "#3498db");
-        SetColorValue(PrimaryColors, "Primary Hover", "#2980b9");
-        SetColorValue(PrimaryColors, "Secondary", "#95a5a6");
-        SetColorValue(PrimaryColors, "Secondary Hover", "#7f8c8d");
+        SetColorValue(FoundationColors, "Primary", "#3498db");
+        SetColorValue(FoundationColors, "Secondary", "#95a5a6");
+        SetColorValue(FoundationColors, "Surface", "#2c3e50");
+        SetColorValue(FoundationColors, "Border", "#556983");
 
-        SetColorValue(BackgroundColors, "Background Primary", "#2c3e50");
-        SetColorValue(BackgroundColors, "Background Secondary", "#34495e");
-        SetColorValue(BackgroundColors, "Background Tertiary", "#3c4f66");
-        SetColorValue(BackgroundColors, "Card Background", "#34495e");  // Fixed: Dark theme should have dark cards
-        SetColorValue(BackgroundColors, "Surface", "#3c4f66");  // Fixed: Dark theme should have dark surface
-        
-        // NEW: Add the fine-tuning colors
-        SetColorValue(BackgroundColors, "Preview Background", "#2c3e50");  // Same as primary for dark theme
-        SetColorValue(BackgroundColors, "Border", "#556983");              // Lighter than secondary
-        SetColorValue(BackgroundColors, "Panel Background", "#34495e");    // Same as secondary
-        SetColorValue(BackgroundColors, "Content Area", "#2c3e50");        // Same as primary
-        SetColorValue(BackgroundColors, "Header Background", "#34495e");   // Same as secondary
+        SetColorValue(SemanticColors, "Success", "#27ae60");
+        SetColorValue(SemanticColors, "Warning", "#f39c12");
+        SetColorValue(SemanticColors, "Error", "#e74c3c");
+        SetColorValue(SemanticColors, "Info", "#3498db");
+
+        SetColorValue(SurfaceColors, "Background", "#2c3e50");
+        SetColorValue(SurfaceColors, "Surface Elevated", "#34495e");
 
         SetColorValue(TextColors, "Text Primary", "#ffffff");
         SetColorValue(TextColors, "Text Secondary", "#bdc3c7");
-        SetColorValue(TextColors, "Text Tertiary", "#95a5a6");
-        SetColorValue(TextColors, "Text On Primary", "#ffffff");
-        
-        // NEW: Fine-tuning text colors
-        SetColorValue(TextColors, "Text Muted", "#95a5a6");
-        SetColorValue(TextColors, "Text Link", "#3498db");
-
-        SetColorValue(StatusColors, "Success", "#27ae60");
-        SetColorValue(StatusColors, "Success Hover", "#229954");
-        SetColorValue(StatusColors, "Warning", "#f39c12");
-        SetColorValue(StatusColors, "Warning Hover", "#e67e22");
-        SetColorValue(StatusColors, "Error", "#e74c3c");
-        SetColorValue(StatusColors, "Error Hover", "#c0392b");
-        SetColorValue(StatusColors, "Info", "#3498db");
-        SetColorValue(StatusColors, "Info Hover", "#2980b9");
-        
-        // Fine-tuning for dark theme
-        SetColorValue(BackgroundColors, "Accent Background", "#1e3a5f");
-        SetColorValue(BackgroundColors, "Hover Background", "#404040");
-        SetColorValue(BackgroundColors, "Active Background", "#4a4a4a");
-        SetColorValue(BackgroundColors, "Modal Background", "#2c3e50");
-        SetColorValue(BackgroundColors, "Overlay Background", "#000000");
-        SetColorValue(BackgroundColors, "Separator", "#556983");
-        SetColorValue(BackgroundColors, "Input Background", "#34495e");
-        SetColorValue(BackgroundColors, "Button Shadow", "#000000");
-    
-        SetColorValue(TextColors, "Caption Text", "#95a5a6");
-        SetColorValue(TextColors, "Disabled Text", "#7f8c8d");
-        SetColorValue(TextColors, "Inverse Text", "#2c3e50");
-    
-        SetColorValue(StatusColors, "Info Light", "#1e3a5f");
-        SetColorValue(StatusColors, "Success Light", "#1e4d2b");
-        SetColorValue(StatusColors, "Warning Light", "#4d3319");
-        SetColorValue(StatusColors, "Error Light", "#4d1f23");
-        
-        
     }
 
     private void SetLightClassicColors()
     {
-        SetColorValue(PrimaryColors, "Primary", "#007acc");
-        SetColorValue(PrimaryColors, "Primary Hover", "#005a9e");
-        SetColorValue(PrimaryColors, "Secondary", "#6c757d");
-        SetColorValue(PrimaryColors, "Secondary Hover", "#5a6268");
+        SetColorValue(FoundationColors, "Primary", "#007acc");
+        SetColorValue(FoundationColors, "Secondary", "#6c757d");
+        SetColorValue(FoundationColors, "Surface", "#ffffff");
+        SetColorValue(FoundationColors, "Border", "#dee2e6");
 
-        SetColorValue(BackgroundColors, "Background Primary", "#ffffff");
-        SetColorValue(BackgroundColors, "Background Secondary", "#f8f9fa");
-        SetColorValue(BackgroundColors, "Background Tertiary", "#e9ecef");
-        SetColorValue(BackgroundColors, "Card Background", "#ffffff");
-        SetColorValue(BackgroundColors, "Surface", "#f8f9fa");
-        SetColorValue(BackgroundColors, "Border", "#dee2e6");
-        
-        
-        // NEW: Add the fine-tuning colors
-        SetColorValue(BackgroundColors, "Preview Background", "#2c3e50");  // Same as primary for dark theme
-        SetColorValue(BackgroundColors, "Border", "#556983");              // Lighter than secondary
-        SetColorValue(BackgroundColors, "Panel Background", "#34495e");    // Same as secondary
-        SetColorValue(BackgroundColors, "Content Area", "#2c3e50");        // Same as primary
-        SetColorValue(BackgroundColors, "Header Background", "#34495e");   // Same as secondary
+        SetColorValue(SemanticColors, "Success", "#28a745");
+        SetColorValue(SemanticColors, "Warning", "#ffc107");
+        SetColorValue(SemanticColors, "Error", "#dc3545");
+        SetColorValue(SemanticColors, "Info", "#17a2b8");
 
+        SetColorValue(SurfaceColors, "Background", "#ffffff");
+        SetColorValue(SurfaceColors, "Surface Elevated", "#f8f9fa");
 
         SetColorValue(TextColors, "Text Primary", "#212529");
         SetColorValue(TextColors, "Text Secondary", "#6c757d");
-        SetColorValue(TextColors, "Text Tertiary", "#adb5bd");
-        SetColorValue(TextColors, "Text On Primary", "#ffffff");
-        
-        // NEW: Fine-tuning text colors
-        SetColorValue(TextColors, "Text Muted", "#95a5a6");
-        SetColorValue(TextColors, "Text Link", "#3498db");
-
-        SetColorValue(StatusColors, "Success", "#28a745");
-        SetColorValue(StatusColors, "Success Hover", "#218838");
-        SetColorValue(StatusColors, "Warning", "#ffc107");
-        SetColorValue(StatusColors, "Warning Hover", "#e0a800");
-        SetColorValue(StatusColors, "Error", "#dc3545");
-        SetColorValue(StatusColors, "Error Hover", "#c82333");
-        SetColorValue(StatusColors, "Info", "#17a2b8");
-        SetColorValue(StatusColors, "Info Hover", "#138496");
-        
-        // Fine-tuning for light theme
-        SetColorValue(BackgroundColors, "Accent Background", "#e3f2fd");
-        SetColorValue(BackgroundColors, "Hover Background", "#f5f5f5");
-        SetColorValue(BackgroundColors, "Active Background", "#e0e0e0");
-        SetColorValue(BackgroundColors, "Modal Background", "#ffffff");
-        SetColorValue(BackgroundColors, "Overlay Background", "#000000");
-        SetColorValue(BackgroundColors, "Separator", "#e0e0e0");
-        SetColorValue(BackgroundColors, "Input Background", "#fafafa");
-        SetColorValue(BackgroundColors, "Button Shadow", "#000000");
-    
-        SetColorValue(TextColors, "Caption Text", "#757575");
-        SetColorValue(TextColors, "Disabled Text", "#bdbdbd");
-        SetColorValue(TextColors, "Inverse Text", "#ffffff");
-    
-        SetColorValue(StatusColors, "Info Light", "#e3f2fd");
-        SetColorValue(StatusColors, "Success Light", "#e8f5e8");
-        SetColorValue(StatusColors, "Warning Light", "#fff8e1");
-        SetColorValue(StatusColors, "Error Light", "#ffebee");
-    }
-
-    private void SetGamingColors()
-    {
-        SetColorValue(PrimaryColors, "Primary", "#ff6b35");
-        SetColorValue(PrimaryColors, "Primary Hover", "#e55a2b");
-        SetColorValue(PrimaryColors, "Secondary", "#00d4ff");
-        SetColorValue(PrimaryColors, "Secondary Hover", "#00bde6");
-
-        SetColorValue(BackgroundColors, "Background Primary", "#0a0a0a");
-        SetColorValue(BackgroundColors, "Background Secondary", "#1a1a1a");
-        SetColorValue(BackgroundColors, "Background Tertiary", "#2a2a2a");
-        SetColorValue(BackgroundColors, "Card Background", "#1a1a1a");  // Fixed: Consistent with background
-        SetColorValue(BackgroundColors, "Surface", "#2a2a2a");
-        SetColorValue(BackgroundColors, "Border", "#3a3a3a");
-
-        SetColorValue(TextColors, "Text Primary", "#ffffff");
-        SetColorValue(TextColors, "Text Secondary", "#cccccc");
-        SetColorValue(TextColors, "Text Tertiary", "#999999");
-        SetColorValue(TextColors, "Text On Primary", "#ffffff");
-
-        SetColorValue(StatusColors, "Success", "#00ff88");
-        SetColorValue(StatusColors, "Success Hover", "#00e67a");
-        SetColorValue(StatusColors, "Warning", "#ffaa00");
-        SetColorValue(StatusColors, "Warning Hover", "#e69900");
-        SetColorValue(StatusColors, "Error", "#ff3366");
-        SetColorValue(StatusColors, "Error Hover", "#e62e5c");
-        SetColorValue(StatusColors, "Info", "#00d4ff");
-        SetColorValue(StatusColors, "Info Hover", "#00bde6");
-    }
-
-    private void SetHighContrastColors()
-    {
-        SetColorValue(PrimaryColors, "Primary", "#ffff00");
-        SetColorValue(PrimaryColors, "Primary Hover", "#e6e600");
-        SetColorValue(PrimaryColors, "Secondary", "#00ffff");
-        SetColorValue(PrimaryColors, "Secondary Hover", "#00e6e6");
-
-        SetColorValue(BackgroundColors, "Background Primary", "#000000");
-        SetColorValue(BackgroundColors, "Background Secondary", "#1a1a1a");
-        SetColorValue(BackgroundColors, "Background Tertiary", "#333333");
-        SetColorValue(BackgroundColors, "Card Background", "#000000");  // Fixed: High contrast should be pure black
-        SetColorValue(BackgroundColors, "Surface", "#1a1a1a");
-        SetColorValue(BackgroundColors, "Border", "#4a4a4a");
-
-        SetColorValue(TextColors, "Text Primary", "#ffffff");
-        SetColorValue(TextColors, "Text Secondary", "#ffff00");
-        SetColorValue(TextColors, "Text Tertiary", "#00ffff");
-        SetColorValue(TextColors, "Text On Primary", "#000000");
-
-        SetColorValue(StatusColors, "Success", "#00ff00");
-        SetColorValue(StatusColors, "Success Hover", "#00e600");
-        SetColorValue(StatusColors, "Warning", "#ffff00");
-        SetColorValue(StatusColors, "Warning Hover", "#e6e600");
-        SetColorValue(StatusColors, "Error", "#ff0000");
-        SetColorValue(StatusColors, "Error Hover", "#e60000");
-        SetColorValue(StatusColors, "Info", "#00ffff");
-        SetColorValue(StatusColors, "Info Hover", "#00e6e6");
-    }
-
-    private void SetMinimalColors()
-    {
-        SetColorValue(PrimaryColors, "Primary", "#333333");
-        SetColorValue(PrimaryColors, "Primary Hover", "#555555");
-        SetColorValue(PrimaryColors, "Secondary", "#666666");
-        SetColorValue(PrimaryColors, "Secondary Hover", "#777777");
-
-        SetColorValue(BackgroundColors, "Background Primary", "#ffffff");
-        SetColorValue(BackgroundColors, "Background Secondary", "#fafafa");
-        SetColorValue(BackgroundColors, "Background Tertiary", "#f5f5f5");
-        SetColorValue(BackgroundColors, "Card Background", "#ffffff");
-        SetColorValue(BackgroundColors, "Surface", "#fafafa");
-        SetColorValue(BackgroundColors, "Border", "#e9ecef");
-
-        SetColorValue(TextColors, "Text Primary", "#333333");
-        SetColorValue(TextColors, "Text Secondary", "#666666");
-        SetColorValue(TextColors, "Text Tertiary", "#999999");
-        SetColorValue(TextColors, "Text On Primary", "#ffffff");
-
-        SetColorValue(StatusColors, "Success", "#4caf50");
-        SetColorValue(StatusColors, "Success Hover", "#45a049");
-        SetColorValue(StatusColors, "Warning", "#ff9800");
-        SetColorValue(StatusColors, "Warning Hover", "#e68900");
-        SetColorValue(StatusColors, "Error", "#f44336");
-        SetColorValue(StatusColors, "Error Hover", "#d32f2f");
-        SetColorValue(StatusColors, "Info", "#2196f3");
-        SetColorValue(StatusColors, "Info Hover", "#1976d2");
     }
 
     private void SetColorValue(ObservableCollection<ColorProperty> collection, string name, string hexValue)
     {
-        var colorProperty = collection.FirstOrDefault(c => c.Name == name);
-        if (colorProperty != null)
+        var color = collection.FirstOrDefault(c => c.Name == name);
+        if (color != null)
         {
-            // Temporarily unsubscribe to prevent triggering change events during bulk updates
-            colorProperty.PropertyChanged -= OnColorPropertyChanged;
-            colorProperty.HexValue = hexValue;
-            colorProperty.PropertyChanged += OnColorPropertyChanged;
-
-            _logger.LogDebug("Updated color {ColorName} to {HexValue}", name, hexValue);
-        }
-        else
-        {
-            _logger.LogWarning("Color property {ColorName} not found in collection. Available colors: {AvailableColors}", 
-                name, string.Join(", ", collection.Select(c => c.Name)));
+            color.HexValue = hexValue;
         }
     }
 
-    private string GenerateThemeXaml()
+    // CORRECT IN-MEMORY PREVIEW METHODS - NO FILE OPERATIONS
+    private async Task PreviewCurrentThemeAsync()
+    {
+        try
+        {
+            StatusMessage = "Applying preview theme...";
+
+            if (!IsPreviewActive)
+            {
+                _originalThemeBeforePreview = _themeService.CurrentTheme;
+                BackupCurrentResources();
+            }
+
+            IsPreviewActive = true;
+
+            // Apply theme colors directly to Application.Resources in memory
+            await ApplyThemeInMemory();
+
+            StatusMessage = "Preview active - theme applied temporarily";
+            _logger.LogInformation("Theme preview applied: {ThemeName}", ThemeName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to preview theme: {ThemeName}", ThemeName);
+            await _errorHandler.HandleExceptionAsync(ex, "Failed to preview theme", "Theme Editor");
+            StatusMessage = "Failed to preview theme";
+            IsPreviewActive = false;
+            _originalThemeBeforePreview = null;
+            _originalResources = null;
+        }
+    }
+
+    private async Task UpdatePreviewAsync()
+    {
+        try
+        {
+            if (!IsPreviewActive) return;
+
+            // Update theme colors directly in Application.Resources
+            await ApplyThemeInMemory();
+
+            _logger.LogDebug("Preview theme updated with new colors");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update preview theme");
+        }
+    }
+
+    private async Task StopPreviewAsync()
+    {
+        try
+        {
+            if (!IsPreviewActive || _originalResources == null)
+            {
+                StatusMessage = "No preview is currently active";
+                return;
+            }
+
+            StatusMessage = "Restoring original theme...";
+
+            // Restore original resources directly in memory - NO FILE LOADING
+            await Task.Run(() =>
+            {
+                try
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        try
+                        {
+                            var app = Application.Current;
+                            if (app?.Resources == null)
+                            {
+                                _logger.LogWarning("Application or Resources is null during preview restoration");
+                                return;
+                            }
+
+                            // Remove all theme-related resources first
+                            var keysToRemove = app.Resources.Keys
+                                .OfType<string>()
+                                .Where(k => k.EndsWith("Brush") || k.EndsWith("Color"))
+                                .ToList();
+
+                            foreach (var key in keysToRemove)
+                            {
+                                try
+                                {
+                                    app.Resources.Remove(key);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "Failed to remove resource key: {Key}", key);
+                                }
+                            }
+
+                            // Restore original resources if we have them
+                            if (_originalResources != null)
+                            {
+                                foreach (var kvp in _originalResources)
+                                {
+                                    try
+                                    {
+                                        if (kvp.Value != null)
+                                        {
+                                            app.Resources[kvp.Key] = kvp.Value;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "Failed to restore resource: {Key}", kvp.Key);
+                                    }
+                                }
+                            }
+
+                            _logger.LogDebug("Restored original theme resources from memory backup");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error in UI thread during resource restoration");
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in background thread during preview restoration");
+                }
+            });
+
+            IsPreviewActive = false;
+            _originalThemeBeforePreview = null;
+            _originalResources = null;
+            StatusMessage = "Preview stopped - original theme restored";
+
+            _logger.LogInformation("Theme preview stopped, resources restored from memory");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to stop theme preview");
+            await _errorHandler.HandleExceptionAsync(ex, "Failed to stop preview", "Theme Editor");
+            StatusMessage = "Failed to stop preview";
+            
+            // Ensure we clean up state even if restoration failed
+            IsPreviewActive = false;
+            _originalThemeBeforePreview = null;
+            _originalResources = null;
+        }
+    }
+
+    /// <summary>
+    /// Apply theme colors directly to application resources in memory
+    /// </summary>
+    private async Task ApplyThemeInMemory()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var app = Application.Current;
+                if (app?.Resources == null) return;
+
+                // Apply new color resources directly to Application.Resources
+                ApplyColorsToResources(app.Resources, FoundationColors, "Foundation");
+                ApplyColorsToResources(app.Resources, SemanticColors, "Semantic");
+                ApplyColorsToResources(app.Resources, SurfaceColors, "Surface");
+                ApplyColorsToResources(app.Resources, TextColors, "Text");
+
+                // Apply derived colors
+                ApplyDerivedColorsToResources(app.Resources);
+
+                _logger.LogDebug("Applied theme colors directly to Application.Resources in memory");
+            });
+        });
+    }
+
+    /// <summary>
+    /// Backup current application resources for restoration
+    /// </summary>
+    private void BackupCurrentResources()
+    {
+        try
+        {
+            var app = Application.Current;
+            if (app?.Resources == null) return;
+
+            _originalResources = new Dictionary<string, object>();
+
+            // Backup all theme-related resources
+            var themeKeys = app.Resources.Keys
+                .OfType<string>()
+                .Where(k => k.EndsWith("Brush") || k.EndsWith("Color"))
+                .ToList();
+
+            foreach (var key in themeKeys)
+            {
+                if (app.Resources.TryGetValue(key, out var resource))
+                {
+                    _originalResources[key] = resource;
+                }
+            }
+
+            _logger.LogDebug("Backed up {Count} theme resources", _originalResources.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to backup current resources");
+            _originalResources = new Dictionary<string, object>();
+        }
+    }
+
+    private void ApplyColorsToResources(IResourceDictionary resources, ObservableCollection<ColorProperty> colors, string category)
+    {
+        foreach (var colorProp in colors)
+        {
+            try
+            {
+                var color = Color.Parse(colorProp.HexValue);
+                var brush = new SolidColorBrush(color);
+
+                var colorKey = colorProp.Name.Replace(" ", "") + "Color";
+                var brushKey = colorProp.Name.Replace(" ", "") + "Brush";
+
+                // Add both color and brush resources
+                resources[colorKey] = color;
+                resources[brushKey] = brush;
+
+                _logger.LogTrace("Applied {Category} color: {Name} = {Value}", category, colorProp.Name, colorProp.HexValue);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse color {Name}: {Value}", colorProp.Name, colorProp.HexValue);
+            }
+        }
+    }
+
+    private void ApplyDerivedColorsToResources(IResourceDictionary resources)
+    {
+        try
+        {
+            // Generate hover states (15% darker)
+            if (resources.TryGetValue("PrimaryColor", out var primaryColorObj) && primaryColorObj is Color primaryColor)
+            {
+                var primaryHover = DarkenColor(primaryColor, 0.15f);
+                resources["PrimaryHoverColor"] = primaryHover;
+                resources["PrimaryHoverBrush"] = new SolidColorBrush(primaryHover);
+            }
+
+            if (resources.TryGetValue("SecondaryColor", out var secondaryColorObj) && secondaryColorObj is Color secondaryColor)
+            {
+                var secondaryHover = DarkenColor(secondaryColor, 0.15f);
+                resources["SecondaryHoverColor"] = secondaryHover;
+                resources["SecondaryHoverBrush"] = new SolidColorBrush(secondaryHover);
+            }
+
+            // Generate light variants for status backgrounds
+            GenerateStatusLightVariants(resources, "Success");
+            GenerateStatusLightVariants(resources, "Warning");
+            GenerateStatusLightVariants(resources, "Error");
+            GenerateStatusLightVariants(resources, "Info");
+
+            // Generate contrasting text on primary
+            if (resources.TryGetValue("PrimaryColor", out var primaryForTextObj) && primaryForTextObj is Color primaryForText)
+            {
+                var textOnPrimary = GetContrastingTextColor(primaryForText);
+                resources["TextOnPrimaryColor"] = textOnPrimary;
+                resources["TextOnPrimaryBrush"] = new SolidColorBrush(textOnPrimary);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate derived colors");
+        }
+    }
+
+    private void GenerateStatusLightVariants(IResourceDictionary resources, string statusName)
+    {
+        if (resources.TryGetValue($"{statusName}Color", out var statusColorObj) && statusColorObj is Color statusColor)
+        {
+            // Determine if we're in dark theme by checking background
+            var isDarkTheme = true; // Default assumption
+            if (resources.TryGetValue("BackgroundColor", out var bgColorObj) && bgColorObj is Color bgColor)
+            {
+                var brightness = (0.299 * bgColor.R + 0.587 * bgColor.G + 0.114 * bgColor.B) / 255;
+                isDarkTheme = brightness < 0.5;
+            }
+
+            // Generate appropriate light variant
+            var lightColor = isDarkTheme 
+                ? DarkenColor(statusColor, 0.7f)  // Much darker for dark themes
+                : LightenColor(statusColor, 0.8f); // Much lighter for light themes
+
+            resources[$"{statusName}LightColor"] = lightColor;
+            resources[$"{statusName}LightBrush"] = new SolidColorBrush(lightColor);
+        }
+    }
+
+    private Color DarkenColor(Color color, float amount)
+    {
+        var r = (byte)Math.Max(0, color.R - (int)(255 * amount));
+        var g = (byte)Math.Max(0, color.G - (int)(255 * amount));
+        var b = (byte)Math.Max(0, color.B - (int)(255 * amount));
+        return Color.FromRgb(r, g, b);
+    }
+
+    private Color LightenColor(Color color, float amount)
+    {
+        var r = (byte)Math.Min(255, color.R + (int)(255 * amount));
+        var g = (byte)Math.Min(255, color.G + (int)(255 * amount));
+        var b = (byte)Math.Min(255, color.B + (int)(255 * amount));
+        return Color.FromRgb(r, g, b);
+    }
+
+    private Color GetContrastingTextColor(Color backgroundColor)
+    {
+        var brightness = (0.299 * backgroundColor.R + 0.587 * backgroundColor.G + 0.114 * backgroundColor.B) / 255;
+        return brightness > 0.5 ? Colors.Black : Colors.White;
+    }
+
+    // FILE OPERATIONS - SEPARATE FROM PREVIEW
+    private async Task SaveThemeAsync()
+    {
+        try
+        {
+            StatusMessage = "Saving theme...";
+            
+            var themeXaml = GenerateFullThemeXaml();
+            var fileName = $"{ThemeName.Replace(" ", "_")}.axaml";
+            var themesDir = _themeService.GetThemesDirectory();
+            var filePath = Path.Combine(themesDir, fileName);
+
+            Directory.CreateDirectory(themesDir);
+            await File.WriteAllTextAsync(filePath, themeXaml);
+
+            StatusMessage = "Theme saved successfully";
+            CanSaveTheme = false;
+
+            await _errorHandler.ShowErrorAsync("Theme Saved", $"Theme '{ThemeName}' saved successfully!", ErrorSeverity.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save theme");
+            await _errorHandler.HandleExceptionAsync(ex, "Failed to save theme", "Theme Editor");
+            StatusMessage = "Failed to save theme";
+        }
+    }
+
+    private async Task ExportThemeAsync()
+    {
+        try
+        {
+            var topLevel = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow : null;
+
+            if (topLevel == null) return;
+
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export Theme File",
+                DefaultExtension = "axaml",
+                SuggestedFileName = $"{ThemeName.Replace(" ", "_")}.axaml",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType("XAML Theme Files") { Patterns = new[] { "*.axaml" } }
+                }
+            });
+
+            if (file != null)
+            {
+                StatusMessage = "Exporting theme...";
+                
+                var themeXaml = GenerateFullThemeXaml();
+
+                using var stream = await file.OpenWriteAsync();
+                using var writer = new StreamWriter(stream);
+                await writer.WriteAsync(themeXaml);
+
+                StatusMessage = "Theme exported successfully";
+                await _errorHandler.ShowErrorAsync("Theme Exported", $"Theme exported successfully to: {file.Name}", ErrorSeverity.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to export theme");
+            await _errorHandler.HandleExceptionAsync(ex, "Failed to export theme", "Theme Editor");
+            StatusMessage = "Failed to export theme";
+        }
+    }
+
+    private string GenerateFullThemeXaml()
     {
         var sb = new StringBuilder();
-
-        // XAML Header
         sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
         sb.AppendLine("        xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
         sb.AppendLine();
-
-        // Theme metadata comment
         sb.AppendLine($"  <!-- {ThemeName} -->");
         sb.AppendLine($"  <!-- Description: {ThemeDescription} -->");
         sb.AppendLine($"  <!-- Author: {ThemeAuthor} -->");
@@ -627,1059 +634,70 @@ public partial class ThemeEditorViewModel : ViewModelBase
         sb.AppendLine($"  <!-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} -->");
         sb.AppendLine();
 
-        // Resources section
         sb.AppendLine("  <Styles.Resources>");
-        sb.AppendLine();
+        sb.AppendLine("    <ResourceDictionary>");
+        sb.AppendLine("      <ResourceDictionary.ThemeDictionaries>");
+        sb.AppendLine("        <ResourceDictionary x:Key=\"Dark\">");
 
-        // Add all color resources
-        sb.AppendLine("    <!-- Primary Colors -->");
-        AppendColorResources(sb, PrimaryColors);
-        sb.AppendLine();
+        foreach (var color in FoundationColors.Concat(SemanticColors).Concat(SurfaceColors).Concat(TextColors))
+        {
+            var colorKey = color.Name.Replace(" ", "") + "Color";
+            var brushKey = color.Name.Replace(" ", "") + "Brush";
+            sb.AppendLine($"          <Color x:Key=\"{colorKey}\">{color.HexValue}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{brushKey}\" Color=\"{{StaticResource {colorKey}}}\"/>");
+        }
 
-        sb.AppendLine("    <!-- Background Colors -->");
-        AppendColorResources(sb, BackgroundColors);
-        sb.AppendLine();
-
-        sb.AppendLine("    <!-- Text Colors -->");
-        AppendColorResources(sb, TextColors);
-        sb.AppendLine();
-
-        sb.AppendLine("    <!-- Status Colors -->");
-        AppendColorResources(sb, StatusColors);
-        sb.AppendLine();
-
-        // Create brushes from colors
-        sb.AppendLine("    <!-- Brushes -->");
-        AppendBrushResources(sb, PrimaryColors);
-        AppendBrushResources(sb, BackgroundColors);
-        AppendBrushResources(sb, TextColors);
-        AppendBrushResources(sb, StatusColors);
-        sb.AppendLine();
-
+        sb.AppendLine("        </ResourceDictionary>");
+        sb.AppendLine("      </ResourceDictionary.ThemeDictionaries>");
+        sb.AppendLine("    </ResourceDictionary>");
         sb.AppendLine("  </Styles.Resources>");
-        sb.AppendLine();
-
-        // Control styles
-        AppendControlStyles(sb);
-
         sb.AppendLine("</Styles>");
 
         return sb.ToString();
     }
 
-    private void AppendColorResources(StringBuilder sb, ObservableCollection<ColorProperty> colors)
+    public async Task CleanupAsync()
     {
-        foreach (var color in colors)
+        if (IsPreviewActive && _originalResources != null)
         {
-            var resourceKey = color.Name.Replace(" ", "") + "Color";
-            sb.AppendLine($"    <Color x:Key=\"{resourceKey}\">{color.HexValue}</Color>");
-        }
-    }
-
-    private void AppendBrushResources(StringBuilder sb, ObservableCollection<ColorProperty> colors)
-    {
-        foreach (var color in colors)
-        {
-            var colorKey = color.Name.Replace(" ", "") + "Color";
-            var brushKey = color.Name.Replace(" ", "") + "Brush";
-            sb.AppendLine($"    <SolidColorBrush x:Key=\"{brushKey}\" Color=\"{{DynamicResource {colorKey}}}\"/>");
-        }
-    }
-
-    private void AppendControlStyles(StringBuilder sb)
-    {
-        sb.AppendLine("  <!-- Control Styles -->");
-        sb.AppendLine();
-
-        // Window style
-        sb.AppendLine("  <Style Selector=\"Window\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource BackgroundPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Button styles
-        sb.AppendLine("  <Style Selector=\"Button.primary\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource PrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextOnPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource PrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"6\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"16,8\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"SemiBold\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Button.primary:pointerover\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource PrimaryHoverBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource PrimaryHoverBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Button.secondary\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextOnPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource SecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"6\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"16,8\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Button.secondary:pointerover\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SecondaryHoverBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource SecondaryHoverBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Success button style
-        sb.AppendLine("  <Style Selector=\"Button.success\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SuccessBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextOnPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource SuccessBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"6\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"16,8\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Button.success:pointerover\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SuccessHoverBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource SuccessHoverBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Icon button style
-        sb.AppendLine("  <Style Selector=\"Button.icon\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundTertiaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"50\"/>");
-        sb.AppendLine("    <Setter Property=\"Width\" Value=\"40\"/>");
-        sb.AppendLine("    <Setter Property=\"Height\" Value=\"40\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"0\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Card styles
-        sb.AppendLine("  <Style Selector=\"Border.card\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource CardBackgroundBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"8\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"16\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.card-compact\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource CardBackgroundBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"6\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"12\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.card-elevated\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource CardBackgroundBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"8\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"16\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Text input styles
-        sb.AppendLine("  <Style Selector=\"TextBox.modern\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SurfaceBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"4\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBox.modern:focus\">");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource PrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"2\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // ComboBox styles
-        sb.AppendLine("  <Style Selector=\"ComboBox.modern\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SurfaceBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource BackgroundSecondaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"1\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"4\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Typography classes - Avalonia 11.3 compatible
-        sb.AppendLine("  <!-- Typography Classes -->");
-        sb.AppendLine("  <Style Selector=\"TextBlock.heading-large\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"32\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"Bold\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBlock.heading-medium\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"24\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"SemiBold\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBlock.heading-small\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"18\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"SemiBold\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBlock.body-large\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"16\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"Normal\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBlock.body-medium\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"14\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"Normal\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextPrimaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"TextBlock.body-small\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"12\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"Normal\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextSecondaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Caption style - Avalonia 11.3 compatible (no TextTransform or LetterSpacing)
-        sb.AppendLine("  <Style Selector=\"TextBlock.caption\">");
-        sb.AppendLine("    <Setter Property=\"FontSize\" Value=\"11\"/>");
-        sb.AppendLine("    <Setter Property=\"FontWeight\" Value=\"SemiBold\"/>");
-        sb.AppendLine("    <Setter Property=\"Foreground\" Value=\"{DynamicResource TextTertiaryBrush}\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Highlight cards
-        sb.AppendLine("  <Style Selector=\"Border.highlight-primary\">");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource PrimaryBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"2\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.highlight-success\">");
-        sb.AppendLine("    <Setter Property=\"BorderBrush\" Value=\"{DynamicResource SuccessBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"BorderThickness\" Value=\"2\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        // Status badges
-        sb.AppendLine("  <Style Selector=\"Border.badge-success\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource SuccessBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"12\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8,4\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.badge-error\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource ErrorBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"12\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8,4\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.badge-warning\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource WarningBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"12\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8,4\"/>");
-        sb.AppendLine("  </Style>");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Style Selector=\"Border.badge-info\">");
-        sb.AppendLine("    <Setter Property=\"Background\" Value=\"{DynamicResource InfoBrush}\"/>");
-        sb.AppendLine("    <Setter Property=\"CornerRadius\" Value=\"12\"/>");
-        sb.AppendLine("    <Setter Property=\"Padding\" Value=\"8,4\"/>");
-        sb.AppendLine("  </Style>");
-    }
-
-    // FIXED: This is the key method - create styles directly in memory without XAML parsing
-    private async Task ApplyCustomThemeToApplicationAsync()
-    {
-        try
-        {
-            _logger.LogDebug("Applying custom theme directly in memory");
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            try
             {
-                var app = Avalonia.Application.Current;
-                if (app?.Styles == null) return;
-
-                // Remove any existing preview styles
-                foreach (var style in _currentPreviewStyles)
+                await Task.Run(() =>
                 {
-                    app.Styles.Remove(style);
-                }
-                _currentPreviewStyles.Clear();
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        var app = Application.Current;
+                        if (app?.Resources == null) return;
 
-                // Create styles directly from color properties (no XAML parsing needed)
-                var customStyles = CreateStylesDirectlyFromColors();
-                
-                foreach (var style in customStyles)
-                {
-                    app.Styles.Add(style);
-                    _currentPreviewStyles.Add(style);
-                }
-                
-                _logger.LogInformation("Applied {StyleCount} custom styles directly to application", customStyles.Count);
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to apply custom theme to application");
-            throw;
-        }
-    }
+                        var keysToRemove = app.Resources.Keys
+                            .OfType<string>()
+                            .Where(k => k.EndsWith("Brush") || k.EndsWith("Color"))
+                            .ToList();
 
-    // FIXED: Create styles directly from color properties - this is the working approach
-    private List<IStyle> CreateStylesDirectlyFromColors()
-    {
-        var styles = new List<IStyle>();
-        
-        try
-        {
-            // Create color dictionaries for easy lookup
-            var colors = new Dictionary<string, Color>();
-            
-            // Extract all colors from collections
-            foreach (var colorProp in PrimaryColors.Concat(BackgroundColors).Concat(TextColors).Concat(StatusColors))
-            {
-                var key = colorProp.Name.Replace(" ", "") + "Color";
-                colors[key] = Color.Parse(colorProp.HexValue);
-            }
-            
-            _logger.LogDebug("Extracted {ColorCount} colors for style creation", colors.Count);
-            
-            // Create Window style - FIXED: Only require BackgroundPrimaryColor
-            if (colors.ContainsKey("BackgroundPrimaryColor"))
-            {
-                var windowStyle = new Style(x => x.OfType<Window>());
-                windowStyle.Setters.Add(new Setter(
-                    Window.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-                
-                // Add text color if available, but don't require it
-                if (colors.ContainsKey("TextPrimaryColor"))
-                {
-                    windowStyle.Setters.Add(new Setter(
-                        Window.ForegroundProperty, 
-                        new SolidColorBrush(colors["TextPrimaryColor"])));
-                }
-                
-                styles.Add(windowStyle);
-                _logger.LogDebug("Created Window style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
-            }
-            
-            // Create ScrollViewer style for preview areas
-            if (colors.ContainsKey("PreviewBackgroundColor"))
-            {
-                var scrollViewerStyle = new Style(x => x.OfType<ScrollViewer>().Class("preview"));
-                scrollViewerStyle.Setters.Add(new Setter(
-                    ScrollViewer.BackgroundProperty, 
-                    new SolidColorBrush(colors["PreviewBackgroundColor"])));
-    
-                styles.Add(scrollViewerStyle);
-            }
-            
-            // Create ScrollViewer style for preview areas
-            if (colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var scrollViewerStyle = new Style(x => x.OfType<ScrollViewer>().Class("sidebar"));
-                scrollViewerStyle.Setters.Add(new Setter(
-                    ScrollViewer.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-    
-                styles.Add(scrollViewerStyle);
-            }
-            
-            // Create Border style for main borders
-            if (colors.ContainsKey("BorderColor"))
-            {
-                var borderStyle = new Style(x => x.OfType<Border>().Class("main-border"));
-                borderStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BorderColor"])));
-    
-                styles.Add(borderStyle);
-            }
-            
-            // Create Border.sidebar style - THIS IS THE KEY FIX FOR YOUR SIDEBAR BACKGROUNDS
-            if (colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var sidebarStyle = new Style(x => x.OfType<Border>().Class("sidebar"));
-                sidebarStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-    
-                // Use Background Tertiary as border color (fallback to text tertiary)
-                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
-                    ? colors["BackgroundTertiaryColor"] 
-                    : colors.ContainsKey("TextTertiaryColor")
-                        ? colors["TextTertiaryColor"]
-                        : colors["BackgroundSecondaryColor"];
-    
-                sidebarStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(borderColor)));
-                sidebarStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(0, 0, 1, 0))); // Right border only
-    
-                sidebarStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(16)));
-    
-                styles.Add(sidebarStyle);
-                _logger.LogDebug("Created Border.sidebar style with background: {BackgroundColor}", colors["BackgroundSecondaryColor"]);
-            }
+                        foreach (var key in keysToRemove)
+                        {
+                            app.Resources.Remove(key);
+                        }
 
-// Create Border.editor-panel style (for right panels)
-            if (colors.ContainsKey("SurfaceColor"))
-            {
-                var editorPanelStyle = new Style(x => x.OfType<Border>().Class("editor-panel"));
-                editorPanelStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["SurfaceColor"])));
-    
-                // Use Background Tertiary as border color (fallback to text tertiary)
-                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
-                    ? colors["BackgroundTertiaryColor"] 
-                    : colors.ContainsKey("TextTertiaryColor")
-                        ? colors["TextTertiaryColor"]
-                        : colors["SurfaceColor"];
-    
-                editorPanelStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(borderColor)));
-                editorPanelStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(1, 0, 0, 0))); // Left border only
-    
-                editorPanelStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(16)));
-    
-                styles.Add(editorPanelStyle);
-                _logger.LogDebug("Created Border.editor-panel style with background: {SurfaceColor}", colors["SurfaceColor"]);
-            }
+                        foreach (var kvp in _originalResources)
+                        {
+                            app.Resources[kvp.Key] = kvp.Value;
+                        }
+                    });
+                });
 
-// Create Border.empty-state style (fixes modal dialogs like "No cards in collection")
-            if (colors.ContainsKey("SurfaceColor"))
-            {
-                var emptyStateStyle = new Style(x => x.OfType<Border>().Class("empty-state"));
-                emptyStateStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["SurfaceColor"])));
-    
-                // Use Background Tertiary as border color (fallback to text tertiary)
-                var borderColor = colors.ContainsKey("BackgroundTertiaryColor") 
-                    ? colors["BackgroundTertiaryColor"] 
-                    : colors.ContainsKey("TextTertiaryColor")
-                        ? colors["TextTertiaryColor"]
-                        : colors["SurfaceColor"];
-    
-                emptyStateStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(borderColor)));
-                emptyStateStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(1)));
-    
-                emptyStateStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(8)));
-                emptyStateStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(32)));
-    
-                styles.Add(emptyStateStyle);
-                _logger.LogDebug("Created Border.empty-state style with background: {SurfaceColor}", colors["SurfaceColor"]);
+                _logger.LogInformation("Cleaned up theme preview from memory on disposal");
             }
-            
-            // Create TabControl background style - FIXES TAB AREA BACKGROUND
-            if (colors.ContainsKey("BackgroundPrimaryColor"))
+            catch (Exception ex)
             {
-                var tabControlStyle = new Style(x => x.OfType<TabControl>());
-                tabControlStyle.Setters.Add(new Setter(
-                    TabControl.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-    
-                styles.Add(tabControlStyle);
-                _logger.LogDebug("Created TabControl style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
+                _logger.LogWarning(ex, "Failed to cleanup theme preview");
             }
-
-            // Create Grid background style - FIXES GRID CONTAINERS
-            if (colors.ContainsKey("BackgroundPrimaryColor"))
+            finally
             {
-                var gridStyle = new Style(x => x.OfType<Grid>());
-                gridStyle.Setters.Add(new Setter(
-                    Grid.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundPrimaryColor"])));
-    
-                styles.Add(gridStyle);
-                _logger.LogDebug("Created Grid style with background: {BackgroundColor}", colors["BackgroundPrimaryColor"]);
-            }
-            
-            // Create Grid style for preview areas
-            if (colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var gridstyle = new Style(x => x.OfType<Grid>().Class("sidebar"));
-                gridstyle.Setters.Add(new Setter(
-                    Grid.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-    
-                styles.Add(gridstyle);
-            }
-            
-            
-            // Create Button.primary style
-            if (colors.ContainsKey("PrimaryColor"))
-            {
-                var primaryButtonStyle = new Style(x => x.OfType<Button>().Class("primary"));
-                primaryButtonStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["PrimaryColor"])));
-                
-                if (colors.ContainsKey("TextOnPrimaryColor"))
-                {
-                    primaryButtonStyle.Setters.Add(new Setter(
-                        Button.ForegroundProperty, 
-                        new SolidColorBrush(colors["TextOnPrimaryColor"])));
-                }
-                
-                primaryButtonStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["PrimaryColor"])));
-                primaryButtonStyle.Setters.Add(new Setter(
-                    Button.BorderThicknessProperty, 
-                    new Thickness(1)));
-                primaryButtonStyle.Setters.Add(new Setter(
-                    Button.CornerRadiusProperty, 
-                    new CornerRadius(6)));
-                primaryButtonStyle.Setters.Add(new Setter(
-                    Button.PaddingProperty, 
-                    new Thickness(16, 8)));
-                
-                styles.Add(primaryButtonStyle);
-            }
-            
-            // Create Button.primary:pointerover style
-            if (colors.ContainsKey("PrimaryHoverColor"))
-            {
-                var primaryButtonHoverStyle = new Style(x => x.OfType<Button>().Class("primary").Class(":pointerover"));
-                primaryButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["PrimaryHoverColor"])));
-                primaryButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["PrimaryHoverColor"])));
-                styles.Add(primaryButtonHoverStyle);
-            }
-            
-            // Create Button.secondary style
-            if (colors.ContainsKey("SecondaryColor"))
-            {
-                var secondaryButtonStyle = new Style(x => x.OfType<Button>().Class("secondary"));
-                secondaryButtonStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["SecondaryColor"])));
-                
-                if (colors.ContainsKey("TextOnPrimaryColor"))
-                {
-                    secondaryButtonStyle.Setters.Add(new Setter(
-                        Button.ForegroundProperty, 
-                        new SolidColorBrush(colors["TextOnPrimaryColor"])));
-                }
-                
-                secondaryButtonStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["SecondaryColor"])));
-                secondaryButtonStyle.Setters.Add(new Setter(
-                    Button.BorderThicknessProperty, 
-                    new Thickness(1)));
-                secondaryButtonStyle.Setters.Add(new Setter(
-                    Button.CornerRadiusProperty, 
-                    new CornerRadius(6)));
-                secondaryButtonStyle.Setters.Add(new Setter(
-                    Button.PaddingProperty, 
-                    new Thickness(16, 8)));
-                
-                styles.Add(secondaryButtonStyle);
-            }
-            
-            // Create Button.secondary:pointerover style
-            if (colors.ContainsKey("SecondaryHoverColor"))
-            {
-                var secondaryButtonHoverStyle = new Style(x => x.OfType<Button>().Class("secondary").Class(":pointerover"));
-                secondaryButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["SecondaryHoverColor"])));
-                secondaryButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["SecondaryHoverColor"])));
-                styles.Add(secondaryButtonHoverStyle);
-            }
-            
-            // Create Button.success style
-            if (colors.ContainsKey("SuccessColor"))
-            {
-                var successButtonStyle = new Style(x => x.OfType<Button>().Class("success"));
-                successButtonStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["SuccessColor"])));
-                
-                if (colors.ContainsKey("TextOnPrimaryColor"))
-                {
-                    successButtonStyle.Setters.Add(new Setter(
-                        Button.ForegroundProperty, 
-                        new SolidColorBrush(colors["TextOnPrimaryColor"])));
-                }
-                
-                successButtonStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["SuccessColor"])));
-                successButtonStyle.Setters.Add(new Setter(
-                    Button.BorderThicknessProperty, 
-                    new Thickness(1)));
-                successButtonStyle.Setters.Add(new Setter(
-                    Button.CornerRadiusProperty, 
-                    new CornerRadius(6)));
-                successButtonStyle.Setters.Add(new Setter(
-                    Button.PaddingProperty, 
-                    new Thickness(16, 8)));
-                
-                styles.Add(successButtonStyle);
-            }
-            
-            // Create Button.success:pointerover style
-            if (colors.ContainsKey("SuccessHoverColor"))
-            {
-                var successButtonHoverStyle = new Style(x => x.OfType<Button>().Class("success").Class(":pointerover"));
-                successButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["SuccessHoverColor"])));
-                successButtonHoverStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["SuccessHoverColor"])));
-                styles.Add(successButtonHoverStyle);
-            }
-            
-            // Create Button.icon style
-            if (colors.ContainsKey("BackgroundSecondaryColor") && colors.ContainsKey("BackgroundTertiaryColor"))
-            {
-                var iconButtonStyle = new Style(x => x.OfType<Button>().Class("icon"));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.BackgroundProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                
-                if (colors.ContainsKey("TextPrimaryColor"))
-                {
-                    iconButtonStyle.Setters.Add(new Setter(
-                        Button.ForegroundProperty, 
-                        new SolidColorBrush(colors["TextPrimaryColor"])));
-                }
-                
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundTertiaryColor"])));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.BorderThicknessProperty, 
-                    new Thickness(1)));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.CornerRadiusProperty, 
-                    new CornerRadius(50)));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.WidthProperty, 
-                    40.0));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.HeightProperty, 
-                    40.0));
-                iconButtonStyle.Setters.Add(new Setter(
-                    Button.PaddingProperty, 
-                    new Thickness(0)));
-                
-                styles.Add(iconButtonStyle);
-            }
-            
-            // Create Border.card style
-            if (colors.ContainsKey("CardBackgroundColor") && colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var cardStyle = new Style(x => x.OfType<Border>().Class("card"));
-                cardStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["CardBackgroundColor"])));
-                cardStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                cardStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(1)));
-                cardStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(8)));
-                cardStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(16)));
-                
-                styles.Add(cardStyle);
-            }
-            
-            // Create Border.card-compact style
-            if (colors.ContainsKey("CardBackgroundColor") && colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var cardCompactStyle = new Style(x => x.OfType<Border>().Class("card-compact"));
-                cardCompactStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["CardBackgroundColor"])));
-                cardCompactStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                cardCompactStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(1)));
-                cardCompactStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(6)));
-                cardCompactStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(12)));
-                
-                styles.Add(cardCompactStyle);
-            }
-            
-            // Create Border.card-elevated style
-            if (colors.ContainsKey("CardBackgroundColor") && colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var cardElevatedStyle = new Style(x => x.OfType<Border>().Class("card-elevated"));
-                cardElevatedStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["CardBackgroundColor"])));
-                cardElevatedStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                cardElevatedStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(1)));
-                cardElevatedStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(8)));
-                cardElevatedStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(16)));
-                
-                styles.Add(cardElevatedStyle);
-            }
-            
-            // Create TextBox.modern style
-            if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("TextPrimaryColor") && colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var textBoxStyle = new Style(x => x.OfType<TextBox>().Class("modern"));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.BackgroundProperty, 
-                    new SolidColorBrush(colors["SurfaceColor"])));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.BorderThicknessProperty, 
-                    new Thickness(1)));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.CornerRadiusProperty, 
-                    new CornerRadius(4)));
-                textBoxStyle.Setters.Add(new Setter(
-                    TextBox.PaddingProperty, 
-                    new Thickness(8)));
-                
-                styles.Add(textBoxStyle);
-            }
-            
-            // Create TextBox.modern:focus style
-            if (colors.ContainsKey("PrimaryColor"))
-            {
-                var textBoxFocusStyle = new Style(x => x.OfType<TextBox>().Class("modern").Class(":focus"));
-                textBoxFocusStyle.Setters.Add(new Setter(
-                    TextBox.BorderBrushProperty, 
-                    new SolidColorBrush(colors["PrimaryColor"])));
-                textBoxFocusStyle.Setters.Add(new Setter(
-                    TextBox.BorderThicknessProperty, 
-                    new Thickness(2)));
-                
-                styles.Add(textBoxFocusStyle);
-            }
-            
-            // Create ComboBox.modern style
-            if (colors.ContainsKey("SurfaceColor") && colors.ContainsKey("TextPrimaryColor") && colors.ContainsKey("BackgroundSecondaryColor"))
-            {
-                var comboBoxStyle = new Style(x => x.OfType<ComboBox>().Class("modern"));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.BackgroundProperty, 
-                    new SolidColorBrush(colors["SurfaceColor"])));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.BorderBrushProperty, 
-                    new SolidColorBrush(colors["BackgroundSecondaryColor"])));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.BorderThicknessProperty, 
-                    new Thickness(1)));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.CornerRadiusProperty, 
-                    new CornerRadius(4)));
-                comboBoxStyle.Setters.Add(new Setter(
-                    ComboBox.PaddingProperty, 
-                    new Thickness(8)));
-                
-                styles.Add(comboBoxStyle);
-            }
-            
-            // Create TextBlock typography styles
-            if (colors.ContainsKey("TextPrimaryColor"))
-            {
-                // Heading large
-                var headingLargeStyle = new Style(x => x.OfType<TextBlock>().Class("heading-large"));
-                headingLargeStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                headingLargeStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    32.0));
-                headingLargeStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.Bold));
-                styles.Add(headingLargeStyle);
-                
-                // Heading medium
-                var headingMediumStyle = new Style(x => x.OfType<TextBlock>().Class("heading-medium"));
-                headingMediumStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                headingMediumStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    24.0));
-                headingMediumStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.SemiBold));
-                styles.Add(headingMediumStyle);
-                
-                // Heading small
-                var headingSmallStyle = new Style(x => x.OfType<TextBlock>().Class("heading-small"));
-                headingSmallStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                headingSmallStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    18.0));
-                headingSmallStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.SemiBold));
-                styles.Add(headingSmallStyle);
-                
-                // Body large
-                var bodyLargeStyle = new Style(x => x.OfType<TextBlock>().Class("body-large"));
-                bodyLargeStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                bodyLargeStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    16.0));
-                bodyLargeStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.Normal));
-                styles.Add(bodyLargeStyle);
-                
-                // Body medium
-                var bodyMediumStyle = new Style(x => x.OfType<TextBlock>().Class("body-medium"));
-                bodyMediumStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextPrimaryColor"])));
-                bodyMediumStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    14.0));
-                bodyMediumStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.Normal));
-                styles.Add(bodyMediumStyle);
-            }
-            
-            // Body small - use secondary text color
-            if (colors.ContainsKey("TextSecondaryColor"))
-            {
-                var bodySmallStyle = new Style(x => x.OfType<TextBlock>().Class("body-small"));
-                bodySmallStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextSecondaryColor"])));
-                bodySmallStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    12.0));
-                bodySmallStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.Normal));
-                styles.Add(bodySmallStyle);
-            }
-            
-            // Caption - use tertiary text color
-            if (colors.ContainsKey("TextTertiaryColor"))
-            {
-                var captionStyle = new Style(x => x.OfType<TextBlock>().Class("caption"));
-                captionStyle.Setters.Add(new Setter(
-                    TextBlock.ForegroundProperty, 
-                    new SolidColorBrush(colors["TextTertiaryColor"])));
-                captionStyle.Setters.Add(new Setter(
-                    TextBlock.FontSizeProperty, 
-                    11.0));
-                captionStyle.Setters.Add(new Setter(
-                    TextBlock.FontWeightProperty, 
-                    FontWeight.SemiBold));
-                styles.Add(captionStyle);
-            }
-            
-            // Create highlight border styles
-            if (colors.ContainsKey("PrimaryColor"))
-            {
-                var highlightPrimaryStyle = new Style(x => x.OfType<Border>().Class("highlight-primary"));
-                highlightPrimaryStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["PrimaryColor"])));
-                highlightPrimaryStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(2)));
-                styles.Add(highlightPrimaryStyle);
-            }
-            
-            if (colors.ContainsKey("SuccessColor"))
-            {
-                var highlightSuccessStyle = new Style(x => x.OfType<Border>().Class("highlight-success"));
-                highlightSuccessStyle.Setters.Add(new Setter(
-                    Border.BorderBrushProperty, 
-                    new SolidColorBrush(colors["SuccessColor"])));
-                highlightSuccessStyle.Setters.Add(new Setter(
-                    Border.BorderThicknessProperty, 
-                    new Thickness(2)));
-                styles.Add(highlightSuccessStyle);
-            }
-            
-            // Create badge styles
-            if (colors.ContainsKey("SuccessColor"))
-            {
-                var badgeSuccessStyle = new Style(x => x.OfType<Border>().Class("badge-success"));
-                badgeSuccessStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["SuccessColor"])));
-                badgeSuccessStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(12)));
-                badgeSuccessStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(8, 4)));
-                styles.Add(badgeSuccessStyle);
-            }
-            
-            if (colors.ContainsKey("ErrorColor"))
-            {
-                var badgeErrorStyle = new Style(x => x.OfType<Border>().Class("badge-error"));
-                badgeErrorStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["ErrorColor"])));
-                badgeErrorStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(12)));
-                badgeErrorStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(8, 4)));
-                styles.Add(badgeErrorStyle);
-            }
-            
-            if (colors.ContainsKey("WarningColor"))
-            {
-                var badgeWarningStyle = new Style(x => x.OfType<Border>().Class("badge-warning"));
-                badgeWarningStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["WarningColor"])));
-                badgeWarningStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(12)));
-                badgeWarningStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(8, 4)));
-                styles.Add(badgeWarningStyle);
-            }
-            
-            if (colors.ContainsKey("InfoColor"))
-            {
-                var badgeInfoStyle = new Style(x => x.OfType<Border>().Class("badge-info"));
-                badgeInfoStyle.Setters.Add(new Setter(
-                    Border.BackgroundProperty, 
-                    new SolidColorBrush(colors["InfoColor"])));
-                badgeInfoStyle.Setters.Add(new Setter(
-                    Border.CornerRadiusProperty, 
-                    new CornerRadius(12)));
-                badgeInfoStyle.Setters.Add(new Setter(
-                    Border.PaddingProperty, 
-                    new Thickness(8, 4)));
-                styles.Add(badgeInfoStyle);
-            }
-            
-            _logger.LogDebug("Created {StyleCount} styles directly from colors", styles.Count);
-            return styles;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create styles directly from colors");
-            throw;
-        }
-    }
-
-    partial void OnSelectedBaseThemeChanged(ThemeDefinition? value)
-    {
-        if (value != null)
-        {
-            StatusMessage = $"Base theme changed to: {value.Name}";
-
-            // Only update colors if collections are initialized
-            if (PrimaryColors != null && BackgroundColors != null && TextColors != null && StatusColors != null)
-            {
-                // Automatically update colors when base theme changes
-                ResetColorsFromBaseTheme(value);
-
-                // Mark as modified so user can save
-                CanSaveTheme = true;
-
-                _logger.LogDebug("Automatically updated color palette for base theme: {ThemeName}", value.Name);
-            }
-            else
-            {
-                _logger.LogDebug("Skipping color update - collections not yet initialized");
+                IsPreviewActive = false;
+                _originalThemeBeforePreview = null;
+                _originalResources = null;
             }
         }
-    }
-    
-    
-
-    partial void OnThemeNameChanged(string value)
-    {
-        CanSaveTheme = !string.IsNullOrWhiteSpace(value);
     }
 }

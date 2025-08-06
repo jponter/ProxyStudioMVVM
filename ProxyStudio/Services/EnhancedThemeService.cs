@@ -17,15 +17,7 @@ using ProxyStudio.Helpers;
 
 namespace ProxyStudio.Services
 {
-    public enum SeasonalTheme
-    {
-        None,
-        Christmas,
-        Halloween,
-        Valentine,
-        Summer,
-        Spring
-    }
+    
 
     public class EnhancedThemeService : IThemeService
     {

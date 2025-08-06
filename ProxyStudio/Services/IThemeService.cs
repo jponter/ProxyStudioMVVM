@@ -8,6 +8,7 @@ namespace ProxyStudio.Services
     {
         DarkProfessional,
         LightClassic,
+        DarkRed,
         HighContrast,
         Gaming,
         Minimal
