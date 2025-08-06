@@ -205,33 +205,40 @@ public partial class MainViewModel : ViewModelBase
 
         public ThemeType LoadThemePreference()
         {
-            throw new NotImplementedException();
+            //design time do nothing
+            return ThemeType.DarkProfessional;
         }
 
         public event EventHandler<ThemeType>? ThemeChanged;
         public Task ApplyCustomThemeAsync(string themeXaml, string themeName)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            // Design time does not apply custom themes
+            return Task.CompletedTask;
         }
 
         public Task ReplaceThemeFileAsync(ThemeType themeType, string themeXaml)
         {
-            throw new NotImplementedException();
+            //design time does not replace theme files
+            return Task.CompletedTask;
         }
 
         public string GetThemesDirectory()
         {
-            throw new NotImplementedException();
+            //design time does not use themes directory
+            return string.Empty;
         }
 
         public Task ApplyThemeAsync(ThemeType theme)
         {
+            //design time does not apply themes
             return Task.CompletedTask;
         }
 
         public bool SaveThemePreference(ThemeType theme)
         {
-            throw new NotImplementedException();
+            //design time does not save theme preferences
+            return true;
         }
 
        
