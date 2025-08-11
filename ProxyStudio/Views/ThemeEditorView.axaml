@@ -120,10 +120,15 @@
                                 Command="{Binding SaveThemeCommand}"
                                 IsEnabled="{Binding CanSaveTheme}"/>
                         
-                        <Button Content="Export Theme"
-                                Background="{DynamicResource SuccessBrush}"
-                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                        <Button Content="Export Theme" Classes="primary"
+                                
                                 Command="{Binding ExportThemeCommand}"/>
+                        
+                        <!-- Removed the bellow styles from the above button -->
+                        <!-- Background="{DynamicResource SuccessBrush}" -->
+                        <!-- Foreground="{DynamicResource TextOnPrimaryBrush}" -->
+                        
+                        
                         
                         <!-- Preview Controls -->
                         <StackPanel Spacing="4">
@@ -557,7 +562,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Button Classes="primary" 
                                             Content="Primary"
-                                            PointerEntered="OnButtonPointerEntered"
+                                            
                                                 
                                                 Padding="12,6"/>
                                         <Button Classes="secondary" 

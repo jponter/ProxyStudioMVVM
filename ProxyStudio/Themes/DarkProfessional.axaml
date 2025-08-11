@@ -161,20 +161,20 @@
   <!-- These styles automatically adapt to Light/Dark theme variants -->
   
   <!-- Button Styles -->
-  <Style Selector="Button.primary">
-    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-    <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="6"/>
-    <Setter Property="Padding" Value="16,8"/>
-    <Setter Property="FontWeight" Value="SemiBold"/>
-  </Style>
-
-  <Style Selector="Button.primary:pointerover">
-    <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
-  </Style>
+  <!-- <Style Selector="Button.primary"> -->
+  <!--   <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/> -->
+  <!--   <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/> -->
+  <!--   <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/> -->
+  <!--   <Setter Property="BorderThickness" Value="1"/> -->
+  <!--   <Setter Property="CornerRadius" Value="6"/> -->
+  <!--   <Setter Property="Padding" Value="16,8"/> -->
+  <!--   <Setter Property="FontWeight" Value="SemiBold"/> -->
+  <!-- </Style> -->
+  <!-- -->
+  <!-- <Style Selector="Button.primary:pointerover"> -->
+  <!--   <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/> -->
+  <!--   <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/> -->
+  <!-- </Style> -->
 
   <Style Selector="Button.secondary">
     <Setter Property="Background" Value="{DynamicResource SecondaryBrush}"/>

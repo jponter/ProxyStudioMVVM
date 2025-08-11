@@ -24,8 +24,8 @@
              
              <Application.Resources>
                  <ResourceDictionary>
-                     <SolidColorBrush x:Key="PrimaryHoverBrush" Color="Red" />
-                     <SolidColorBrush x:Key="SecondaryHoverBrush" Color="Green" />
+                     <!-- <SolidColorBrush x:Key="PrimaryHoverBrush" Color="Red" /> -->
+                     <!-- <SolidColorBrush x:Key="SecondaryHoverBrush" Color="Green" /> -->
                      <ResourceDictionary.MergedDictionaries>
                          <ResourceInclude Source="avares://LoadingIndicators.Avalonia/LoadingIndicators.axaml" />
                         

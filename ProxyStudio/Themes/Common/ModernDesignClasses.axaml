@@ -22,17 +22,25 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     
-    <!-- ~1~ Primary Button Hover State @1@ -->
-    <!-- <Style Selector="Button.primary:pointerover"> -->
-    <!--     <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /> -->
-    <!--     <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" /> -->
-    <!-- </Style> -->
+    <!-- Primary Button Hover State -->
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
     
     <!-- Primary Button Pressed State -->
     <Style Selector="Button.primary:pressed">
         <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" />
         <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
     </Style>
 
     <!-- Secondary Button Style -->
@@ -53,6 +61,12 @@
     <Style Selector="Button.secondary:pointerover">
         <Setter Property="Background" Value="{DynamicResource SecondaryHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SecondaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SecondaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+
     </Style>
     
     <!-- Secondary Button Pressed State -->
@@ -60,6 +74,9 @@
         <Setter Property="Background" Value="{DynamicResource SecondaryHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SecondaryHoverBrush}" />
         <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="Button.secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SecondaryHoverBrush}" />
     </Style>
 
     <!-- Success Button Style -->
@@ -79,8 +96,26 @@
     <Style Selector="Button.success:pointerover">
         <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SuccessHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.success:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    
+    <!-- Sucess Button Pressed State -->
+    <Style Selector="Button.success:pressed">
+        <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SuccessHoverBrush}" />
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="Button.secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}" />
     </Style>
 
+    
+    
+    
     <!-- Warning Button Style -->
     <Style Selector="Button.warning">
         <Setter Property="Background" Value="{DynamicResource WarningBrush}" />
@@ -95,10 +130,32 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     
-    <Style Selector="Button.warning:pointerover">
+    <!-- Warning Button Hover State -->
+    <!-- <Style Selector="Button.warning:pointerover"> -->
+    <!--     <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" /> -->
+    <!--     <Setter Property="BorderBrush" Value="{DynamicResource WarningHoverBrush}" /> -->
+    <!-- </Style> -->
+    <!-- <Style Selector="Button.warning:pointerover /template/ ContentPresenter#PART_ContentPresenter"> -->
+    <!--     <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" /> -->
+    <!-- </Style> -->
+    
+    <!-- Warning Button Pressed State -->
+    <Style Selector="Button.warning:pressed">
         <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource WarningHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
     </Style>
+    <Style Selector="Button.warning:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+
+    </Style>
+    
+    
+ 
+   
 
     <!-- Error Button Style -->
     <Style Selector="Button.error">
@@ -117,6 +174,11 @@
     <Style Selector="Button.error:pointerover">
         <Setter Property="Background" Value="{DynamicResource ErrorHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ErrorHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.error:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ErrorHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
     </Style>
 
     <!-- Info Button Style -->
@@ -136,6 +198,11 @@
     <Style Selector="Button.info:pointerover">
         <Setter Property="Background" Value="{DynamicResource InfoHoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource InfoHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.info:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource InfoHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}" />
     </Style>
 
     <!-- ==============================================

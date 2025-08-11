@@ -76,8 +76,7 @@
                                     <Button Classes="primary"
                                             Content="📥 Load MPC Fill XML"
                                             HorizontalAlignment="Stretch"
-                                            Background="{DynamicResource PrimaryBrush}"
-                                            Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                            
                                             Command="{Binding LoadMpcFillXmlCommand}"
                                             IsEnabled="{Binding !IsLoadingMpcFill}"
                                             ToolTip.Tip="Load an MPC Fill XML file to import cards to the collection" />
@@ -88,9 +87,9 @@
                                     <!--         HorizontalAlignment="Stretch" -->
                                     <!--         Command="{Binding AddTestCardsRelayCommand}"/> -->
                                     
-                                    <Button Classes="secondary"
-                                            Background="{DynamicResource ErrorBrush}"
-                                            Foreground="White"
+                                    <Button Classes="error"
+                                            
+                                            
                                             Content="🗑️ Delete All Cards"
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding DeleteAllCardsCommand}"
