@@ -2559,25 +2559,37 @@ private void ForceResourceRefresh()
         return brightness > 0.5 ? Colors.Black : Colors.White;
     }
 
-    // FILE OPERATIONS - SEPARATE FROM PREVIEW
+    /// <summary>
+    /// Updated Save method that ensures proper theme structure
+    /// </summary>
     private async Task SaveThemeAsync()
     {
         try
         {
             StatusMessage = "Saving theme...";
-            
+        
+            // Generate theme using the SAME method as preview
             var themeXaml = GenerateFullThemeXaml();
             var fileName = $"{ThemeName.Replace(" ", "_")}.axaml";
+        
+            // Save to themes directory
             var themesDir = _themeService.GetThemesDirectory();
             var filePath = Path.Combine(themesDir, fileName);
 
             Directory.CreateDirectory(themesDir);
             await File.WriteAllTextAsync(filePath, themeXaml);
 
-            StatusMessage = "Theme saved successfully";
+            // ✅ CRITICAL: Apply the saved theme to test it works
+            await _themeService.ApplyCustomThemeAsync(themeXaml, ThemeName);
+
+            StatusMessage = "Theme saved and applied successfully";
             CanSaveTheme = false;
 
-            await _errorHandler.ShowErrorAsync("Theme Saved", $"Theme '{ThemeName}' saved successfully!", ErrorSeverity.Information);
+            await _errorHandler.ShowErrorAsync("Theme Saved", 
+                $"Theme '{ThemeName}' saved and applied successfully!\n\nLocation: {filePath}", 
+                ErrorSeverity.Information);
+            
+            _logger.LogInformation("Theme saved and applied: {FilePath}", filePath);
         }
         catch (Exception ex)
         {
@@ -2629,40 +2641,257 @@ private void ForceResourceRefresh()
         }
     }
 
-    private string GenerateFullThemeXaml()
+/// <summary>
+/// FIXED: Generate complete theme XAML with all derived colors and correct resource references
+/// </summary>
+private string GenerateFullThemeXaml()
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
+    sb.AppendLine("        xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
+    sb.AppendLine();
+    sb.AppendLine($"  <!-- {ThemeName} -->");
+    sb.AppendLine($"  <!-- Description: {ThemeDescription} -->");
+    sb.AppendLine($"  <!-- Author: {ThemeAuthor} -->");
+    sb.AppendLine($"  <!-- Version: {ThemeVersion} -->");
+    sb.AppendLine($"  <!-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} -->");
+    sb.AppendLine($"  <!-- COMPLETE THEME: Matches preview exactly with all derived colors -->");
+    sb.AppendLine();
+
+    sb.AppendLine("  <Styles.Resources>");
+    sb.AppendLine("    <ResourceDictionary>");
+    sb.AppendLine("      <ResourceDictionary.ThemeDictionaries>");
+    sb.AppendLine("        <ResourceDictionary x:Key=\"Dark\">");
+    sb.AppendLine();
+
+    // ===== FOUNDATION COLORS =====
+    sb.AppendLine("          <!-- ===== FOUNDATION COLORS ===== -->");
+    foreach (var color in FoundationColors)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
-        sb.AppendLine("        xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        // ✅ FIXED: Use DynamicResource instead of StaticResource in ThemeDictionaries
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+        
+        // Generate hover state (15% darker)
+        var baseColor = Color.Parse(color.HexValue);
+        var hoverColor = DarkenColor(baseColor, 0.15f);
+        sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\"/>");
         sb.AppendLine();
-        sb.AppendLine($"  <!-- {ThemeName} -->");
-        sb.AppendLine($"  <!-- Description: {ThemeDescription} -->");
-        sb.AppendLine($"  <!-- Author: {ThemeAuthor} -->");
-        sb.AppendLine($"  <!-- Version: {ThemeVersion} -->");
-        sb.AppendLine($"  <!-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} -->");
-        sb.AppendLine();
-
-        sb.AppendLine("  <Styles.Resources>");
-        sb.AppendLine("    <ResourceDictionary>");
-        sb.AppendLine("      <ResourceDictionary.ThemeDictionaries>");
-        sb.AppendLine("        <ResourceDictionary x:Key=\"Dark\">");
-
-        foreach (var color in FoundationColors.Concat(SemanticColors).Concat(SurfaceColors).Concat(TextColors))
-        {
-            var colorKey = color.Name.Replace(" ", "") + "Color";
-            var brushKey = color.Name.Replace(" ", "") + "Brush";
-            sb.AppendLine($"          <Color x:Key=\"{colorKey}\">{color.HexValue}</Color>");
-            sb.AppendLine($"          <SolidColorBrush x:Key=\"{brushKey}\" Color=\"{{StaticResource {colorKey}}}\"/>");
-        }
-
-        sb.AppendLine("        </ResourceDictionary>");
-        sb.AppendLine("      </ResourceDictionary.ThemeDictionaries>");
-        sb.AppendLine("    </ResourceDictionary>");
-        sb.AppendLine("  </Styles.Resources>");
-        sb.AppendLine("</Styles>");
-
-        return sb.ToString();
     }
+
+    // ===== SEMANTIC COLORS =====
+    sb.AppendLine("          <!-- ===== SEMANTIC COLORS ===== -->");
+    foreach (var color in SemanticColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+        
+        // Generate hover and light variants
+        var baseColor = Color.Parse(color.HexValue);
+        var hoverColor = DarkenColor(baseColor, 0.15f);
+        var lightColor = LightenColor(baseColor, 0.8f);
+        
+        sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\"/>");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}LightColor\">{lightColor}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}LightBrush\" Color=\"{{DynamicResource {colorName}LightColor}}\"/>");
+        sb.AppendLine();
+    }
+
+    // ===== SURFACE COLORS =====
+    sb.AppendLine("          <!-- ===== SURFACE COLORS ===== -->");
+    foreach (var color in SurfaceColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+        
+        // Add subtle hover for surfaces
+        if (colorName == "Surface")
+        {
+            var baseColor = Color.Parse(color.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.05f); // Subtle hover
+            sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\"/>");
+        }
+        sb.AppendLine();
+    }
+
+    // ===== TEXT COLORS =====
+    sb.AppendLine("          <!-- ===== TEXT COLORS ===== -->");
+    foreach (var color in TextColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+    sb.AppendLine();
+
+    // ===== CONTRASTING TEXT COLORS =====
+    sb.AppendLine("          <!-- ===== AUTO-GENERATED CONTRASTING TEXT ===== -->");
+    GenerateContrastingTextInXaml(sb, "Primary");
+    GenerateContrastingTextInXaml(sb, "Secondary");
+    sb.AppendLine();
+
+    sb.AppendLine("        </ResourceDictionary>");
+    sb.AppendLine();
+    
+    // ===== LIGHT THEME VARIANT =====
+    sb.AppendLine("        <!-- Light theme variant (optional) -->");
+    sb.AppendLine("        <ResourceDictionary x:Key=\"Light\">");
+    sb.AppendLine("          <!-- TODO: Implement proper light theme derivation -->");
+    sb.AppendLine("          <!-- For now, using same colors - replace with light variants -->");
+    GenerateLightThemeVariant(sb);
+    sb.AppendLine("        </ResourceDictionary>");
+
+    sb.AppendLine("      </ResourceDictionary.ThemeDictionaries>");
+    sb.AppendLine("    </ResourceDictionary>");
+    sb.AppendLine("  </Styles.Resources>");
+    sb.AppendLine("</Styles>");
+
+    return sb.ToString();
+}
+
+// ===== NEW HELPER METHODS FOR COMPLETE THEME GENERATION =====
+
+/// <summary>
+/// Generate hover states in XAML format (15% darker)
+/// </summary>
+private void GenerateHoverColorsInXaml(StringBuilder sb, ObservableCollection<ColorProperty> colors)
+{
+    foreach (var color in colors)
+    {
+        try
+        {
+            var colorName = color.Name.Replace(" ", "");
+            var baseColor = Color.Parse(color.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.15f);
+            
+            sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{StaticResource {colorName}HoverColor}}\"/>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate hover color for {Name}", color.Name);
+        }
+    }
+}
+
+/// <summary>
+/// Generate light variants for semantic colors (80% lighter for backgrounds)
+/// </summary>
+private void GenerateStatusLightVariantsInXaml(StringBuilder sb, ObservableCollection<ColorProperty> semanticColors)
+{
+    foreach (var color in semanticColors)
+    {
+        try
+        {
+            var colorName = color.Name.Replace(" ", "");
+            var baseColor = Color.Parse(color.HexValue);
+            
+            // For dark themes, we want much lighter versions for status backgrounds
+            var lightColor = LightenColor(baseColor, 0.8f);
+            
+            sb.AppendLine($"          <Color x:Key=\"{colorName}LightColor\">{lightColor}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}LightBrush\" Color=\"{{StaticResource {colorName}LightColor}}\"/>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate light variant for {Name}", color.Name);
+        }
+    }
+}
+
+// <summary>
+/// Generate contrasting text colors in XAML for export
+/// </summary>
+private void GenerateContrastingTextInXaml(StringBuilder sb, string backgroundColorName)
+{
+    try
+    {
+        var colorProperty = FoundationColors.FirstOrDefault(c => 
+            c.Name.Equals(backgroundColorName, StringComparison.OrdinalIgnoreCase));
+        
+        if (colorProperty != null)
+        {
+            var bgColor = Color.Parse(colorProperty.HexValue);
+            var textColor = GetContrastingTextColor(bgColor);
+            
+            sb.AppendLine($"          <!-- Contrasting text for {backgroundColorName} background -->");
+            sb.AppendLine($"          <Color x:Key=\"TextOn{backgroundColorName}Color\">{textColor}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"TextOn{backgroundColorName}Brush\" Color=\"{{DynamicResource TextOn{backgroundColorName}Color}}\"/>");
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Failed to generate contrasting text for {BackgroundName}", backgroundColorName);
+    }
+}
+
+/// <summary>
+/// Generate surface variations (subtle hover states)
+/// </summary>
+private void GenerateSurfaceVariationsInXaml(StringBuilder sb)
+{
+    try
+    {
+        var surfaceColor = SurfaceColors.FirstOrDefault(c => c.Name == "Surface");
+        if (surfaceColor != null)
+        {
+            var baseColor = Color.Parse(surfaceColor.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.05f); // Subtle hover for surfaces
+            
+            sb.AppendLine($"          <Color x:Key=\"SurfaceHoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"SurfaceHoverBrush\" Color=\"{{StaticResource SurfaceHoverColor}}\"/>");
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Failed to generate surface variations");
+    }
+}
+
+/// <summary>
+/// Generate light theme variant - simplified version
+/// </summary>
+private void GenerateLightThemeVariant(StringBuilder sb)
+{
+    // Generate light theme versions of all colors
+    sb.AppendLine("          <!-- Foundation Colors - Light Theme -->");
+    foreach (var color in FoundationColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        // For light theme, you might want to derive lighter/different colors
+        // For now, using the same colors - you can enhance this later
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+    
+    // Add semantic colors for light theme
+    sb.AppendLine("          <!-- Semantic Colors - Light Theme -->");
+    foreach (var color in SemanticColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+    
+    // Add surface and text colors
+    sb.AppendLine("          <!-- Surface & Text Colors - Light Theme -->");
+    foreach (var color in SurfaceColors.Concat(TextColors))
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+}
 
     public async Task CleanupAsync()
     {

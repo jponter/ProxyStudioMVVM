@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
@@ -39,7 +40,8 @@ namespace ProxyStudio.Services
 
         public IReadOnlyList<ThemeDefinition> AvailableThemes { get; } = new List<ThemeDefinition>
         {
-            new() {
+            new()
+            {
                 Type = ThemeType.DarkProfessional,
                 Name = "Dark Professional",
                 Description = "Modern dark theme optimized for long work sessions",
@@ -47,7 +49,8 @@ namespace ProxyStudio.Services
                 IsDark = true,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/dark-professional.png"
             },
-            new() {
+            new()
+            {
                 Type = ThemeType.LightClassic,
                 Name = "Light Classic",
                 Description = "Clean light theme with traditional styling",
@@ -55,7 +58,8 @@ namespace ProxyStudio.Services
                 IsDark = false,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/light-classic.png"
             },
-            new() {
+            new()
+            {
                 Type = ThemeType.DarkRed,
                 Name = "Dark Red",
                 Description = "Clean light theme with traditional styling",
@@ -63,8 +67,9 @@ namespace ProxyStudio.Services
                 IsDark = true,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/DarkRed.png"
             },
-            
-            new() {
+
+            new()
+            {
                 Type = ThemeType.HighContrast,
                 Name = "High Contrast",
                 Description = "High contrast theme for accessibility",
@@ -72,7 +77,8 @@ namespace ProxyStudio.Services
                 IsDark = true,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/high-contrast.png"
             },
-            new() {
+            new()
+            {
                 Type = ThemeType.Gaming,
                 Name = "Gaming RGB",
                 Description = "Vibrant theme with gaming-inspired RGB lighting",
@@ -80,7 +86,8 @@ namespace ProxyStudio.Services
                 IsDark = true,
                 PreviewImagePath = "avares://ProxyStudio/Assets/Previews/gaming.png"
             },
-            new() {
+            new()
+            {
                 Type = ThemeType.Minimal,
                 Name = "Minimal",
                 Description = "Clean, distraction-free monochrome interface",
@@ -98,7 +105,7 @@ namespace ProxyStudio.Services
             _configManager = configManager;
             _logger = logger;
             _transitionManager = new ThemeTransitionManager();
-            
+
             // Check for seasonal themes on startup
             CheckSeasonalThemes();
         }
@@ -111,7 +118,7 @@ namespace ProxyStudio.Services
             try
             {
                 _logger.LogInformation("Applying theme: {ThemeName}", theme);
-                
+
                 var themeDefinition = AvailableThemes.FirstOrDefault(t => t.Type == theme);
                 if (themeDefinition == null)
                 {
@@ -125,7 +132,7 @@ namespace ProxyStudio.Services
 
                 _currentTheme = theme;
                 ThemeChanged?.Invoke(this, theme);
-                
+
                 _logger.LogInformation("Successfully applied theme: {ThemeName}", theme);
             }
             catch (Exception ex)
@@ -141,7 +148,7 @@ namespace ProxyStudio.Services
         private async Task ApplyThemeWithThemeDictionaries(ThemeDefinition themeDefinition)
         {
             var app = Application.Current;
-            if (app?.Styles == null) 
+            if (app?.Styles == null)
             {
                 _logger.LogWarning("Application or Styles collection is null");
                 return;
@@ -152,8 +159,8 @@ namespace ProxyStudio.Services
                 // Remove existing custom theme styles (but keep FluentTheme and system styles)
                 var customThemes = app.Styles
                     .OfType<StyleInclude>()
-                    .Where(s => s.Source?.ToString().Contains("Themes/") == true || 
-                               s.Source?.ToString().Contains("temp") == true)
+                    .Where(s => s.Source?.ToString().Contains("Themes/") == true ||
+                                s.Source?.ToString().Contains("temp") == true)
                     .ToList();
 
                 foreach (var customTheme in customThemes)
@@ -173,9 +180,9 @@ namespace ProxyStudio.Services
 
                 // Set the appropriate theme variant based on the theme
                 var themeVariant = themeDefinition.IsDark ? ThemeVariant.Dark : ThemeVariant.Light;
-                
+
                 // Apply to main window if available
-                if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && 
+                if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
                     desktop.MainWindow != null)
                 {
                     desktop.MainWindow.RequestedThemeVariant = themeVariant;
@@ -197,27 +204,29 @@ namespace ProxyStudio.Services
         }
 
         /// <summary>
-        /// Apply custom theme from XAML content with ThemeDictionaries support
+        /// FIXED: Apply custom theme with proper ThemeDictionaries support
         /// </summary>
         public async Task ApplyCustomThemeAsync(string themeXaml, string themeName)
         {
             try
             {
                 _logger.LogInformation("Applying custom theme: {ThemeName}", themeName);
-                
-                // Validate that the theme XAML contains ThemeDictionaries
+
+                // Validate that the theme contains ThemeDictionaries
                 if (!themeXaml.Contains("ThemeDictionaries"))
                 {
                     _logger.LogWarning("Custom theme does not contain ThemeDictionaries, may not work correctly");
+                    // Convert old format to new format if needed
+                    themeXaml = ConvertLegacyThemeToThemeDictionaries(themeXaml);
                 }
 
                 // Create temporary theme file
                 var tempDir = Path.Combine(Path.GetTempPath(), "ProxyStudio", "Themes");
                 Directory.CreateDirectory(tempDir);
                 var tempThemeFile = Path.Combine(tempDir, $"{SanitizeFileName(themeName)}.axaml");
-                
+
                 await File.WriteAllTextAsync(tempThemeFile, themeXaml);
-                
+
                 var app = Application.Current;
                 if (app?.Styles == null) return;
 
@@ -225,7 +234,7 @@ namespace ProxyStudio.Services
                 var customThemes = app.Styles
                     .OfType<StyleInclude>()
                     .Where(s => s.Source?.ToString().Contains("temp") == true ||
-                               s.Source?.ToString().Contains("Themes/") == true)
+                                s.Source?.ToString().Contains("ProxyStudio/Themes/") == true)
                     .ToList();
 
                 foreach (var customTheme in customThemes)
@@ -239,17 +248,31 @@ namespace ProxyStudio.Services
                     Source = new Uri(tempThemeFile)
                 };
 
-                app.Styles.Add(styleInclude);
+                // ✅ CRITICAL: Insert theme BEFORE ModernDesignClasses so resources are available
+                var modernDesignIndex = app.Styles
+                    .OfType<StyleInclude>()
+                    .Select((style, index) => new { style, index })
+                    .FirstOrDefault(x => x.style.Source?.ToString().Contains("ModernDesign") == true)?.index;
 
-                // Determine theme variant from content or default to Dark
-                var themeVariant = DetermineThemeVariantFromXaml(themeXaml);
-                
-                if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && 
-                    desktop.MainWindow != null)
+                if (modernDesignIndex.HasValue)
                 {
-                    desktop.MainWindow.RequestedThemeVariant = themeVariant;
+                    app.Styles.Insert(modernDesignIndex.Value, styleInclude);
+                    _logger.LogDebug("Inserted custom theme before ModernDesignClasses at index {Index}",
+                        modernDesignIndex.Value);
                 }
-                app.RequestedThemeVariant = themeVariant;
+                else
+                {
+                    app.Styles.Add(styleInclude);
+                    _logger.LogDebug("Added custom theme at end of styles");
+                }
+
+                // Set the appropriate theme variant
+                var themeVariant = DetermineThemeVariantFromXaml(themeXaml);
+                if (app.RequestedThemeVariant != themeVariant)
+                {
+                    app.RequestedThemeVariant = themeVariant;
+                    _logger.LogDebug("Set RequestedThemeVariant to: {Variant}", themeVariant);
+                }
 
                 _logger.LogInformation("Successfully applied custom theme: {ThemeName}", themeName);
             }
@@ -257,6 +280,51 @@ namespace ProxyStudio.Services
             {
                 _logger.LogError(ex, "Failed to apply custom theme: {ThemeName}", themeName);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Convert legacy theme format to modern ThemeDictionaries format
+        /// </summary>
+        private string ConvertLegacyThemeToThemeDictionaries(string legacyXaml)
+        {
+            try
+            {
+                _logger.LogInformation("Converting legacy theme to ThemeDictionaries format");
+
+                // This is a simplified conversion - you might need to enhance based on your legacy format
+                var sb = new StringBuilder();
+                sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
+                sb.AppendLine("        xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
+                sb.AppendLine();
+                sb.AppendLine("  <Styles.Resources>");
+                sb.AppendLine("    <ResourceDictionary>");
+                sb.AppendLine("      <ResourceDictionary.ThemeDictionaries>");
+                sb.AppendLine("        <ResourceDictionary x:Key=\"Dark\">");
+
+                // Extract existing color/brush definitions and wrap them in ThemeDictionaries
+                // This is a basic implementation - enhance as needed
+                var lines = legacyXaml.Split('\n');
+                foreach (var line in lines)
+                {
+                    if (line.Contains("<Color") || line.Contains("<SolidColorBrush"))
+                    {
+                        sb.AppendLine($"          {line.Trim()}");
+                    }
+                }
+
+                sb.AppendLine("        </ResourceDictionary>");
+                sb.AppendLine("      </ResourceDictionary.ThemeDictionaries>");
+                sb.AppendLine("    </ResourceDictionary>");
+                sb.AppendLine("  </Styles.Resources>");
+                sb.AppendLine("</Styles>");
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to convert legacy theme, using original");
+                return legacyXaml;
             }
         }
 
@@ -289,9 +357,9 @@ namespace ProxyStudio.Services
                 // Write new theme content
                 Directory.CreateDirectory(Path.GetDirectoryName(themeFilePath) ?? themesDir);
                 await File.WriteAllTextAsync(themeFilePath, themeXaml);
-                
+
                 _logger.LogInformation("Replaced theme file: {ThemeFilePath}", themeFilePath);
-                
+
                 // Apply the updated theme
                 await ApplyThemeAsync(themeType);
             }
@@ -409,44 +477,69 @@ namespace ProxyStudio.Services
         }
 
         /// <summary>
-        /// Helper method to determine theme variant from XAML content
+        /// Determine the appropriate theme variant from XAML content
         /// </summary>
         private ThemeVariant DetermineThemeVariantFromXaml(string themeXaml)
         {
-            // Simple heuristic: if XAML contains Dark theme dictionary, it's a dark theme
-            if (themeXaml.Contains("x:Key=\"Dark\"") || themeXaml.Contains("Dark Theme"))
+            // Look for Dark/Light keys in ThemeDictionaries
+            if (themeXaml.Contains("x:Key=\"Dark\""))
             {
                 return ThemeVariant.Dark;
             }
-            if (themeXaml.Contains("x:Key=\"Light\"") || themeXaml.Contains("Light Theme"))
+            else if (themeXaml.Contains("x:Key=\"Light\""))
             {
                 return ThemeVariant.Light;
             }
-            
-            // Default to Dark if cannot determine
+
+            // Fallback - analyze color brightness to determine if it's a dark theme
+            try
+            {
+                // Look for background color in the XAML
+                var backgroundMatch = System.Text.RegularExpressions.Regex.Match(
+                    themeXaml, @"BackgroundColor['""]>#([A-Fa-f0-9]{6})");
+
+                if (backgroundMatch.Success)
+                {
+                    var colorHex = backgroundMatch.Groups[1].Value;
+                    var color = Color.Parse($"#{colorHex}");
+                    var brightness = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255;
+
+                    return brightness < 0.5 ? ThemeVariant.Dark : ThemeVariant.Light;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to determine theme variant from XAML, defaulting to Dark");
+            }
+
             return ThemeVariant.Dark;
         }
 
         /// <summary>
-        /// Sanitize filename for cross-platform compatibility
+        /// Sanitize filename for safe file operations
         /// </summary>
         private string SanitizeFileName(string fileName)
         {
             var invalidChars = Path.GetInvalidFileNameChars();
-            return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
-        }
-    }
+            foreach (var invalidChar in invalidChars)
+            {
+                fileName = fileName.Replace(invalidChar, '_');
+            }
 
-    /// <summary>
-    /// Theme transition manager for smooth theme changes (placeholder for future enhancement)
-    /// </summary>
-    public class ThemeTransitionManager
-    {
-        public async Task TransitionToThemeAsync(ThemeDefinition themeDefinition)
+            return fileName;
+        }
+
+        /// <summary>
+        /// Theme transition manager for smooth theme changes (placeholder for future enhancement)
+        /// </summary>
+        public class ThemeTransitionManager
         {
-            // Placeholder for smooth theme transitions
-            // Could implement fade effects, color transitions, etc.
-            await Task.Delay(100);
+            public async Task TransitionToThemeAsync(ThemeDefinition themeDefinition)
+            {
+                // Placeholder for smooth theme transitions
+                // Could implement fade effects, color transitions, etc.
+                await Task.Delay(100);
+            }
         }
     }
 }
