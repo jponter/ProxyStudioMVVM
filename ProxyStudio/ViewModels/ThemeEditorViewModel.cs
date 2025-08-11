@@ -440,7 +440,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
     // }
     
 /// <summary>
-/// Enhanced memory theme application with proper resource handling
+/// Updated theme application with the final fix
 /// </summary>
 private async Task ApplyThemeInMemory()
 {
@@ -462,7 +462,7 @@ private async Task ApplyThemeInMemory()
                 // Create a new resource dictionary for our theme
                 var themeDict = new ResourceDictionary();
 
-                // Apply colors to the new dictionary instead of directly to app resources
+                // Apply colors to the new dictionary
                 ApplyColorsToResources(themeDict, FoundationColors, "Foundation");
                 ApplyColorsToResources(themeDict, SemanticColors, "Semantic");
                 ApplyColorsToResources(themeDict, SurfaceColors, "Surface");
@@ -471,8 +471,7 @@ private async Task ApplyThemeInMemory()
                 // Apply derived colors AFTER base colors are set
                 ApplyDerivedColorsToResources(themeDict);
 
-                // Now merge this dictionary with the application resources
-                // First, remove any existing theme dictionary we might have added
+                // Remove existing theme dictionary
                 ResourceDictionary? existingThemeDict = null;
                 for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
                 {
@@ -486,34 +485,17 @@ private async Task ApplyThemeInMemory()
                     }
                 }
 
-                // Add a marker to identify our theme dictionary
+                // Add marker and add to merged dictionaries  
                 themeDict["_ThemeEditorGenerated"] = true;
-
-                // Add the new theme dictionary to merged dictionaries
-                // This approach ensures proper DynamicResource change notifications
                 app.Resources.MergedDictionaries.Add(themeDict);
 
                 _logger.LogDebug("Applied theme colors via MergedDictionaries");
-                
-                // *** ADD THIS LINE ***
-                RefreshModernDesignClassesAfterThemeChange();
 
-                // Debug the current state
+                // THE FINAL FIX: Force complete style invalidation
+                ForceStyleInvalidationAfterResourceConfirmed();
+
+                // Debug and verify
                 DebugResourceState();
-
-                // Verify the primary hover was actually set
-                if (app.Resources.TryGetValue("PrimaryHoverBrush", out var hoverBrush) && hoverBrush is SolidColorBrush brush)
-                {
-                    _logger.LogDebug("Verified PrimaryHoverBrush applied: {Color}", brush.Color);
-                }
-                else if (themeDict.TryGetValue("PrimaryHoverBrush", out var themeBrush) && themeBrush is SolidColorBrush themeBrushTyped)
-                {
-                    _logger.LogDebug("PrimaryHoverBrush exists in theme dictionary: {Color}", themeBrushTyped.Color);
-                }
-                else
-                {
-                    _logger.LogWarning("PrimaryHoverBrush was not found after application");
-                }
             }
             catch (Exception ex)
             {
@@ -521,6 +503,153 @@ private async Task ApplyThemeInMemory()
             }
         });
     });
+}
+
+/// <summary>
+/// The FINAL fix - Force complete style invalidation after confirming resources exist
+/// </summary>
+private void ForceStyleInvalidationAfterResourceConfirmed()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("Forcing complete style invalidation...");
+
+        // First, confirm our resources are actually findable
+        try
+        {
+            var primaryHover = app.FindResource("PrimaryHoverBrush");
+            var secondaryHover = app.FindResource("SecondaryHoverBrush");
+            _logger.LogDebug("✅ Confirmed resources exist: Primary={Primary}, Secondary={Secondary}", 
+                primaryHover, secondaryHover);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Resources still not findable, cannot proceed with style invalidation");
+            return;
+        }
+
+        // Method 1: Force style system refresh by manipulating the style collection
+        // This is the most reliable approach
+        var allStyles = app.Styles.ToList();
+        app.Styles.Clear();
+        
+        // Small delay to ensure style system clears
+        System.Threading.Thread.Sleep(50);
+        
+        // Re-add all styles in correct order
+        foreach (var style in allStyles)
+        {
+            app.Styles.Add(style);
+        }
+        
+        _logger.LogDebug("✅ Completely refreshed style system");
+
+        // Method 2: Force theme variant refresh to invalidate all theme-dependent styles
+        var currentVariant = app.RequestedThemeVariant;
+        app.RequestedThemeVariant = ThemeVariant.Light;
+        System.Threading.Thread.Sleep(10);
+        app.RequestedThemeVariant = currentVariant;
+        
+        _logger.LogDebug("✅ Forced theme variant refresh");
+
+        // Method 3: Try to force visual invalidation on main windows
+        if (app.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            foreach (var window in desktop.Windows)
+            {
+                try
+                {
+                    // Force visual invalidation
+                    window.InvalidateVisual();
+                    window.InvalidateMeasure();
+                    window.InvalidateArrange();
+                    _logger.LogDebug("Invalidated visuals for window: {Title}", window.Title);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to invalidate window visuals");
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to force style invalidation");
+    }
+}
+
+/// <summary>
+/// The CORRECT fix - don't reload static theme files, just refresh ModernDesignClasses
+/// </summary>
+private void RefreshModernDesignClassesOnly()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("Refreshing ONLY ModernDesignClasses (not theme files)...");
+
+        // Find ModernDesignClasses
+        var modernDesignClasses = app.Styles
+            .OfType<StyleInclude>()
+            .FirstOrDefault(s => s.Source?.ToString().Contains("ModernDesignClasses") == true);
+
+        if (modernDesignClasses != null)
+        {
+            var sourceUri = modernDesignClasses.Source;
+            
+            // Remove and re-add ONLY ModernDesignClasses
+            app.Styles.Remove(modernDesignClasses);
+            
+            // Small delay
+            System.Threading.Thread.Sleep(10);
+            
+            // Re-add ModernDesignClasses - it should now find our hover brushes
+            var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+            {
+                Source = sourceUri
+            };
+            
+            app.Styles.Add(newStyleInclude);
+            
+            _logger.LogDebug("✅ ModernDesignClasses refreshed - should now find hover brushes");
+        }
+        else
+        {
+            // Manually add if not found
+            var styleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+            {
+                Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+            };
+
+            app.Styles.Add(styleInclude);
+            _logger.LogDebug("✅ Manually added ModernDesignClasses");
+        }
+
+        // Test resource accessibility
+        var canFindHover = app.Resources.TryGetValue("PrimaryHoverBrush", out var hoverTest);
+        _logger.LogDebug("After ModernDesignClasses refresh, can find PrimaryHoverBrush: {CanFind}, Value: {Value}", 
+            canFindHover, hoverTest);
+
+        // Also test with FindResource (what DynamicResource actually uses)
+        try
+        {
+            var dynamicHover = app.FindResource("PrimaryHoverBrush");
+            _logger.LogDebug("✅ FindResource found PrimaryHoverBrush: {Value}", dynamicHover);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("❌ FindResource failed to find PrimaryHoverBrush: {Error}", ex.Message);
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to refresh ModernDesignClasses");
+    }
 }
 
     /// <summary>
@@ -974,6 +1103,69 @@ private void DebugApplicationStyles()
     catch (Exception ex)
     {
         _logger.LogError(ex, "Error debugging application styles");
+    }
+}
+
+/// <summary>
+/// Force complete recompilation of ModernDesignClasses after hover brushes are available
+/// </summary>
+private void ForceCompleteStyleRecompilation()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("Forcing complete style recompilation...");
+
+        // Remove ALL StyleInclude items that might reference our resources
+        var stylesToRemove = app.Styles
+            .OfType<StyleInclude>()
+            .ToList();
+
+        foreach (var style in stylesToRemove)
+        {
+            app.Styles.Remove(style);
+            _logger.LogDebug("Removed style: {Source}", style.Source);
+        }
+
+        // Force garbage collection to clear any cached compiled styles
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        // Small delay to ensure everything is cleared
+        //await Task.Delay(10);
+
+        // Now re-add them in the correct order
+        // Add theme first (so resources are available)
+        var themeStyle = new StyleInclude(new Uri("avares://ProxyStudio/"))
+        {
+            Source = new Uri("avares://ProxyStudio/Themes/DarkProfessional.axaml")
+        };
+        app.Styles.Add(themeStyle);
+        _logger.LogDebug("Re-added theme style");
+
+        // Small delay to let theme resources settle
+        //await Task.Delay(10);
+
+        // Then add ModernDesignClasses (which can now find the hover brushes)
+        var modernDesignStyle = new StyleInclude(new Uri("avares://ProxyStudio/"))
+        {
+            Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+        };
+        app.Styles.Add(modernDesignStyle);
+        _logger.LogDebug("Re-added ModernDesignClasses style");
+
+        // Test if we can now find the hover brush
+        var canFindHover = app.Resources.TryGetValue("PrimaryHoverBrush", out var hoverTest);
+        _logger.LogDebug("After recompilation, can find PrimaryHoverBrush: {CanFind}, Value: {Value}", 
+            canFindHover, hoverTest);
+
+        _logger.LogDebug("✅ Complete style recompilation finished");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to force complete style recompilation");
     }
 }
 

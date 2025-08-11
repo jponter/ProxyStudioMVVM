@@ -93,6 +93,8 @@
       </None>
       <Compile Remove="Services\EnhancedThemeService.cs" />
       <None Include="Services\EnhancedThemeService.cs" />
+      <AvaloniaXaml Remove="Themes\Common\ResponsiveClasses.axaml" />
+      <None Include="Themes\Common\ResponsiveClasses.axaml" />
     </ItemGroup>
 
    

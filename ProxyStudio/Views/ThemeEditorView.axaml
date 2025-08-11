@@ -513,6 +513,7 @@
         </ScrollViewer>
         
         <!-- Preview and Help Panel -->
+        
         <Border Grid.Column="2" 
                 Background="{DynamicResource SurfaceElevatedBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
@@ -521,7 +522,9 @@
                 <StackPanel Spacing="16" Margin="16">
                     
                     <!-- Live Preview -->
-                    <Border Background="{DynamicResource SurfaceBrush}"
+                   
+                    <Border 
+                        Background="{DynamicResource SurfaceBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             CornerRadius="8"
@@ -562,6 +565,32 @@
                                                 
                                                 Padding="12,6"/>
                                     </StackPanel>
+                                </StackPanel>
+                                
+                                <!-- Add this test button to your ThemeEditorView.axaml -->
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="DEBUG TEST:" />
+    
+                                    <!-- Test button with explicit style -->
+                                    <Button x:Name="TestButton" 
+                                            Content="TEST HOVER"
+                                            Classes="primary"
+                                            Background="Blue"
+                                            Padding="12,6"
+                                            PointerEntered="TestButton_OnPointerEntered"
+                                            PointerExited="TestButton_OnPointerExited"/>
+            
+                                    <!-- Test button with inline hover style -->
+                                    <Button Content="INLINE HOVER TEST" Padding="12,6">
+                                        <Button.Styles>
+                                            <Style Selector="Button">
+                                                <Setter Property="Background" Value="Purple" />
+                                            </Style>
+                                            <Style Selector="Button:pointerover">
+                                                <Setter Property="Background" Value="Yellow" />
+                                            </Style>
+                                        </Button.Styles>
+                                    </Button>
                                 </StackPanel>
                                 
                                 <!-- Status Preview -->

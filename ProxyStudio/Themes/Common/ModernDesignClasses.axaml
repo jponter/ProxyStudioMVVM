@@ -22,11 +22,11 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     
-    <!-- Primary Button Hover State -->
-    <Style Selector="Button.primary:pointerover">
-        <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" />
-    </Style>
+    <!-- ~1~ Primary Button Hover State @1@ -->
+    <!-- <Style Selector="Button.primary:pointerover"> -->
+    <!--     <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}" /> -->
+    <!--     <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}" /> -->
+    <!-- </Style> -->
     
     <!-- Primary Button Pressed State -->
     <Style Selector="Button.primary:pressed">
