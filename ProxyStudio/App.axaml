@@ -9,6 +9,8 @@
          <FluentTheme /> <!-- FluentTheme is the default theme for Avalonia, providing a modern look and feel. -->
         
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+         <!-- Colour picker -->
+         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <!-- Add your modern design system here -->
          <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
         

@@ -31,22 +31,30 @@ public partial class ColorProperty : ObservableObject
     [ObservableProperty] private string _name;
     [ObservableProperty] private string _hexValue;
     [ObservableProperty] private string _description;
+    [ObservableProperty] private Color _color;
 
-    public SolidColorBrush ColorBrush => new(Color.Parse(HexValue));
+    public SolidColorBrush ColorBrush => new(Color);
 
     public ColorProperty(string name, string hexValue, string description)
     {
         _name = name;
         _hexValue = hexValue;
         _description = description;
+        _color = Color.Parse(hexValue);
+    }
+    
+    partial void OnColorChanged(Color value)
+    {
+        HexValue = value.ToString();
+        OnPropertyChanged(nameof(ColorBrush));
     }
 
     partial void OnHexValueChanged(string value)
     {
         // Validate hex color format
-        if (IsValidHexColor(value)) 
+        if (IsValidHexColor(value))
         {
-            OnPropertyChanged(nameof(ColorBrush));
+            Color = Color.Parse(value);
         }
     }
 

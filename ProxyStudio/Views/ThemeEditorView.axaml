@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+            
              mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
              x:Class="ProxyStudio.Views.ThemeEditorView"
              x:DataType="vm:ThemeEditorViewModel">
@@ -227,13 +229,30 @@
                                                      FontWeight="SemiBold"
                                                      TextAlignment="Center"/>
                                             
+                                            <StackPanel Spacing="6">
+                                                <ColorPicker Color="{Binding Color, Mode=TwoWay}"
+                                                                         HorizontalAlignment="Center"
+                                                                         Width="120"
+                                                                         IsAlphaEnabled="False"
+                                                                         ColorModel="Rgba"/>
+    
+                                                <TextBox Text="{Binding HexValue, Mode=TwoWay}"
+                                                         Background="{DynamicResource SurfaceBrush}"
+                                                         BorderBrush="{DynamicResource BorderBrush}"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         FontFamily="Consolas, Monaco, monospace"
+                                                         TextAlignment="Center"
+                                                         Watermark="#RRGGBB"
+                                                         MaxLength="7"/>
+                                            </StackPanel>
+                                            
                                             <!-- Color Input -->
-                                            <TextBox Text="{Binding HexValue}"
-                                                   Background="{DynamicResource SurfaceBrush}"
-                                                   BorderBrush="{DynamicResource BorderBrush}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontFamily="Consolas, Monaco, monospace"
-                                                   TextAlignment="Center"/>
+                                            <!-- <TextBox Text="{Binding HexValue}" -->
+                                            <!--        Background="{DynamicResource SurfaceBrush}" -->
+                                            <!--        BorderBrush="{DynamicResource BorderBrush}" -->
+                                            <!--        Foreground="{DynamicResource TextPrimaryBrush}" -->
+                                            <!--        FontFamily="Consolas, Monaco, monospace" -->
+                                            <!--        TextAlignment="Center"/> -->
                                             
                                             <!-- Description -->
                                             <TextBlock Classes="body-small" 
@@ -292,12 +311,30 @@
                                                      FontWeight="SemiBold"
                                                      TextAlignment="Center"/>
                                             
-                                            <TextBox Text="{Binding HexValue}"
-                                                   Background="{DynamicResource SurfaceBrush}"
-                                                   BorderBrush="{DynamicResource BorderBrush}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontFamily="Consolas, Monaco, monospace"
-                                                   TextAlignment="Center"/>
+                                            
+                                            <StackPanel Spacing="6">
+                                                <ColorPicker Color="{Binding Color, Mode=TwoWay}"
+                                                             HorizontalAlignment="Center"
+                                                             Width="120"
+                                                             IsAlphaEnabled="False"
+                                                             ColorModel="Rgba"/>
+    
+                                                <TextBox Text="{Binding HexValue, Mode=TwoWay}"
+                                                         Background="{DynamicResource SurfaceBrush}"
+                                                         BorderBrush="{DynamicResource BorderBrush}"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         FontFamily="Consolas, Monaco, monospace"
+                                                         TextAlignment="Center"
+                                                         Watermark="#RRGGBB"
+                                                         MaxLength="7"/>
+                                            </StackPanel>
+                                            
+                                            <!-- <TextBox Text="{Binding HexValue}" -->
+                                            <!--        Background="{DynamicResource SurfaceBrush}" -->
+                                            <!--        BorderBrush="{DynamicResource BorderBrush}" -->
+                                            <!--        Foreground="{DynamicResource TextPrimaryBrush}" -->
+                                            <!--        FontFamily="Consolas, Monaco, monospace" -->
+                                            <!--        TextAlignment="Center"/> -->
                                             
                                             <TextBlock Classes="body-small" 
                                                      Text="{Binding Description}"
@@ -355,12 +392,29 @@
                                                      FontWeight="SemiBold"
                                                      TextAlignment="Center"/>
                                             
-                                            <TextBox Text="{Binding HexValue}"
-                                                   Background="{DynamicResource SurfaceBrush}"
-                                                   BorderBrush="{DynamicResource BorderBrush}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontFamily="Consolas, Monaco, monospace"
-                                                   TextAlignment="Center"/>
+                                            <StackPanel Spacing="6">
+                                                <ColorPicker Color="{Binding Color, Mode=TwoWay}"
+                                                             HorizontalAlignment="Center"
+                                                             Width="120"
+                                                             IsAlphaEnabled="False"
+                                                             ColorModel="Rgba"/>
+    
+                                                <TextBox Text="{Binding HexValue, Mode=TwoWay}"
+                                                         Background="{DynamicResource SurfaceBrush}"
+                                                         BorderBrush="{DynamicResource BorderBrush}"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         FontFamily="Consolas, Monaco, monospace"
+                                                         TextAlignment="Center"
+                                                         Watermark="#RRGGBB"
+                                                         MaxLength="7"/>
+                                            </StackPanel>
+                                            
+                                            <!-- <TextBox Text="{Binding HexValue}" -->
+                                            <!--        Background="{DynamicResource SurfaceBrush}" -->
+                                            <!--        BorderBrush="{DynamicResource BorderBrush}" -->
+                                            <!--        Foreground="{DynamicResource TextPrimaryBrush}" -->
+                                            <!--        FontFamily="Consolas, Monaco, monospace" -->
+                                            <!--        TextAlignment="Center"/> -->
                                             
                                             <TextBlock Classes="body-small" 
                                                      Text="{Binding Description}"
@@ -418,12 +472,29 @@
                                                      FontWeight="SemiBold"
                                                      TextAlignment="Center"/>
                                             
-                                            <TextBox Text="{Binding HexValue}"
-                                                   Background="{DynamicResource SurfaceBrush}"
-                                                   BorderBrush="{DynamicResource BorderBrush}"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontFamily="Consolas, Monaco, monospace"
-                                                   TextAlignment="Center"/>
+                                            <StackPanel Spacing="6">
+                                                <ColorPicker Color="{Binding Color, Mode=TwoWay}"
+                                                             HorizontalAlignment="Center"
+                                                             Width="120"
+                                                             IsAlphaEnabled="False"
+                                                             ColorModel="Rgba"/>
+    
+                                                <TextBox Text="{Binding HexValue, Mode=TwoWay}"
+                                                         Background="{DynamicResource SurfaceBrush}"
+                                                         BorderBrush="{DynamicResource BorderBrush}"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         FontFamily="Consolas, Monaco, monospace"
+                                                         TextAlignment="Center"
+                                                         Watermark="#RRGGBB"
+                                                         MaxLength="7"/>
+                                            </StackPanel>
+                                            
+                                            <!-- <TextBox Text="{Binding HexValue}" -->
+                                            <!--        Background="{DynamicResource SurfaceBrush}" -->
+                                            <!--        BorderBrush="{DynamicResource BorderBrush}" -->
+                                            <!--        Foreground="{DynamicResource TextPrimaryBrush}" -->
+                                            <!--        FontFamily="Consolas, Monaco, monospace" -->
+                                            <!--        TextAlignment="Center"/> -->
                                             
                                             <TextBlock Classes="body-small" 
                                                      Text="{Binding Description}"
