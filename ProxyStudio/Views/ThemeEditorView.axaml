@@ -552,13 +552,14 @@
                                              Text="Buttons:"
                                              Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Content="Primary"
-                                                Background="{DynamicResource PrimaryBrush}"
-                                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                        <Button Classes="primary" 
+                                            Content="Primary"
+                                            PointerEntered="OnButtonPointerEntered"
+                                                
                                                 Padding="12,6"/>
-                                        <Button Content="Secondary"
-                                                Background="{DynamicResource SecondaryBrush}"
-                                                Foreground="{DynamicResource TextOnPrimaryBrush}"
+                                        <Button Classes="secondary" 
+                                            Content="Secondary"
+                                                
                                                 Padding="12,6"/>
                                     </StackPanel>
                                 </StackPanel>

@@ -11,13 +11,15 @@
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
          <!-- Colour picker -->
          <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
-        <!-- Add your modern design system here -->
-         <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
+        
         
         <!-- Test styles directly here first -->
         <!-- Then your theme -->
         
         <StyleInclude Source="avares://ProxyStudio/Themes/DarkProfessional.axaml"/>
+         
+         <!-- Add your modern design system here -->
+         <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
     </Application.Styles>
              
              <Application.Resources>

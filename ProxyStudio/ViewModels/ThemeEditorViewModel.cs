@@ -19,6 +19,8 @@ using Microsoft.Extensions.Logging;
 using ProxyStudio.Helpers;
 using ProxyStudio.Services;
 using Avalonia;
+using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 
 namespace ProxyStudio.ViewModels;
@@ -414,28 +416,112 @@ public partial class ThemeEditorViewModel : ViewModelBase
     /// <summary>
     /// Apply theme colors directly to application resources in memory
     /// </summary>
-    private async Task ApplyThemeInMemory()
+    // private async Task ApplyThemeInMemory()
+    // {
+    //     await Task.Run(() =>
+    //     {
+    //         Dispatcher.UIThread.Post(() =>
+    //         {
+    //             var app = Application.Current;
+    //             if (app?.Resources == null) return;
+    //
+    //             // Apply new color resources directly to Application.Resources
+    //             ApplyColorsToResources(app.Resources, FoundationColors, "Foundation");
+    //             ApplyColorsToResources(app.Resources, SemanticColors, "Semantic");
+    //             ApplyColorsToResources(app.Resources, SurfaceColors, "Surface");
+    //             ApplyColorsToResources(app.Resources, TextColors, "Text");
+    //
+    //             // Apply derived colors
+    //             ApplyDerivedColorsToResources(app.Resources);
+    //
+    //             _logger.LogDebug("Applied theme colors directly to Application.Resources in memory");
+    //         });
+    //     });
+    // }
+    
+/// <summary>
+/// Enhanced memory theme application with proper resource handling
+/// </summary>
+private async Task ApplyThemeInMemory()
+{
+    await Task.Run(() =>
     {
-        await Task.Run(() =>
+        Dispatcher.UIThread.Post(() =>
         {
-            Dispatcher.UIThread.Post(() =>
+            try
             {
                 var app = Application.Current;
-                if (app?.Resources == null) return;
+                if (app?.Resources == null) 
+                {
+                    _logger.LogWarning("Application.Current.Resources is null");
+                    return;
+                }
 
-                // Apply new color resources directly to Application.Resources
-                ApplyColorsToResources(app.Resources, FoundationColors, "Foundation");
-                ApplyColorsToResources(app.Resources, SemanticColors, "Semantic");
-                ApplyColorsToResources(app.Resources, SurfaceColors, "Surface");
-                ApplyColorsToResources(app.Resources, TextColors, "Text");
+                _logger.LogDebug("Applying theme colors to Application.Resources...");
 
-                // Apply derived colors
-                ApplyDerivedColorsToResources(app.Resources);
+                // Create a new resource dictionary for our theme
+                var themeDict = new ResourceDictionary();
 
-                _logger.LogDebug("Applied theme colors directly to Application.Resources in memory");
-            });
+                // Apply colors to the new dictionary instead of directly to app resources
+                ApplyColorsToResources(themeDict, FoundationColors, "Foundation");
+                ApplyColorsToResources(themeDict, SemanticColors, "Semantic");
+                ApplyColorsToResources(themeDict, SurfaceColors, "Surface");
+                ApplyColorsToResources(themeDict, TextColors, "Text");
+
+                // Apply derived colors AFTER base colors are set
+                ApplyDerivedColorsToResources(themeDict);
+
+                // Now merge this dictionary with the application resources
+                // First, remove any existing theme dictionary we might have added
+                ResourceDictionary? existingThemeDict = null;
+                for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
+                {
+                    if (app.Resources.MergedDictionaries[i] is ResourceDictionary dict && 
+                        dict.ContainsKey("_ThemeEditorGenerated"))
+                    {
+                        existingThemeDict = dict;
+                        app.Resources.MergedDictionaries.RemoveAt(i);
+                        _logger.LogDebug("Removed existing theme dictionary at index {Index}", i);
+                        break;
+                    }
+                }
+
+                // Add a marker to identify our theme dictionary
+                themeDict["_ThemeEditorGenerated"] = true;
+
+                // Add the new theme dictionary to merged dictionaries
+                // This approach ensures proper DynamicResource change notifications
+                app.Resources.MergedDictionaries.Add(themeDict);
+
+                _logger.LogDebug("Applied theme colors via MergedDictionaries");
+                
+                // *** ADD THIS LINE ***
+                RefreshModernDesignClassesAfterThemeChange();
+
+                // Debug the current state
+                DebugResourceState();
+
+                // Verify the primary hover was actually set
+                if (app.Resources.TryGetValue("PrimaryHoverBrush", out var hoverBrush) && hoverBrush is SolidColorBrush brush)
+                {
+                    _logger.LogDebug("Verified PrimaryHoverBrush applied: {Color}", brush.Color);
+                }
+                else if (themeDict.TryGetValue("PrimaryHoverBrush", out var themeBrush) && themeBrush is SolidColorBrush themeBrushTyped)
+                {
+                    _logger.LogDebug("PrimaryHoverBrush exists in theme dictionary: {Color}", themeBrushTyped.Color);
+                }
+                else
+                {
+                    _logger.LogWarning("PrimaryHoverBrush was not found after application");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying theme in memory");
+            }
         });
-    }
+    });
+}
 
     /// <summary>
     /// Backup current application resources for restoration
@@ -472,6 +558,34 @@ public partial class ThemeEditorViewModel : ViewModelBase
         }
     }
 
+    // private void ApplyColorsToResources(IResourceDictionary resources, ObservableCollection<ColorProperty> colors, string category)
+    // {
+    //     foreach (var colorProp in colors)
+    //     {
+    //         try
+    //         {
+    //             var color = Color.Parse(colorProp.HexValue);
+    //             var brush = new SolidColorBrush(color);
+    //
+    //             var colorKey = colorProp.Name.Replace(" ", "") + "Color";
+    //             var brushKey = colorProp.Name.Replace(" ", "") + "Brush";
+    //
+    //             // Add both color and brush resources
+    //             resources[colorKey] = color;
+    //             resources[brushKey] = brush;
+    //
+    //             _logger.LogTrace("Applied {Category} color: {Name} = {Value}", category, colorProp.Name, colorProp.HexValue);
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             _logger.LogWarning(ex, "Failed to parse color {Name}: {Value}", colorProp.Name, colorProp.HexValue);
+    //         }
+    //     }
+    // }
+    
+    // <summary>
+    /// Improved color application with resource invalidation
+    /// </summary>
     private void ApplyColorsToResources(IResourceDictionary resources, ObservableCollection<ColorProperty> colors, string category)
     {
         foreach (var colorProp in colors)
@@ -484,11 +598,13 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 var colorKey = colorProp.Name.Replace(" ", "") + "Color";
                 var brushKey = colorProp.Name.Replace(" ", "") + "Brush";
 
-                // Add both color and brush resources
+                // For ResourceDictionary, we can add directly without removing first
+                // since we're creating a new dictionary each time
                 resources[colorKey] = color;
                 resources[brushKey] = brush;
 
-                _logger.LogTrace("Applied {Category} color: {Name} = {Value}", category, colorProp.Name, colorProp.HexValue);
+                _logger.LogTrace("Applied {Category} color: {Name} = {Value} (Keys: {ColorKey}, {BrushKey})", 
+                    category, colorProp.Name, colorProp.HexValue, colorKey, brushKey);
             }
             catch (Exception ex)
             {
@@ -496,68 +612,602 @@ public partial class ThemeEditorViewModel : ViewModelBase
             }
         }
     }
+    
+/// <summary>
+/// Debug method to verify resource state  
+/// </summary>
+private void DebugResourceState()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Resources == null) return;
 
-    private void ApplyDerivedColorsToResources(IResourceDictionary resources)
+        _logger.LogDebug("=== Resource Debug Information ===");
+        
+        // Check if Primary color exists
+        if (app.Resources.TryGetValue("PrimaryColor", out var primaryColor))
+        {
+            _logger.LogDebug("PrimaryColor found: {Color}", primaryColor);
+        }
+        else
+        {
+            _logger.LogWarning("PrimaryColor NOT found in resources");
+        }
+
+        // Check if PrimaryHover exists
+        if (app.Resources.TryGetValue("PrimaryHoverColor", out var primaryHoverColor))
+        {
+            _logger.LogDebug("PrimaryHoverColor found: {Color}", primaryHoverColor);
+        }
+        else
+        {
+            _logger.LogWarning("PrimaryHoverColor NOT found in resources");
+        }
+
+        if (app.Resources.TryGetValue("PrimaryHoverBrush", out var primaryHoverBrush))
+        {
+            _logger.LogDebug("PrimaryHoverBrush found: {Brush}", primaryHoverBrush);
+        }
+        else
+        {
+            _logger.LogWarning("PrimaryHoverBrush NOT found in resources");
+        }
+
+        // List all color/brush resources from main dictionary
+        if (app.Resources is ResourceDictionary mainDict)
+        {
+            var colorBrushKeys = mainDict.Keys
+                .OfType<string>()
+                .Where(k => k.Contains("Color") || k.Contains("Brush"))
+                .OrderBy(k => k)
+                .ToList();
+
+            _logger.LogDebug("Main Resource Dictionary Color/Brush resources ({Count}): {Keys}", 
+                colorBrushKeys.Count, string.Join(", ", colorBrushKeys));
+        }
+
+        // Check merged dictionaries
+        _logger.LogDebug("MergedDictionaries count: {Count}", app.Resources.MergedDictionaries.Count);
+        
+        for (int i = 0; i < app.Resources.MergedDictionaries.Count; i++)
+        {
+            var provider = app.Resources.MergedDictionaries[i];
+            
+            // Try to cast to ResourceDictionary to access Keys
+            if (provider is ResourceDictionary dict)
+            {
+                var dictKeys = dict.Keys.OfType<string>()
+                    .Where(k => k.Contains("Primary"))
+                    .ToList();
+                
+                if (dictKeys.Any())
+                {
+                    _logger.LogDebug("MergedDictionary[{Index}] Primary keys: {Keys}", i, string.Join(", ", dictKeys));
+                }
+                
+                // Check if our generated marker exists
+                if (dict.ContainsKey("_ThemeEditorGenerated"))
+                {
+                    _logger.LogDebug("Found our theme dictionary at index {Index}", i);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("MergedDictionary[{Index}] is {Type} (not ResourceDictionary)", i, provider.GetType().Name);
+            }
+        }
+
+        _logger.LogDebug("=== End Resource Debug ===");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error during resource debug");
+    }
+}
+    
+// /// <summary>
+// /// Enhanced derived colors generation - includes all hover states for semantic colors
+// /// </summary>
+// private void ApplyDerivedColorsToResources(IResourceDictionary resources)
+// {
+//     try
+//     {
+//         _logger.LogDebug("Generating enhanced derived colors with all hover states...");
+//
+//         // Generate hover states for Foundation colors (15% darker)
+//         GenerateHoverState(resources, "Primary");
+//         GenerateHoverState(resources, "Secondary");
+//
+//         // Generate hover states for Semantic colors (15% darker)
+//         GenerateHoverState(resources, "Success");
+//         GenerateHoverState(resources, "Warning");
+//         GenerateHoverState(resources, "Error");
+//         GenerateHoverState(resources, "Info");
+//
+//         // Generate light variants for status backgrounds
+//         GenerateStatusLightVariants(resources, "Success");
+//         GenerateStatusLightVariants(resources, "Warning");
+//         GenerateStatusLightVariants(resources, "Error");
+//         GenerateStatusLightVariants(resources, "Info");
+//
+//         // Generate contrasting text colors
+//         GenerateContrastingText(resources, "Primary");
+//         GenerateContrastingText(resources, "Secondary");
+//
+//         // Generate surface hover states if needed
+//         if (resources.TryGetValue("SurfaceColor", out var surfaceColorObj) && surfaceColorObj is Color surfaceColor)
+//         {
+//             var surfaceHover = DarkenColor(surfaceColor, 0.05f); // Subtle hover for surfaces
+//             resources["SurfaceHoverColor"] = surfaceHover;
+//             resources["SurfaceHoverBrush"] = new SolidColorBrush(surfaceHover);
+//         }
+//
+//         _logger.LogDebug("Enhanced derived colors generation completed successfully");
+//     }
+//     catch (Exception ex)
+//     {
+//         _logger.LogWarning(ex, "Failed to generate enhanced derived colors");
+//     }
+// }
+
+/// <summary>
+/// Debug version - Enhanced derived colors generation with detailed logging
+/// </summary>
+private void ApplyDerivedColorsToResources(IResourceDictionary resources)
+{
+    try
+    {
+        _logger.LogDebug("=== STARTING DERIVED COLORS GENERATION ===");
+
+        // Check what's in the resources before we start
+        _logger.LogDebug("Resources contains {Count} items before generation", resources.Count);
+        
+        // List all color resources currently in the dictionary
+        var existingColors = resources.Keys.OfType<string>()
+            .Where(k => k.Contains("Color"))
+            .ToList();
+        _logger.LogDebug("Existing color resources: {Colors}", string.Join(", ", existingColors));
+
+        // Generate hover states for Foundation colors (15% darker)
+        _logger.LogDebug("Generating Foundation hover states...");
+        GenerateHoverState(resources, "Primary");
+        GenerateHoverState(resources, "Secondary");
+
+        // Generate hover states for Semantic colors (15% darker)
+        _logger.LogDebug("Generating Semantic hover states...");
+        GenerateHoverState(resources, "Success");
+        GenerateHoverState(resources, "Warning");
+        GenerateHoverState(resources, "Error");
+        GenerateHoverState(resources, "Info");
+
+        // Generate light variants for status backgrounds
+        _logger.LogDebug("Generating status light variants...");
+        GenerateStatusLightVariants(resources, "Success");
+        GenerateStatusLightVariants(resources, "Warning");
+        GenerateStatusLightVariants(resources, "Error");
+        GenerateStatusLightVariants(resources, "Info");
+
+        // Generate contrasting text colors
+        _logger.LogDebug("Generating contrasting text colors...");
+        GenerateContrastingText(resources, "Primary");
+        GenerateContrastingText(resources, "Secondary");
+
+        // Generate surface hover states if needed
+        if (resources.TryGetValue("SurfaceColor", out var surfaceColorObj) && surfaceColorObj is Color surfaceColor)
+        {
+            var surfaceHover = DarkenColor(surfaceColor, 0.05f); // Subtle hover for surfaces
+            resources["SurfaceHoverColor"] = surfaceHover;
+            resources["SurfaceHoverBrush"] = new SolidColorBrush(surfaceHover);
+            _logger.LogDebug("Generated SurfaceHover: {Color}", surfaceHover);
+        }
+
+        // Final check - list all hover brushes that were created
+        var hoverBrushes = resources.Keys.OfType<string>()
+            .Where(k => k.Contains("Hover") && k.EndsWith("Brush"))
+            .ToList();
+        _logger.LogDebug("Created hover brushes: {Brushes}", string.Join(", ", hoverBrushes));
+
+        // Specifically check if PrimaryHoverBrush exists and log its value
+        if (resources.TryGetValue("PrimaryHoverBrush", out var primaryHoverBrush) && primaryHoverBrush is SolidColorBrush phb)
+        {
+            _logger.LogDebug("✅ PrimaryHoverBrush successfully created: {Color}", phb.Color);
+        }
+        else
+        {
+            _logger.LogError("❌ PrimaryHoverBrush was NOT created!");
+        }
+
+        if (resources.TryGetValue("SecondaryHoverBrush", out var secondaryHoverBrush) && secondaryHoverBrush is SolidColorBrush shb)
+        {
+            _logger.LogDebug("✅ SecondaryHoverBrush successfully created: {Color}", shb.Color);
+        }
+        else
+        {
+            _logger.LogError("❌ SecondaryHoverBrush was NOT created!");
+        }
+
+        _logger.LogDebug("=== DERIVED COLORS GENERATION COMPLETED ===");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to generate enhanced derived colors");
+    }
+}
+
+/// <summary>
+/// Generate hover state for any color (15% darker)
+/// </summary>
+// private void GenerateHoverState(IResourceDictionary resources, string colorName)
+// {
+//     try
+//     {
+//         var colorKey = colorName + "Color";
+//         var hoverColorKey = colorName + "HoverColor";
+//         var hoverBrushKey = colorName + "HoverBrush";
+//
+//         if (resources.TryGetValue(colorKey, out var colorObj) && colorObj is Color color)
+//         {
+//             var hoverColor = DarkenColor(color, 0.15f);
+//             
+//             resources[hoverColorKey] = hoverColor;
+//             resources[hoverBrushKey] = new SolidColorBrush(hoverColor);
+//             
+//             _logger.LogDebug("Generated {ColorName}Hover: {HoverColor} from {OriginalColor}", 
+//                 colorName, hoverColor, color);
+//         }
+//         else
+//         {
+//             _logger.LogWarning("{ColorName} color not found for hover generation", colorName);
+//         }
+//     }
+//     catch (Exception ex)
+//     {
+//         _logger.LogWarning(ex, "Failed to generate hover state for {ColorName}", colorName);
+//     }
+// }
+
+/// <summary>
+/// Generate hover state for any color (15% darker) - with detailed logging
+/// </summary>
+private void GenerateHoverState(IResourceDictionary resources, string colorName)
+{
+    try
+    {
+        var colorKey = colorName + "Color";
+        var hoverColorKey = colorName + "HoverColor";
+        var hoverBrushKey = colorName + "HoverBrush";
+
+        _logger.LogDebug("Attempting to generate hover for {ColorName}...", colorName);
+        _logger.LogDebug("Looking for source color with key: {ColorKey}", colorKey);
+
+        if (resources.TryGetValue(colorKey, out var colorObj))
+        {
+            _logger.LogDebug("Found color object: {ColorObj} (Type: {Type})", colorObj, colorObj?.GetType().Name);
+            
+            if (colorObj is Color color)
+            {
+                var hoverColor = DarkenColor(color, 0.15f);
+                
+                resources[hoverColorKey] = hoverColor;
+                resources[hoverBrushKey] = new SolidColorBrush(hoverColor);
+                
+                _logger.LogDebug("✅ Generated {ColorName}Hover: {HoverColor} from {OriginalColor}", 
+                    colorName, hoverColor, color);
+                _logger.LogDebug("✅ Added keys: {HoverColorKey}, {HoverBrushKey}", hoverColorKey, hoverBrushKey);
+            }
+            else
+            {
+                _logger.LogWarning("❌ Color object is not of type Color: {ActualType}", colorObj?.GetType().Name);
+            }
+        }
+        else
+        {
+            _logger.LogWarning("❌ {ColorName} color not found for hover generation (key: {ColorKey})", colorName, colorKey);
+            
+            // List all available keys for debugging
+            var availableKeys = resources.Keys.OfType<string>().Where(k => k.Contains(colorName)).ToList();
+            _logger.LogDebug("Available keys containing '{ColorName}': {Keys}", colorName, string.Join(", ", availableKeys));
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to generate hover state for {ColorName}", colorName);
+    }
+}
+
+/// <summary>
+/// Debug method to see what styles are actually loaded
+/// </summary>
+private void DebugApplicationStyles()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("=== APPLICATION STYLES DEBUG ===");
+        _logger.LogDebug("Total styles count: {Count}", app.Styles.Count);
+
+        for (int i = 0; i < app.Styles.Count; i++)
+        {
+            var style = app.Styles[i];
+            _logger.LogDebug("Style[{Index}]: {Type}", i, style.GetType().Name);
+
+            if (style is StyleInclude styleInclude)
+            {
+                _logger.LogDebug("  Source: {Source}", styleInclude.Source?.ToString());
+            }
+            else if (style is FluentTheme)
+            {
+                _logger.LogDebug("  FluentTheme detected");
+            }
+            else
+            {
+                _logger.LogDebug("  Details: {ToString}", style.ToString());
+            }
+        }
+
+        // Look for ModernDesignClasses more specifically
+        var modernDesignFound = app.Styles
+            .OfType<StyleInclude>()
+            .Where(s => s.Source?.ToString().Contains("ModernDesign") == true)
+            .ToList();
+
+        _logger.LogDebug("Found {Count} ModernDesign-related styles:", modernDesignFound.Count);
+        foreach (var style in modernDesignFound)
+        {
+            _logger.LogDebug("  - {Source}", style.Source?.ToString());
+        }
+
+        // List ALL StyleInclude sources
+        var allStyleIncludes = app.Styles
+            .OfType<StyleInclude>()
+            .Select(s => s.Source?.ToString())
+            .Where(s => s != null)
+            .ToList();
+
+        _logger.LogDebug("All StyleInclude sources: {Sources}", string.Join(", ", allStyleIncludes));
+
+        _logger.LogDebug("=== END APPLICATION STYLES DEBUG ===");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error debugging application styles");
+    }
+}
+
+
+/// <summary>
+/// Enhanced refresh method with better detection
+/// </summary>
+private void RefreshModernDesignClassesAfterThemeChange()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("Refreshing ModernDesignClasses to pick up new hover brushes...");
+
+        // First, debug what styles we have
+        DebugApplicationStyles();
+
+        // Try different ways to find ModernDesignClasses
+        var modernDesignClasses = app.Styles
+            .OfType<StyleInclude>()
+            .FirstOrDefault(s => s.Source?.ToString().Contains("ModernDesignClasses") == true);
+
+        if (modernDesignClasses == null)
+        {
+            // Try without case sensitivity
+            modernDesignClasses = app.Styles
+                .OfType<StyleInclude>()
+                .FirstOrDefault(s => s.Source?.ToString().ToLowerInvariant().Contains("moderndesign") == true);
+        }
+
+        if (modernDesignClasses == null)
+        {
+            // Try looking for any file in Common folder
+            modernDesignClasses = app.Styles
+                .OfType<StyleInclude>()
+                .FirstOrDefault(s => s.Source?.ToString().Contains("Common") == true);
+        }
+
+        if (modernDesignClasses != null)
+        {
+            var sourceUri = modernDesignClasses.Source;
+            _logger.LogDebug("Found ModernDesignClasses: {Source}", sourceUri);
+            
+            // Remove and re-add to force DynamicResource re-evaluation
+            app.Styles.Remove(modernDesignClasses);
+            
+            // Create a new StyleInclude with the same source
+            var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+            {
+                Source = sourceUri
+            };
+            
+            app.Styles.Add(newStyleInclude);
+            
+            _logger.LogDebug("✅ ModernDesignClasses refreshed - hover styles should now work");
+        }
+        else
+        {
+            _logger.LogWarning("❌ ModernDesignClasses not found in app styles AT ALL");
+            _logger.LogWarning("This means the styles are not being loaded or have a different name");
+            
+            // As a fallback, try to manually add ModernDesignClasses
+            TryAddModernDesignClasses();
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to refresh ModernDesignClasses");
+    }
+}
+
+/// <summary>
+/// Fallback method to manually add ModernDesignClasses if not found
+/// </summary>
+private void TryAddModernDesignClasses()
+{
+    try
+    {
+        var app = Application.Current;
+        if (app?.Styles == null) return;
+
+        _logger.LogDebug("Attempting to manually add ModernDesignClasses...");
+
+        var styleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+        {
+            Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+        };
+
+        app.Styles.Add(styleInclude);
+        
+        _logger.LogDebug("✅ Manually added ModernDesignClasses to application styles");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to manually add ModernDesignClasses: {Error}", ex.Message);
+    }
+}
+
+
+/// <summary>
+/// Generate contrasting text color for backgrounds
+/// </summary>
+private void GenerateContrastingText(IResourceDictionary resources, string backgroundColorName)
+{
+    try
+    {
+        var backgroundColorKey = backgroundColorName + "Color";
+        var textColorKey = "TextOn" + backgroundColorName + "Color";
+        var textBrushKey = "TextOn" + backgroundColorName + "Brush";
+
+        if (resources.TryGetValue(backgroundColorKey, out var bgColorObj) && bgColorObj is Color bgColor)
+        {
+            var textColor = GetContrastingTextColor(bgColor);
+            
+            resources[textColorKey] = textColor;
+            resources[textBrushKey] = new SolidColorBrush(textColor);
+            
+            _logger.LogDebug("Generated TextOn{BackgroundName}: {TextColor} for background {BackgroundColor}", 
+                backgroundColorName, textColor, bgColor);
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Failed to generate contrasting text for {BackgroundName}", backgroundColorName);
+    }
+}
+
+/// <summary>
+/// Force UI refresh using the correct Avalonia 11.3 approach
+/// </summary>
+private void ForceResourceRefresh()
+{
+    try
+    {
+        // The correct way in Avalonia 11.3 is to manipulate the MergedDictionaries
+        // This triggers proper change notifications for DynamicResource bindings
+        var app = Application.Current;
+        if (app?.Resources == null) return;
+
+        // Create a temporary resource dictionary to trigger change notification
+        var tempDict = new ResourceDictionary();
+        
+        // Add and immediately remove to force resource system refresh
+        // This is the recommended approach for forcing DynamicResource updates
+        app.Resources.MergedDictionaries.Add(tempDict);
+        app.Resources.MergedDictionaries.Remove(tempDict);
+
+        _logger.LogDebug("Forced resource refresh using MergedDictionaries manipulation");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogDebug(ex, "Could not force resource refresh - changes may require restart");
+    }
+}
+
+    // private void ApplyDerivedColorsToResources(IResourceDictionary resources)
+    // {
+    //     try
+    //     {
+    //         // Generate hover states (15% darker)
+    //         if (resources.TryGetValue("PrimaryColor", out var primaryColorObj) && primaryColorObj is Color primaryColor)
+    //         {
+    //             var primaryHover = DarkenColor(primaryColor, 0.15f);
+    //             resources["PrimaryHoverColor"] = primaryHover;
+    //             resources["PrimaryHoverBrush"] = new SolidColorBrush(primaryHover);
+    //         }
+    //
+    //         if (resources.TryGetValue("SecondaryColor", out var secondaryColorObj) && secondaryColorObj is Color secondaryColor)
+    //         {
+    //             var secondaryHover = DarkenColor(secondaryColor, 0.15f);
+    //             resources["SecondaryHoverColor"] = secondaryHover;
+    //             resources["SecondaryHoverBrush"] = new SolidColorBrush(secondaryHover);
+    //         }
+    //
+    //         // Generate light variants for status backgrounds
+    //         GenerateStatusLightVariants(resources, "Success");
+    //         GenerateStatusLightVariants(resources, "Warning");
+    //         GenerateStatusLightVariants(resources, "Error");
+    //         GenerateStatusLightVariants(resources, "Info");
+    //
+    //         // Generate contrasting text on primary
+    //         if (resources.TryGetValue("PrimaryColor", out var primaryForTextObj) && primaryForTextObj is Color primaryForText)
+    //         {
+    //             var textOnPrimary = GetContrastingTextColor(primaryForText);
+    //             resources["TextOnPrimaryColor"] = textOnPrimary;
+    //             resources["TextOnPrimaryBrush"] = new SolidColorBrush(textOnPrimary);
+    //         }
+    //
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogWarning(ex, "Failed to generate derived colors");
+    //     }
+    // }
+    
+    
+
+    /// <summary>
+    /// Enhanced status light variants generation
+    /// </summary>
+    private void GenerateStatusLightVariants(IResourceDictionary resources, string statusName)
     {
         try
         {
-            // Generate hover states (15% darker)
-            if (resources.TryGetValue("PrimaryColor", out var primaryColorObj) && primaryColorObj is Color primaryColor)
+            if (resources.TryGetValue($"{statusName}Color", out var statusColorObj) && statusColorObj is Color statusColor)
             {
-                var primaryHover = DarkenColor(primaryColor, 0.15f);
-                resources["PrimaryHoverColor"] = primaryHover;
-                resources["PrimaryHoverBrush"] = new SolidColorBrush(primaryHover);
+                // Determine if we're in dark theme by checking background
+                var isDarkTheme = true; // Default assumption
+                if (resources.TryGetValue("BackgroundColor", out var bgColorObj) && bgColorObj is Color bgColor)
+                {
+                    var brightness = (0.299 * bgColor.R + 0.587 * bgColor.G + 0.114 * bgColor.B) / 255;
+                    isDarkTheme = brightness < 0.5;
+                }
+
+                // Generate appropriate light variant
+                var lightColor = isDarkTheme 
+                    ? DarkenColor(statusColor, 0.7f)  // Much darker for dark themes
+                    : LightenColor(statusColor, 0.8f); // Much lighter for light themes
+
+                resources[$"{statusName}LightColor"] = lightColor;
+                resources[$"{statusName}LightBrush"] = new SolidColorBrush(lightColor);
+
+                _logger.LogDebug("Generated {StatusName}Light: {LightColor} (isDarkTheme: {IsDark})", 
+                    statusName, lightColor, isDarkTheme);
             }
-
-            if (resources.TryGetValue("SecondaryColor", out var secondaryColorObj) && secondaryColorObj is Color secondaryColor)
-            {
-                var secondaryHover = DarkenColor(secondaryColor, 0.15f);
-                resources["SecondaryHoverColor"] = secondaryHover;
-                resources["SecondaryHoverBrush"] = new SolidColorBrush(secondaryHover);
-            }
-
-            // Generate light variants for status backgrounds
-            GenerateStatusLightVariants(resources, "Success");
-            GenerateStatusLightVariants(resources, "Warning");
-            GenerateStatusLightVariants(resources, "Error");
-            GenerateStatusLightVariants(resources, "Info");
-
-            // Generate contrasting text on primary
-            if (resources.TryGetValue("PrimaryColor", out var primaryForTextObj) && primaryForTextObj is Color primaryForText)
-            {
-                var textOnPrimary = GetContrastingTextColor(primaryForText);
-                resources["TextOnPrimaryColor"] = textOnPrimary;
-                resources["TextOnPrimaryBrush"] = new SolidColorBrush(textOnPrimary);
-            }
-
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to generate derived colors");
+            _logger.LogWarning(ex, "Failed to generate light variant for {StatusName}", statusName);
         }
     }
 
-    private void GenerateStatusLightVariants(IResourceDictionary resources, string statusName)
-    {
-        if (resources.TryGetValue($"{statusName}Color", out var statusColorObj) && statusColorObj is Color statusColor)
-        {
-            // Determine if we're in dark theme by checking background
-            var isDarkTheme = true; // Default assumption
-            if (resources.TryGetValue("BackgroundColor", out var bgColorObj) && bgColorObj is Color bgColor)
-            {
-                var brightness = (0.299 * bgColor.R + 0.587 * bgColor.G + 0.114 * bgColor.B) / 255;
-                isDarkTheme = brightness < 0.5;
-            }
-
-            // Generate appropriate light variant
-            var lightColor = isDarkTheme 
-                ? DarkenColor(statusColor, 0.7f)  // Much darker for dark themes
-                : LightenColor(statusColor, 0.8f); // Much lighter for light themes
-
-            resources[$"{statusName}LightColor"] = lightColor;
-            resources[$"{statusName}LightBrush"] = new SolidColorBrush(lightColor);
-        }
-    }
 
     private Color DarkenColor(Color color, float amount)
     {
