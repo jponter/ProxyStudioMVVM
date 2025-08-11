@@ -2537,26 +2537,96 @@ private void ForceResourceRefresh()
     }
 
 
+    /// <summary>
+    /// FIXED: Darken a color by the specified amount (0.0 to 1.0)
+    /// Ensures proper 6-digit hex output format
+    /// </summary>
     private Color DarkenColor(Color color, float amount)
     {
-        var r = (byte)Math.Max(0, color.R - (int)(255 * amount));
-        var g = (byte)Math.Max(0, color.G - (int)(255 * amount));
-        var b = (byte)Math.Max(0, color.B - (int)(255 * amount));
-        return Color.FromRgb(r, g, b);
+        try
+        {
+            // Clamp amount to valid range
+            amount = Math.Max(0f, Math.Min(1f, amount));
+        
+            // Calculate darkened values
+            var factor = 1.0f - amount;
+            var r = (byte)Math.Max(0, Math.Min(255, (int)(color.R * factor)));
+            var g = (byte)Math.Max(0, Math.Min(255, (int)(color.G * factor)));
+            var b = (byte)Math.Max(0, Math.Min(255, (int)(color.B * factor)));
+        
+            var result = Color.FromRgb(r, g, b);
+            _logger.LogTrace("DarkenColor: {Original} -> {Result} (amount: {Amount})", color, result, amount);
+        
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to darken color {Color}, returning original", color);
+            return color;
+        }
     }
 
+    /// <summary>
+    /// FIXED: Lighten a color by the specified amount (0.0 to 1.0)
+    /// Ensures proper 6-digit hex output format
+    /// </summary>
     private Color LightenColor(Color color, float amount)
     {
-        var r = (byte)Math.Min(255, color.R + (int)(255 * amount));
-        var g = (byte)Math.Min(255, color.G + (int)(255 * amount));
-        var b = (byte)Math.Min(255, color.B + (int)(255 * amount));
-        return Color.FromRgb(r, g, b);
+        try
+        {
+            // Clamp amount to valid range
+            amount = Math.Max(0f, Math.Min(1f, amount));
+        
+            // Calculate lightened values using proper blending
+            var r = (byte)Math.Max(0, Math.Min(255, color.R + (int)((255 - color.R) * amount)));
+            var g = (byte)Math.Max(0, Math.Min(255, color.G + (int)((255 - color.G) * amount)));
+            var b = (byte)Math.Max(0, Math.Min(255, color.B + (int)((255 - color.B) * amount)));
+        
+            var result = Color.FromRgb(r, g, b);
+            _logger.LogTrace("LightenColor: {Original} -> {Result} (amount: {Amount})", color, result, amount);
+        
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to lighten color {Color}, returning original", color);
+            return color;
+        }
     }
 
+    /// <summary>
+    /// FIXED: Get contrasting text color with proper color format
+    /// </summary>
     private Color GetContrastingTextColor(Color backgroundColor)
     {
-        var brightness = (0.299 * backgroundColor.R + 0.587 * backgroundColor.G + 0.114 * backgroundColor.B) / 255;
-        return brightness > 0.5 ? Colors.Black : Colors.White;
+        try
+        {
+            // Calculate relative luminance using WCAG formula
+            var r = backgroundColor.R / 255.0;
+            var g = backgroundColor.G / 255.0;
+            var b = backgroundColor.B / 255.0;
+        
+            // Apply gamma correction
+            r = r <= 0.03928 ? r / 12.92 : Math.Pow((r + 0.055) / 1.055, 2.4);
+            g = g <= 0.03928 ? g / 12.92 : Math.Pow((g + 0.055) / 1.055, 2.4);
+            b = b <= 0.03928 ? b / 12.92 : Math.Pow((b + 0.055) / 1.055, 2.4);
+        
+            // Calculate luminance
+            var luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        
+            // Use WCAG contrast ratio threshold
+            var result = luminance > 0.179 ? Colors.Black : Colors.White;
+        
+            _logger.LogTrace("ContrastingText: {Background} (luminance: {Luminance:F3}) -> {Text}", 
+                backgroundColor, luminance, result);
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to calculate contrasting text for {Background}, defaulting to white", backgroundColor);
+            return Colors.White;
+        }
     }
 
     /// <summary>
@@ -2598,6 +2668,121 @@ private void ForceResourceRefresh()
             StatusMessage = "Failed to save theme";
         }
     }
+    
+    /// <summary>
+/// UPDATED: Generate complete theme XAML with fixed color algorithms
+/// </summary>
+private string GenerateFullThemeXamlFixed()
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
+    sb.AppendLine("        xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
+    sb.AppendLine();
+    sb.AppendLine($"  <!-- {ThemeName} -->");
+    sb.AppendLine($"  <!-- Description: {ThemeDescription} -->");
+    sb.AppendLine($"  <!-- Author: {ThemeAuthor} -->");
+    sb.AppendLine($"  <!-- Version: {ThemeVersion} -->");
+    sb.AppendLine($"  <!-- Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} -->");
+    sb.AppendLine($"  <!-- FIXED: Proper color generation and hex formatting -->");
+    sb.AppendLine();
+
+    sb.AppendLine("  <Styles.Resources>");
+    sb.AppendLine("    <ResourceDictionary>");
+    sb.AppendLine("      <ResourceDictionary.ThemeDictionaries>");
+    sb.AppendLine("        <ResourceDictionary x:Key=\"Dark\">");
+    sb.AppendLine();
+
+    // ===== FOUNDATION COLORS WITH FIXED GENERATION =====
+    sb.AppendLine("          <!-- ===== FOUNDATION COLORS ===== -->");
+    foreach (var color in FoundationColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+        
+        // Generate hover state with FIXED algorithm
+        GenerateHoverColorInXaml(sb, color, "Foundation");
+        sb.AppendLine();
+    }
+
+    // ===== SEMANTIC COLORS WITH FIXED GENERATION =====
+    sb.AppendLine("          <!-- ===== SEMANTIC COLORS ===== -->");
+    foreach (var color in SemanticColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+        
+        // Generate hover and light variants with FIXED algorithms
+        GenerateHoverColorInXaml(sb, color, "Semantic");
+        GenerateLightVariantInXaml(sb, color);
+        sb.AppendLine();
+    }
+
+    // ===== SURFACE & TEXT COLORS =====
+    sb.AppendLine("          <!-- ===== SURFACE COLORS ===== -->");
+    foreach (var color in SurfaceColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+    sb.AppendLine();
+
+    sb.AppendLine("          <!-- ===== TEXT COLORS ===== -->");
+    foreach (var color in TextColors)
+    {
+        var colorName = color.Name.Replace(" ", "");
+        sb.AppendLine($"          <!-- {color.Name}: {color.Description} -->");
+        sb.AppendLine($"          <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+        sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\"/>");
+    }
+    sb.AppendLine();
+
+    // ===== CONTRASTING TEXT =====
+    sb.AppendLine("          <!-- ===== AUTO-GENERATED CONTRASTING TEXT ===== -->");
+    GenerateContrastingTextInXamlFixed(sb, "Primary");
+    GenerateContrastingTextInXamlFixed(sb, "Secondary");
+
+    sb.AppendLine("        </ResourceDictionary>");
+    sb.AppendLine("      </ResourceDictionary.ThemeDictionaries>");
+    sb.AppendLine("    </ResourceDictionary>");
+    sb.AppendLine("  </Styles.Resources>");
+    sb.AppendLine("</Styles>");
+
+    return sb.ToString();
+}
+    
+    /// <summary>
+    /// FIXED: Generate contrasting text with proper hex format
+    /// </summary>
+    private void GenerateContrastingTextInXamlFixed(StringBuilder sb, string backgroundColorName)
+    {
+        try
+        {
+            var colorProperty = FoundationColors.FirstOrDefault(c => 
+                c.Name.Equals(backgroundColorName, StringComparison.OrdinalIgnoreCase));
+        
+            if (colorProperty != null)
+            {
+                var bgColor = Color.Parse(colorProperty.HexValue);
+                var textColor = GetContrastingTextColor(bgColor);
+                var textHex = ColorToHex(textColor);
+            
+                sb.AppendLine($"          <!-- Contrasting text for {backgroundColorName} background -->");
+                sb.AppendLine($"          <Color x:Key=\"TextOn{backgroundColorName}Color\">{textHex}</Color>");
+                sb.AppendLine($"          <SolidColorBrush x:Key=\"TextOn{backgroundColorName}Brush\" Color=\"{{DynamicResource TextOn{backgroundColorName}Color}}\"/>");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate contrasting text for {BackgroundName}", backgroundColorName);
+        }
+    }
+
 
     private async Task ExportThemeAsync()
     {
@@ -2623,7 +2808,7 @@ private void ForceResourceRefresh()
             {
                 StatusMessage = "Exporting theme...";
                 
-                var themeXaml = GenerateFullThemeXaml();
+                var themeXaml = GenerateFullThemeXamlFixed();
 
                 using var stream = await file.OpenWriteAsync();
                 using var writer = new StreamWriter(stream);
@@ -2640,6 +2825,24 @@ private void ForceResourceRefresh()
             StatusMessage = "Failed to export theme";
         }
     }
+    
+    /// <summary>
+    /// FIXED: Convert Color to proper hex string format
+    /// Ensures standard #RRGGBB format without alpha channel issues
+    /// </summary>
+    private string ColorToHex(Color color)
+    {
+        try
+        {
+            // Force RGB format without alpha channel
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to convert color {Color} to hex", color);
+            return "#000000"; // Safe fallback
+        }
+    }    
 
 /// <summary>
 /// FIXED: Generate complete theme XAML with all derived colors and correct resource references
@@ -2761,28 +2964,83 @@ private string GenerateFullThemeXaml()
 
 // ===== NEW HELPER METHODS FOR COMPLETE THEME GENERATION =====
 
-/// <summary>
-/// Generate hover states in XAML format (15% darker)
-/// </summary>
-private void GenerateHoverColorsInXaml(StringBuilder sb, ObservableCollection<ColorProperty> colors)
-{
-    foreach (var color in colors)
+    /// <summary>
+    /// FIXED: Generate hover state in XAML with proper color format
+    /// </summary>
+    private void GenerateHoverColorInXaml(StringBuilder sb, ColorProperty color, string category)
     {
         try
         {
             var colorName = color.Name.Replace(" ", "");
             var baseColor = Color.Parse(color.HexValue);
             var hoverColor = DarkenColor(baseColor, 0.15f);
-            
-            sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
-            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{StaticResource {colorName}HoverColor}}\"/>");
+            var hoverHex = ColorToHex(hoverColor);
+        
+            sb.AppendLine($"          <!-- {color.Name} Hover State -->");
+            sb.AppendLine($"          <Color x:Key=\"{colorName}HoverColor\">{hoverHex}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\"/>");
+        
+            _logger.LogDebug("Generated {Category} hover: {Original} -> {Hover}", 
+                category, color.HexValue, hoverHex);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to generate hover color for {Name}", color.Name);
         }
     }
-}
+    
+    
+    
+    
+    /// <summary>
+    /// FIXED: Generate light variant in XAML with proper color format
+    /// </summary>
+    private void GenerateLightVariantInXaml(StringBuilder sb, ColorProperty color)
+    {
+        try
+        {
+            var colorName = color.Name.Replace(" ", "");
+            var baseColor = Color.Parse(color.HexValue);
+        
+            // For semantic colors, create a subtle light background variant
+            var lightColor = CreateLightBackgroundVariant(baseColor);
+            var lightHex = ColorToHex(lightColor);
+        
+            sb.AppendLine($"          <!-- {color.Name} Light Background Variant -->");
+            sb.AppendLine($"          <Color x:Key=\"{colorName}LightColor\">{lightHex}</Color>");
+            sb.AppendLine($"          <SolidColorBrush x:Key=\"{colorName}LightBrush\" Color=\"{{DynamicResource {colorName}LightColor}}\"/>");
+        
+            _logger.LogDebug("Generated light variant: {Original} -> {Light}", color.HexValue, lightHex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate light variant for {Name}", color.Name);
+        }
+    }
+    
+    /// <summary>
+    /// Create a proper light background variant for semantic colors
+    /// </summary>
+    private Color CreateLightBackgroundVariant(Color baseColor)
+    {
+        try
+        {
+            // For dark themes, create a very light tinted background
+            // Mix the color with white at ~10% opacity for subtle backgrounds
+            var mixRatio = 0.1f; // 10% base color, 90% white
+        
+            var r = (byte)Math.Round(baseColor.R * mixRatio + 255 * (1 - mixRatio));
+            var g = (byte)Math.Round(baseColor.G * mixRatio + 255 * (1 - mixRatio));
+            var b = (byte)Math.Round(baseColor.B * mixRatio + 255 * (1 - mixRatio));
+        
+            return Color.FromRgb(r, g, b);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create light background variant, using fallback");
+            return Color.FromRgb(248, 249, 250); // Light gray fallback
+        }
+    }
 
 /// <summary>
 /// Generate light variants for semantic colors (80% lighter for backgrounds)

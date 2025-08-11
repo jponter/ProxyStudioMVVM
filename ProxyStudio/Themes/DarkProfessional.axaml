@@ -1,11 +1,12 @@
-﻿<!-- Fixed DarkProfessional.axaml - Complete theme with all required brushes -->
-<Styles xmlns="https://github.com/avaloniaui"
+﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Dark Professional Theme -->
-  <!-- Description: Modern dark theme optimized for long work sessions -->
-  <!-- Version: 2.0 -->
-  <!-- Generated: Compatible with Avalonia 11.3+ ThemeDictionaries -->
+  <!-- My Custom Theme -->
+  <!-- Description: A custom theme created with ProxyStudio Theme Editor -->
+  <!-- Author: james -->
+  <!-- Version: 1.0.0 -->
+  <!-- Generated: 2025-08-11 15:29:08 -->
+  <!-- FIXED: Proper color generation and hex formatting -->
 
   <Styles.Resources>
     <ResourceDictionary>
@@ -13,66 +14,79 @@
         <ResourceDictionary x:Key="Dark">
 
           <!-- ===== FOUNDATION COLORS ===== -->
-          <!-- Primary: Main brand color for primary actions -->
+          <!-- Primary: Main brand color for primary actions and highlights -->
           <Color x:Key="PrimaryColor">#3498db</Color>
           <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
-          <Color x:Key="PrimaryHoverColor">#2980b9</Color>
+          <!-- Primary Hover State -->
+          <Color x:Key="PrimaryHoverColor">#2C81BA</Color>
           <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}"/>
 
           <!-- Secondary: Secondary accent color for supporting elements -->
           <Color x:Key="SecondaryColor">#95a5a6</Color>
           <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}"/>
-          <Color x:Key="SecondaryHoverColor">#7f8c8d</Color>
+          <!-- Secondary Hover State -->
+          <Color x:Key="SecondaryHoverColor">#7E8C8D</Color>
           <SolidColorBrush x:Key="SecondaryHoverBrush" Color="{DynamicResource SecondaryHoverColor}"/>
 
           <!-- Surface: Base surface color for backgrounds and cards -->
           <Color x:Key="SurfaceColor">#2c3e50</Color>
           <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}"/>
-          <Color x:Key="SurfaceHoverColor">#273442</Color>
+          <!-- Surface Hover State -->
+          <Color x:Key="SurfaceHoverColor">#253444</Color>
           <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{DynamicResource SurfaceHoverColor}"/>
 
           <!-- Border: Border and separator color -->
           <Color x:Key="BorderColor">#556983</Color>
           <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}"/>
+          <!-- Border Hover State -->
+          <Color x:Key="BorderHoverColor">#48596F</Color>
+          <SolidColorBrush x:Key="BorderHoverBrush" Color="{DynamicResource BorderHoverColor}"/>
 
           <!-- ===== SEMANTIC COLORS ===== -->
           <!-- Success: Success states, confirmations, and positive actions -->
           <Color x:Key="SuccessColor">#27ae60</Color>
           <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}"/>
-          <Color x:Key="SuccessHoverColor">#219a52</Color>
+          <!-- Success Hover State -->
+          <Color x:Key="SuccessHoverColor">#219351</Color>
           <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}"/>
-          <Color x:Key="SuccessLightColor">#d5f4e6</Color>
+          <!-- Success Light Background Variant -->
+          <Color x:Key="SuccessLightColor">#E9F7EF</Color>
           <SolidColorBrush x:Key="SuccessLightBrush" Color="{DynamicResource SuccessLightColor}"/>
 
           <!-- Warning: Warning states, cautions, and important notices -->
           <Color x:Key="WarningColor">#f39c12</Color>
           <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}"/>
-          <Color x:Key="WarningHoverColor">#d68910</Color>
+          <!-- Warning Hover State -->
+          <Color x:Key="WarningHoverColor">#CE840F</Color>
           <SolidColorBrush x:Key="WarningHoverBrush" Color="{DynamicResource WarningHoverColor}"/>
-          <Color x:Key="WarningLightColor">#fef2e6</Color>
+          <!-- Warning Light Background Variant -->
+          <Color x:Key="WarningLightColor">#FEF5E7</Color>
           <SolidColorBrush x:Key="WarningLightBrush" Color="{DynamicResource WarningLightColor}"/>
 
           <!-- Error: Error states, failures, and destructive actions -->
           <Color x:Key="ErrorColor">#e74c3c</Color>
           <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}"/>
-          <Color x:Key="ErrorHoverColor">#c0392b</Color>
+          <!-- Error Hover State -->
+          <Color x:Key="ErrorHoverColor">#C44033</Color>
           <SolidColorBrush x:Key="ErrorHoverBrush" Color="{DynamicResource ErrorHoverColor}"/>
-          <Color x:Key="ErrorLightColor">#fdeaea</Color>
+          <!-- Error Light Background Variant -->
+          <Color x:Key="ErrorLightColor">#FDEDEC</Color>
           <SolidColorBrush x:Key="ErrorLightBrush" Color="{DynamicResource ErrorLightColor}"/>
 
           <!-- Info: Informational messages, hints, and neutral notices -->
           <Color x:Key="InfoColor">#3498db</Color>
           <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}"/>
-          <Color x:Key="InfoHoverColor">#2980b9</Color>
+          <!-- Info Hover State -->
+          <Color x:Key="InfoHoverColor">#2C81BA</Color>
           <SolidColorBrush x:Key="InfoHoverBrush" Color="{DynamicResource InfoHoverColor}"/>
-          <Color x:Key="InfoLightColor">#ebf5fd</Color>
+          <!-- Info Light Background Variant -->
+          <Color x:Key="InfoLightColor">#EBF5FB</Color>
           <SolidColorBrush x:Key="InfoLightBrush" Color="{DynamicResource InfoLightColor}"/>
 
           <!-- ===== SURFACE COLORS ===== -->
           <!-- Background: Main application background color -->
           <Color x:Key="BackgroundColor">#2c3e50</Color>
           <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}"/>
-
           <!-- Surface Elevated: Elevated surfaces like cards, modals, and panels -->
           <Color x:Key="SurfaceElevatedColor">#34495e</Color>
           <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{DynamicResource SurfaceElevatedColor}"/>
@@ -81,84 +95,18 @@
           <!-- Text Primary: Primary text color for headings and important content -->
           <Color x:Key="TextPrimaryColor">#ffffff</Color>
           <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}"/>
-
           <!-- Text Secondary: Secondary text color for descriptions and labels -->
           <Color x:Key="TextSecondaryColor">#bdc3c7</Color>
           <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}"/>
 
           <!-- ===== AUTO-GENERATED CONTRASTING TEXT ===== -->
           <!-- Contrasting text for Primary background -->
-          <Color x:Key="TextOnPrimaryColor">#ffffff</Color>
+          <Color x:Key="TextOnPrimaryColor">#000000</Color>
           <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{DynamicResource TextOnPrimaryColor}"/>
-
           <!-- Contrasting text for Secondary background -->
           <Color x:Key="TextOnSecondaryColor">#000000</Color>
           <SolidColorBrush x:Key="TextOnSecondaryBrush" Color="{DynamicResource TextOnSecondaryColor}"/>
-
         </ResourceDictionary>
-
-        <!-- Light theme variant (automatically generated) -->
-        <ResourceDictionary x:Key="Light">
-          <!-- TODO: Implement proper light theme colors -->
-          <!-- For now, using modified dark theme colors -->
-          
-          <!-- Foundation Colors - adjusted for light theme -->
-          <Color x:Key="PrimaryColor">#007acc</Color>
-          <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
-          <Color x:Key="PrimaryHoverColor">#005a99</Color>
-          <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}"/>
-
-          <Color x:Key="SecondaryColor">#6c757d</Color>
-          <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}"/>
-          <Color x:Key="SecondaryHoverColor">#5a6268</Color>
-          <SolidColorBrush x:Key="SecondaryHoverBrush" Color="{DynamicResource SecondaryHoverColor}"/>
-
-          <!-- Surface colors - inverted for light theme -->
-          <Color x:Key="SurfaceColor">#ffffff</Color>
-          <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}"/>
-          <Color x:Key="SurfaceHoverColor">#f8f9fa</Color>
-          <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{DynamicResource SurfaceHoverColor}"/>
-
-          <Color x:Key="BorderColor">#dee2e6</Color>
-          <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}"/>
-
-          <!-- Background colors for light theme -->
-          <Color x:Key="BackgroundColor">#ffffff</Color>
-          <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}"/>
-
-          <Color x:Key="SurfaceElevatedColor">#f8f9fa</Color>
-          <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{DynamicResource SurfaceElevatedColor}"/>
-
-          <!-- Text colors - inverted for light theme -->
-          <Color x:Key="TextPrimaryColor">#212529</Color>
-          <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}"/>
-
-          <Color x:Key="TextSecondaryColor">#6c757d</Color>
-          <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}"/>
-
-          <!-- Semantic colors remain the same for light theme -->
-          <Color x:Key="SuccessColor">#28a745</Color>
-          <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}"/>
-          <Color x:Key="SuccessHoverColor">#218838</Color>
-          <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}"/>
-
-          <Color x:Key="WarningColor">#ffc107</Color>
-          <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}"/>
-          <Color x:Key="WarningHoverColor">#e0a800</Color>
-          <SolidColorBrush x:Key="WarningHoverBrush" Color="{DynamicResource WarningHoverColor}"/>
-
-          <Color x:Key="ErrorColor">#dc3545</Color>
-          <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}"/>
-          <Color x:Key="ErrorHoverColor">#c82333</Color>
-          <SolidColorBrush x:Key="ErrorHoverBrush" Color="{DynamicResource ErrorHoverColor}"/>
-
-          <Color x:Key="InfoColor">#17a2b8</Color>
-          <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}"/>
-          <Color x:Key="InfoHoverColor">#138496</Color>
-          <SolidColorBrush x:Key="InfoHoverBrush" Color="{DynamicResource InfoHoverColor}"/>
-
-        </ResourceDictionary>
-
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Styles.Resources>
