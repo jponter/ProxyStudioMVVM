@@ -712,7 +712,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
     // }
     
     /// <summary>
-    /// REAL SIMPLE FIX: Just remove preview dictionary, don't call theme service
+    /// ULTIMATE SIMPLE FIX: Just remove preview and force refresh - no backup/restore complexity
     /// </summary>
     
     private async Task StopPreviewAsync()
@@ -724,7 +724,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
             var app = Application.Current;
             if (app?.Resources != null)
             {
-                // Remove our theme dictionary - this will restore original theme resources automatically
+                // Remove our preview dictionary
                 for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
                 {
                     var dict = app.Resources.MergedDictionaries[i];
@@ -738,25 +738,124 @@ public partial class ThemeEditorViewModel : ViewModelBase
                 }
             }
         
-            // DON'T call _themeService.ApplyThemeAsync() - it removes ModernDesignClasses!
-            // The original DarkProfessional StyleInclude is still loaded and will provide the resources
+            // Force resource system to refresh by adding/removing empty dictionary
+            // This forces Avalonia to re-evaluate all DynamicResource bindings
+            var tempDict = new ResourceDictionary();
+            app.Resources.MergedDictionaries.Add(tempDict);
+            app.Resources.MergedDictionaries.Remove(tempDict);
+        
+            // Minimal delay to let resources settle
+            await Task.Delay(50);
         
             IsPreviewActive = false;
-            _originalThemeBeforePreview = null;
             StatusMessage = "Preview stopped - original theme restored";
 
-            _logger.LogInformation("Theme preview stopped, original theme automatically restored");
+            _logger.LogInformation("Theme preview stopped - simple refresh approach");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to stop theme preview");
             StatusMessage = "Failed to stop preview";
-        
-            // Ensure we clean up state even if restoration failed
             IsPreviewActive = false;
-            _originalThemeBeforePreview = null;
         }
     }
+    
+    /// <summary>
+/// Force Avalonia to refresh and re-resolve all StyleInclude resources
+/// </summary>
+private async Task ForceStyleIncludeRefresh()
+{
+    await Task.Run(() =>
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                var app = Application.Current;
+                if (app?.Styles == null) return;
+                
+                _logger.LogDebug("Forcing StyleInclude refresh to re-resolve resources...");
+                
+                // Find the ORIGINAL theme (whatever was loaded before preview)
+                string? originalThemePath = null;
+                if (_originalThemeBeforePreview.HasValue)
+                {
+                    var originalThemeDefinition = _themeService.AvailableThemes
+                        .FirstOrDefault(t => t.Type == _originalThemeBeforePreview.Value);
+                    originalThemePath = originalThemeDefinition?.ResourcePath;
+                }
+                
+                var originalThemeStyle = app.Styles
+                    .OfType<StyleInclude>()
+                    .FirstOrDefault(s => originalThemePath != null && s.Source?.ToString().Contains(originalThemePath.Split('/').Last()) == true);
+                
+                if (originalThemeStyle != null)
+                {
+                    var sourceUri = originalThemeStyle.Source;
+                    var index = app.Styles.IndexOf(originalThemeStyle);
+                    
+                    // Remove and re-add to force resource re-resolution
+                    app.Styles.RemoveAt(index);
+                    
+                    var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                    {
+                        Source = sourceUri
+                    };
+                    
+                    app.Styles.Insert(index, newStyleInclude);
+                    
+                    _logger.LogDebug("✅ Original theme refreshed at index {Index}: {Theme}", index, _originalThemeBeforePreview);
+                }
+                else
+                {
+                    _logger.LogWarning("❌ Original theme StyleInclude not found: {Theme}", _originalThemeBeforePreview);
+                }
+                
+                // Also refresh ModernDesignClasses
+                var modernDesignClasses = app.Styles
+                    .OfType<StyleInclude>()
+                    .FirstOrDefault(s => s.Source?.ToString().Contains("ModernDesignClasses") == true);
+                
+                if (modernDesignClasses != null)
+                {
+                    var sourceUri = modernDesignClasses.Source;
+                    var index = app.Styles.IndexOf(modernDesignClasses);
+                    
+                    app.Styles.RemoveAt(index);
+                    
+                    var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                    {
+                        Source = sourceUri
+                    };
+                    
+                    app.Styles.Insert(index, newStyleInclude);
+                    
+                    _logger.LogDebug("✅ ModernDesignClasses refreshed at index {Index}", index);
+                }
+                else
+                {
+                    // Add ModernDesignClasses if missing
+                    var styleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                    {
+                        Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+                    };
+                    
+                    app.Styles.Add(styleInclude);
+                    _logger.LogInformation("✅ Added missing ModernDesignClasses");
+                }
+                
+                // Force a complete resource system refresh
+                ForceResourceRefresh();
+                
+                _logger.LogDebug("StyleInclude refresh completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to force StyleInclude refresh");
+            }
+        });
+    });
+}
     
     /// <summary>
     /// Restore the original theme StyleInclude

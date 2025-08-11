@@ -61,6 +61,10 @@
     <Color x:Key="ErrorLightColor">#4d1f23</Color>
 
     <!-- Brushes -->
+    <!-- I HAD TO ADD THE BELOW BRUSH MANUALLY TO MAKE IT WORK !-->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundPrimaryColor}"></SolidColorBrush>
+    
+    <!--These are added by our theme editor, so we can use them in our styles-->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
     <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}"/>
