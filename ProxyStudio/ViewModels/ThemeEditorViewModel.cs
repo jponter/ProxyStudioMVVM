@@ -83,6 +83,12 @@ public partial class ThemeEditorViewModel : ViewModelBase
     private readonly IErrorHandlingService _errorHandler;
     private ThemeType? _originalThemeBeforePreview;
     private Dictionary<string, object>? _originalResources; // Store original resources for restore
+    // Field to track our custom resource dictionary
+    private ResourceDictionary? _customThemeDictionary;
+    // Field to track our custom resource dictionary
+   
+    // Store original theme file path for restoration
+    private string? _originalThemeStylePath;
 
     [ObservableProperty] private string _themeName = "My Custom Theme";
     [ObservableProperty] private string _themeDescription = "A custom theme created with ProxyStudio Theme Editor";
@@ -265,7 +271,44 @@ public partial class ThemeEditorViewModel : ViewModelBase
         }
     }
 
-    // CORRECT IN-MEMORY PREVIEW METHODS - NO FILE OPERATIONS
+    // // CORRECT IN-MEMORY PREVIEW METHODS - NO FILE OPERATIONS
+    // private async Task PreviewCurrentThemeAsync()
+    // {
+    //     try
+    //     {
+    //         StatusMessage = "Applying preview theme...";
+    //
+    //         if (!IsPreviewActive)
+    //         {
+    //             _originalThemeBeforePreview = _themeService.CurrentTheme;
+    //             BackupCurrentResources();
+    //         }
+    //
+    //         IsPreviewActive = true;
+    //
+    //         // Apply theme colors directly to Application.Resources in memory
+    //         await ApplyThemeInMemory();
+    //
+    //         StatusMessage = "Preview active - theme applied temporarily";
+    //         _logger.LogInformation("Theme preview applied: {ThemeName}", ThemeName);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Failed to preview theme: {ThemeName}", ThemeName);
+    //         await _errorHandler.HandleExceptionAsync(ex, "Failed to preview theme", "Theme Editor");
+    //         StatusMessage = "Failed to preview theme";
+    //         IsPreviewActive = false;
+    //         _originalThemeBeforePreview = null;
+    //         _originalResources = null;
+    //     }
+    // }
+    
+    
+    
+    /// <summary>
+    /// WORKING: Apply preview using the original MergedDictionaries approach
+    /// </summary>
+    [RelayCommand]
     private async Task PreviewCurrentThemeAsync()
     {
         try
@@ -275,12 +318,12 @@ public partial class ThemeEditorViewModel : ViewModelBase
             if (!IsPreviewActive)
             {
                 _originalThemeBeforePreview = _themeService.CurrentTheme;
-                BackupCurrentResources();
+                // DON'T backup resources - they're not in Application.Resources anyway
             }
 
             IsPreviewActive = true;
 
-            // Apply theme colors directly to Application.Resources in memory
+            // Apply theme colors directly using the ORIGINAL working method
             await ApplyThemeInMemory();
 
             StatusMessage = "Preview active - theme applied temporarily";
@@ -289,11 +332,266 @@ public partial class ThemeEditorViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to preview theme: {ThemeName}", ThemeName);
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to preview theme", "Theme Editor");
             StatusMessage = "Failed to preview theme";
             IsPreviewActive = false;
             _originalThemeBeforePreview = null;
-            _originalResources = null;
+        }
+    }
+    
+    /// <summary>
+    /// Apply preview theme by creating and loading a temporary theme StyleInclude
+    /// </summary>
+    private async Task ApplyPreviewThemeAsStyleInclude()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Styles == null) return;
+                    
+                    // 1. Generate the theme XAML content
+                    var themeXaml = GeneratePreviewThemeXaml();
+                    
+                    // 2. Create temporary theme file
+                    var tempDir = Path.Combine(Path.GetTempPath(), "ProxyStudio", "ThemePreview");
+                    Directory.CreateDirectory(tempDir);
+                    var tempThemeFile = Path.Combine(tempDir, "PreviewTheme.axaml");
+                    
+                    await File.WriteAllTextAsync(tempThemeFile, themeXaml);
+                    _logger.LogDebug("Created temporary theme file: {Path}", tempThemeFile);
+                    
+                    // 3. Remove existing theme StyleIncludes (but keep ModernDesignClasses)
+                    var existingThemes = app.Styles
+                        .OfType<StyleInclude>()
+                        .Where(s => s.Source?.ToString().Contains("Themes/") == true && 
+                                   !s.Source.ToString().Contains("ModernDesign") == true)
+                        .ToList();
+                    
+                    foreach (var theme in existingThemes)
+                    {
+                        app.Styles.Remove(theme);
+                        _logger.LogDebug("Removed existing theme: {Source}", theme.Source);
+                    }
+                    
+                    // 4. Add our preview theme StyleInclude
+                    var previewStyleInclude = new StyleInclude(new Uri("file:///"))
+                    {
+                        Source = new Uri(tempThemeFile)
+                    };
+                    
+                    // Insert before ModernDesignClasses (so resources are available to it)
+                    var modernDesignIndex = app.Styles
+                        .OfType<StyleInclude>()
+                        .Select((style, index) => new { style, index })
+                        .FirstOrDefault(x => x.style.Source?.ToString().Contains("ModernDesign") == true)?.index;
+                    
+                    if (modernDesignIndex.HasValue)
+                    {
+                        app.Styles.Insert(modernDesignIndex.Value, previewStyleInclude);
+                        _logger.LogDebug("Inserted preview theme before ModernDesignClasses at index {Index}", modernDesignIndex.Value);
+                    }
+                    else
+                    {
+                        app.Styles.Add(previewStyleInclude);
+                        _logger.LogDebug("Added preview theme at end of styles");
+                    }
+                    
+                    _logger.LogInformation("Preview theme StyleInclude loaded successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to apply preview theme as StyleInclude");
+                }
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Generate the complete theme XAML content for preview
+    /// </summary>
+    private string GeneratePreviewThemeXaml()
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("<Styles xmlns=\"https://github.com/avaloniaui\"");
+        sb.AppendLine("       xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">");
+        sb.AppendLine("    ");
+        sb.AppendLine("    <Styles.Resources>");
+        sb.AppendLine("        <ResourceDictionary>");
+        
+        // Generate Foundation Colors
+        foreach (var color in FoundationColors)
+        {
+            var colorName = color.Name.Replace(" ", "");
+            sb.AppendLine($"            <!-- {colorName} Colors -->");
+            sb.AppendLine($"            <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\" />");
+            
+            // Generate hover color (15% darker)
+            var baseColor = Color.Parse(color.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.15f);
+            sb.AppendLine($"            <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\" />");
+        }
+        
+        // Generate Semantic Colors
+        foreach (var color in SemanticColors)
+        {
+            var colorName = color.Name.Replace(" ", "");
+            sb.AppendLine($"            <!-- {colorName} Colors -->");
+            sb.AppendLine($"            <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\" />");
+            
+            // Generate hover and light variants
+            var baseColor = Color.Parse(color.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.15f);
+            var lightColor = LightenColor(baseColor, 0.8f);
+            
+            sb.AppendLine($"            <Color x:Key=\"{colorName}HoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}HoverBrush\" Color=\"{{DynamicResource {colorName}HoverColor}}\" />");
+            sb.AppendLine($"            <Color x:Key=\"{colorName}LightColor\">{lightColor}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}LightBrush\" Color=\"{{DynamicResource {colorName}LightColor}}\" />");
+        }
+        
+        // Generate Surface Colors
+        foreach (var color in SurfaceColors.Concat(TextColors))
+        {
+            var colorName = color.Name.Replace(" ", "");
+            sb.AppendLine($"            <!-- {colorName} Colors -->");
+            sb.AppendLine($"            <Color x:Key=\"{colorName}Color\">{color.HexValue}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"{colorName}Brush\" Color=\"{{DynamicResource {colorName}Color}}\" />");
+        }
+        
+        // Generate contrasting text colors
+        GenerateContrastingTextXaml(sb, "Primary");
+        GenerateContrastingTextXaml(sb, "Secondary");
+        GenerateContrastingTextXaml(sb, "Success");
+        GenerateContrastingTextXaml(sb, "Warning");
+        GenerateContrastingTextXaml(sb, "Error");
+        GenerateContrastingTextXaml(sb, "Info");
+        
+        // Generate surface hover states
+        var surfaceColor = SurfaceColors.FirstOrDefault(c => c.Name.Contains("Surface") && !c.Name.Contains("Elevated"));
+        if (surfaceColor != null)
+        {
+            var baseColor = Color.Parse(surfaceColor.HexValue);
+            var hoverColor = DarkenColor(baseColor, 0.15f);
+            sb.AppendLine($"            <Color x:Key=\"SurfaceHoverColor\">{hoverColor}</Color>");
+            sb.AppendLine($"            <SolidColorBrush x:Key=\"SurfaceHoverBrush\" Color=\"{{DynamicResource SurfaceHoverColor}}\" />");
+        }
+        
+        sb.AppendLine("        </ResourceDictionary>");
+        sb.AppendLine("    </Styles.Resources>");
+        sb.AppendLine("    ");
+        sb.AppendLine("</Styles>");
+        
+        return sb.ToString();
+    }
+    
+    /// <summary>
+    /// Generate contrasting text colors in XAML
+    /// </summary>
+    private void GenerateContrastingTextXaml(StringBuilder sb, string backgroundColorName)
+    {
+        try
+        {
+            var colorProperty = FoundationColors.Concat(SemanticColors)
+                .FirstOrDefault(c => c.Name.Equals(backgroundColorName, StringComparison.OrdinalIgnoreCase));
+            
+            if (colorProperty != null)
+            {
+                var bgColor = Color.Parse(colorProperty.HexValue);
+                var textColor = GetContrastingTextColor(bgColor);
+                
+                sb.AppendLine($"            <!-- Text on {backgroundColorName} -->");
+                sb.AppendLine($"            <Color x:Key=\"TextOn{backgroundColorName}Color\">{textColor}</Color>");
+                sb.AppendLine($"            <SolidColorBrush x:Key=\"TextOn{backgroundColorName}Brush\" Color=\"{{DynamicResource TextOn{backgroundColorName}Color}}\" />");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate contrasting text for {BackgroundName}", backgroundColorName);
+        }
+    }
+    
+    /// <summary>
+    /// Apply theme with proper resource scoping to ensure ModernDesignClasses can find resources
+    /// </summary>
+    private async Task ApplyThemeWithProperScoping()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Resources == null) return;
+                    
+                    // 1. Remove any existing custom dictionary
+                    RemoveExistingCustomDictionary();
+                    
+                    // 2. Create new theme dictionary with HIGHER PRIORITY
+                    _customThemeDictionary = new ResourceDictionary();
+                    
+                    // 3. Apply colors to our custom dictionary
+                    ApplyColorsToResources(_customThemeDictionary, FoundationColors, "Foundation");
+                    ApplyColorsToResources(_customThemeDictionary, SemanticColors, "Semantic");
+                    ApplyColorsToResources(_customThemeDictionary, SurfaceColors, "Surface");
+                    ApplyColorsToResources(_customThemeDictionary, TextColors, "Text");
+                    
+                    // 4. Apply derived colors (hover states, etc.)
+                    ApplyDerivedColorsToResources(_customThemeDictionary);
+                    
+                    // 5. Mark our dictionary for identification
+                    _customThemeDictionary["_ThemeEditorCustom"] = true;
+                    
+                    // 6. Add to the BEGINNING of MergedDictionaries for highest priority
+                    app.Resources.MergedDictionaries.Insert(0, _customThemeDictionary);
+                    
+                    _logger.LogDebug("Applied custom theme dictionary with {Count} resources", 
+                        _customThemeDictionary.Count);
+                    
+                    // 7. Debug the resource state
+                    DebugResourceAvailability();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to apply theme with proper scoping");
+                }
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Remove existing custom dictionary to prevent conflicts
+    /// </summary>
+    private void RemoveExistingCustomDictionary()
+    {
+        try
+        {
+            var app = Application.Current;
+            if (app?.Resources == null) return;
+            
+            // Remove any existing custom or generated dictionaries
+            for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
+            {
+                var dict = app.Resources.MergedDictionaries[i];
+                if (dict is ResourceDictionary resourceDict && 
+                    (resourceDict.ContainsKey("_ThemeEditorCustom") || 
+                     resourceDict.ContainsKey("_ThemeEditorGenerated")))
+                {
+                    app.Resources.MergedDictionaries.RemoveAt(i);
+                    _logger.LogDebug("Removed existing custom dictionary at index {Index}", i);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove existing custom dictionary");
         }
     }
 
@@ -314,104 +612,621 @@ public partial class ThemeEditorViewModel : ViewModelBase
         }
     }
 
+    // private async Task StopPreviewAsync()
+    // {
+    //     try
+    //     {
+    //         if (!IsPreviewActive || _originalResources == null)
+    //         {
+    //             StatusMessage = "No preview is currently active";
+    //             return;
+    //         }
+    //
+    //         StatusMessage = "Restoring original theme...";
+    //
+    //         // Restore original resources directly in memory - NO FILE LOADING
+    //         await Task.Run(() =>
+    //         {
+    //             try
+    //             {
+    //                 Dispatcher.UIThread.Post(() =>
+    //                 {
+    //                     try
+    //                     {
+    //                         var app = Application.Current;
+    //                         if (app?.Resources == null)
+    //                         {
+    //                             _logger.LogWarning("Application or Resources is null during preview restoration");
+    //                             return;
+    //                         }
+    //
+    //                         // Remove all theme-related resources first
+    //                         var keysToRemove = app.Resources.Keys
+    //                             .OfType<string>()
+    //                             .Where(k => k.EndsWith("Brush") || k.EndsWith("Color"))
+    //                             .ToList();
+    //
+    //                         foreach (var key in keysToRemove)
+    //                         {
+    //                             try
+    //                             {
+    //                                 app.Resources.Remove(key);
+    //                             }
+    //                             catch (Exception ex)
+    //                             {
+    //                                 _logger.LogWarning(ex, "Failed to remove resource key: {Key}", key);
+    //                             }
+    //                         }
+    //
+    //                         // Restore original resources if we have them
+    //                         if (_originalResources != null)
+    //                         {
+    //                             foreach (var kvp in _originalResources)
+    //                             {
+    //                                 try
+    //                                 {
+    //                                     if (kvp.Value != null)
+    //                                     {
+    //                                         app.Resources[kvp.Key] = kvp.Value;
+    //                                     }
+    //                                 }
+    //                                 catch (Exception ex)
+    //                                 {
+    //                                     _logger.LogWarning(ex, "Failed to restore resource: {Key}", kvp.Key);
+    //                                 }
+    //                             }
+    //                         }
+    //
+    //                         _logger.LogDebug("Restored original theme resources from memory backup");
+    //                     }
+    //                     catch (Exception ex)
+    //                     {
+    //                         _logger.LogError(ex, "Error in UI thread during resource restoration");
+    //                     }
+    //                 });
+    //             }
+    //             catch (Exception ex)
+    //             {
+    //                 _logger.LogError(ex, "Error in background thread during preview restoration");
+    //             }
+    //         });
+    //
+    //         IsPreviewActive = false;
+    //         _originalThemeBeforePreview = null;
+    //         _originalResources = null;
+    //         StatusMessage = "Preview stopped - original theme restored";
+    //
+    //         _logger.LogInformation("Theme preview stopped, resources restored from memory");
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Failed to stop theme preview");
+    //         await _errorHandler.HandleExceptionAsync(ex, "Failed to stop preview", "Theme Editor");
+    //         StatusMessage = "Failed to stop preview";
+    //         
+    //         // Ensure we clean up state even if restoration failed
+    //         IsPreviewActive = false;
+    //         _originalThemeBeforePreview = null;
+    //         _originalResources = null;
+    //     }
+    // }
+    
+    /// <summary>
+    /// REAL SIMPLE FIX: Just remove preview dictionary, don't call theme service
+    /// </summary>
+    
     private async Task StopPreviewAsync()
     {
         try
         {
-            if (!IsPreviewActive || _originalResources == null)
-            {
-                StatusMessage = "No preview is currently active";
-                return;
-            }
-
             StatusMessage = "Restoring original theme...";
-
-            // Restore original resources directly in memory - NO FILE LOADING
-            await Task.Run(() =>
+        
+            var app = Application.Current;
+            if (app?.Resources != null)
             {
-                try
+                // Remove our theme dictionary - this will restore original theme resources automatically
+                for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
                 {
-                    Dispatcher.UIThread.Post(() =>
+                    var dict = app.Resources.MergedDictionaries[i];
+                    if (dict is ResourceDictionary resourceDict && 
+                        resourceDict.ContainsKey("_ThemeEditorGenerated"))
                     {
-                        try
-                        {
-                            var app = Application.Current;
-                            if (app?.Resources == null)
-                            {
-                                _logger.LogWarning("Application or Resources is null during preview restoration");
-                                return;
-                            }
-
-                            // Remove all theme-related resources first
-                            var keysToRemove = app.Resources.Keys
-                                .OfType<string>()
-                                .Where(k => k.EndsWith("Brush") || k.EndsWith("Color"))
-                                .ToList();
-
-                            foreach (var key in keysToRemove)
-                            {
-                                try
-                                {
-                                    app.Resources.Remove(key);
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "Failed to remove resource key: {Key}", key);
-                                }
-                            }
-
-                            // Restore original resources if we have them
-                            if (_originalResources != null)
-                            {
-                                foreach (var kvp in _originalResources)
-                                {
-                                    try
-                                    {
-                                        if (kvp.Value != null)
-                                        {
-                                            app.Resources[kvp.Key] = kvp.Value;
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        _logger.LogWarning(ex, "Failed to restore resource: {Key}", kvp.Key);
-                                    }
-                                }
-                            }
-
-                            _logger.LogDebug("Restored original theme resources from memory backup");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error in UI thread during resource restoration");
-                        }
-                    });
+                        app.Resources.MergedDictionaries.RemoveAt(i);
+                        _logger.LogDebug("Removed theme dictionary at index {Index}", i);
+                        break;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error in background thread during preview restoration");
-                }
-            });
-
+            }
+        
+            // DON'T call _themeService.ApplyThemeAsync() - it removes ModernDesignClasses!
+            // The original DarkProfessional StyleInclude is still loaded and will provide the resources
+        
             IsPreviewActive = false;
             _originalThemeBeforePreview = null;
-            _originalResources = null;
             StatusMessage = "Preview stopped - original theme restored";
 
-            _logger.LogInformation("Theme preview stopped, resources restored from memory");
+            _logger.LogInformation("Theme preview stopped, original theme automatically restored");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to stop theme preview");
-            await _errorHandler.HandleExceptionAsync(ex, "Failed to stop preview", "Theme Editor");
             StatusMessage = "Failed to stop preview";
-            
+        
             // Ensure we clean up state even if restoration failed
             IsPreviewActive = false;
             _originalThemeBeforePreview = null;
-            _originalResources = null;
         }
     }
+    
+    /// <summary>
+    /// Restore the original theme StyleInclude
+    /// </summary>
+    private async Task RestoreOriginalThemeStyleInclude()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Styles == null) return;
+                    
+                    // 1. Remove preview theme StyleIncludes
+                    var previewThemes = app.Styles
+                        .OfType<StyleInclude>()
+                        .Where(s => s.Source?.ToString().Contains("PreviewTheme") == true ||
+                                   s.Source?.ToString().Contains("temp") == true)
+                        .ToList();
+                    
+                    foreach (var theme in previewThemes)
+                    {
+                        app.Styles.Remove(theme);
+                        _logger.LogDebug("Removed preview theme: {Source}", theme.Source);
+                    }
+                    
+                    // 2. Restore original theme if we have the path
+                    if (!string.IsNullOrEmpty(_originalThemeStylePath))
+                    {
+                        var originalStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                        {
+                            Source = new Uri(_originalThemeStylePath)
+                        };
+                        
+                        // Insert before ModernDesignClasses
+                        var modernDesignIndex = app.Styles
+                            .OfType<StyleInclude>()
+                            .Select((style, index) => new { style, index })
+                            .FirstOrDefault(x => x.style.Source?.ToString().Contains("ModernDesign") == true)?.index;
+                        
+                        if (modernDesignIndex.HasValue)
+                        {
+                            app.Styles.Insert(modernDesignIndex.Value, originalStyleInclude);
+                            _logger.LogDebug("Restored original theme before ModernDesignClasses at index {Index}", modernDesignIndex.Value);
+                        }
+                        else
+                        {
+                            app.Styles.Add(originalStyleInclude);
+                            _logger.LogDebug("Restored original theme at end of styles");
+                        }
+                        
+                        _logger.LogInformation("Original theme StyleInclude restored: {Path}", _originalThemeStylePath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No original theme path to restore, using theme service fallback");
+                        
+                        // Fallback: use theme service
+                        if (_originalThemeBeforePreview.HasValue)
+                        {
+                            Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await _themeService.ApplyThemeAsync(_originalThemeBeforePreview.Value);
+                                    _logger.LogInformation("Restored theme via service: {Theme}", _originalThemeBeforePreview.Value);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Failed to restore theme via service");
+                                }
+                            });
+                        }
+                    }
+                    
+                    // 3. Clear backup data
+                    _originalThemeStylePath = null;
+                    _originalThemeBeforePreview = null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to restore original theme StyleInclude");
+                }
+            });
+        });
+    }
+    
+   /// <summary>
+    /// CORRECTED: Restore original style resources without calling theme service
+    /// </summary>
+    private async Task RestoreOriginalStyleResources()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Resources == null || _originalResources == null) 
+                    {
+                        _logger.LogWarning("Cannot restore resources - app.Resources or backup is null");
+                        
+                        // FALLBACK: If we have no backup, re-apply the original theme via theme service
+                        if (_originalThemeBeforePreview.HasValue)
+                        {
+                            _logger.LogInformation("No backup found, re-applying original theme via service");
+                            // This is risky but better than white background
+                            Task.Run(async () => {
+                                try
+                                {
+                                    await _themeService.ApplyThemeAsync(_originalThemeBeforePreview.Value);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Failed to re-apply theme via service");
+                                }
+                            });
+                        }
+                        return;
+                    }
+                    
+                    _logger.LogDebug("Restoring {Count} resources directly", _originalResources.Count);
+                    
+                    // Restore each backed up resource directly to Application.Resources
+                    int restoredCount = 0;
+                    foreach (var kvp in _originalResources)
+                    {
+                        try
+                        {
+                            if (kvp.Value != null)
+                            {
+                                app.Resources[kvp.Key] = kvp.Value;
+                                restoredCount++;
+                                
+                                // Debug important ones
+                                if (kvp.Key.Contains("Primary") || kvp.Key.Contains("Surface") || kvp.Key.Contains("Background"))
+                                {
+                                    if (kvp.Value is SolidColorBrush brush)
+                                    {
+                                        _logger.LogDebug("✅ Restored {Key}: {Color}", kvp.Key, brush.Color);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogDebug("✅ Restored {Key}: {Type}", kvp.Key, kvp.Value.GetType().Name);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to restore resource: {Key}", kvp.Key);
+                        }
+                    }
+                    
+                    _logger.LogInformation("Successfully restored {Count}/{Total} resources", restoredCount, _originalResources.Count);
+                    
+                    // Clear backup
+                    _originalResources.Clear();
+                    _originalResources = null;
+                    _originalThemeBeforePreview = null;
+                    
+                    _logger.LogDebug("Resources restored directly to Application.Resources");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to restore original style resources");
+                }
+            });
+        });
+    } 
+    
+    // <summary>
+    /// NEW: Restore resources directly without calling theme service
+    /// This prevents the white background issue
+    /// </summary>
+    private async Task RestoreResourcesDirectly()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Resources == null || _originalResources == null) 
+                    {
+                        _logger.LogWarning("Cannot restore resources - app.Resources or backup is null");
+                        return;
+                    }
+                    
+                    _logger.LogDebug("Restoring {Count} resources directly", _originalResources.Count);
+                    
+                    // Restore each backed up resource directly to Application.Resources
+                    foreach (var kvp in _originalResources)
+                    {
+                        try
+                        {
+                            if (kvp.Value != null)
+                            {
+                                app.Resources[kvp.Key] = kvp.Value;
+                                
+                                // Debug important ones
+                                if (kvp.Key.Contains("Primary") || kvp.Key.Contains("Surface") || kvp.Key.Contains("Background"))
+                                {
+                                    if (kvp.Value is SolidColorBrush brush)
+                                    {
+                                        _logger.LogDebug("Restored {Key}: {Color}", kvp.Key, brush.Color);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to restore resource: {Key}", kvp.Key);
+                        }
+                    }
+                    
+                    // Clear backup
+                    _originalResources.Clear();
+                    _originalResources = null;
+                    _originalThemeBeforePreview = null;
+                    
+                    _logger.LogDebug("Resources restored directly to Application.Resources");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to restore resources directly");
+                }
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Force complete style refresh - enhanced approach
+    /// </summary>
+    private async Task ForceCompleteStyleRefresh()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Styles == null) return;
+                    
+                    // 1. Force resource refresh
+                    ForceResourceRefresh();
+                    
+                    // 2. Refresh ModernDesignClasses
+                    RefreshModernDesignClasses();
+                    
+                    // 3. Force garbage collection to ensure resources are updated
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    
+                    _logger.LogDebug("Complete style refresh performed");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to force complete style refresh");
+                }
+            });
+        });
+    }
+    
+    /// <summary>
+    /// Enhanced ModernDesignClasses refresh
+    /// </summary>
+    private void RefreshModernDesignClasses()
+    {
+        try
+        {
+            var app = Application.Current;
+            if (app?.Styles == null) return;
+            
+            // Find ModernDesignClasses
+            var modernDesignClasses = app.Styles
+                .OfType<StyleInclude>()
+                .FirstOrDefault(s => s.Source?.ToString().Contains("ModernDesignClasses") == true);
+            
+            if (modernDesignClasses != null)
+            {
+                var sourceUri = modernDesignClasses.Source;
+                var index = app.Styles.IndexOf(modernDesignClasses);
+                
+                // Remove and re-add to force refresh
+                app.Styles.RemoveAt(index);
+                
+                var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                {
+                    Source = sourceUri
+                };
+                
+                app.Styles.Insert(index, newStyleInclude);
+                
+                _logger.LogDebug("ModernDesignClasses refreshed at index {Index}", index);
+            }
+            else
+            {
+                _logger.LogWarning("ModernDesignClasses not found for refresh");
+                
+                // Try to add it manually
+                try
+                {
+                    var styleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                    {
+                        Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+                    };
+                    
+                    app.Styles.Add(styleInclude);
+                    _logger.LogInformation("✅ Added missing ModernDesignClasses");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to add missing ModernDesignClasses");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh ModernDesignClasses");
+        }
+    }
+    
+    
+    
+    /// <summary>
+    /// Debug resource availability for troubleshooting
+    /// </summary>
+    private void DebugResourceAvailability()
+    {
+        try
+        {
+            var app = Application.Current;
+            if (app?.Resources == null) return;
+            
+            var testKeys = new[] { "PrimaryBrush", "PrimaryHoverBrush", "SecondaryBrush", "SecondaryHoverBrush", "SurfaceBrush", "BackgroundBrush" };
+            
+            _logger.LogDebug("=== RESOURCE AVAILABILITY DEBUG ===");
+            
+            foreach (var key in testKeys)
+            {
+                var found = app.Resources.TryGetValue(key, out var value);
+                if (found && value is SolidColorBrush brush)
+                {
+                    _logger.LogDebug("✅ {Key}: {Color}", key, brush.Color);
+                }
+                else
+                {
+                    _logger.LogWarning("❌ {Key}: NOT FOUND", key);
+                }
+            }
+            
+            _logger.LogDebug("MergedDictionaries count: {Count}", app.Resources.MergedDictionaries.Count);
+            
+            // Check each merged dictionary
+            for (int i = 0; i < app.Resources.MergedDictionaries.Count; i++)
+            {
+                var dict = app.Resources.MergedDictionaries[i];
+                if (dict is ResourceDictionary resourceDict)
+                {
+                    var markerKeys = resourceDict.Keys.OfType<string>()
+                        .Where(k => k.StartsWith("_ThemeEditor"))
+                        .ToList();
+                    
+                    if (markerKeys.Any())
+                    {
+                        _logger.LogDebug("Dictionary[{Index}]: ThemeEditor dictionary with {Count} keys", 
+                            i, resourceDict.Count);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Dictionary[{Index}]: Standard dictionary with {Count} keys", 
+                            i, resourceDict.Count);
+                    }
+                }
+                else
+                {
+                    _logger.LogDebug("Dictionary[{Index}]: IResourceProvider (type: {Type})", 
+                        i, dict.GetType().Name);
+                }
+            }
+            
+            _logger.LogDebug("=== END RESOURCE DEBUG ===");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to debug resource availability");
+        }
+    }
+    
+    /// <summary>
+    /// Restore original theme state
+    /// </summary>
+    private async Task RestoreOriginalThemeState()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    // 1. Restore original theme if we had one
+                    if (_originalThemeBeforePreview.HasValue)
+                    {
+                        await _themeService.ApplyThemeAsync(_originalThemeBeforePreview.Value);
+                        _originalThemeBeforePreview = null;
+                    }
+                    
+                    // 2. Clear backup resources
+                    _originalResources?.Clear();
+                    _originalResources = null;
+                    
+                    _logger.LogDebug("Original theme state restored");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to restore original theme state");
+                }
+            });
+        });
+    }
+
+    
+    /// <summary>
+    /// Remove our custom theme dictionary
+    /// </summary>
+    private async Task RemoveCustomThemeDictionary()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Resources == null) return;
+                    
+                    // Remove our custom dictionary if it exists
+                    if (_customThemeDictionary != null)
+                    {
+                        app.Resources.MergedDictionaries.Remove(_customThemeDictionary);
+                        _customThemeDictionary = null;
+                        _logger.LogDebug("Removed custom theme dictionary");
+                    }
+                    
+                    // Also remove any marked dictionaries
+                    for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
+                    {
+                        var dict = app.Resources.MergedDictionaries[i];
+                        if (dict is ResourceDictionary resourceDict && 
+                            (resourceDict.ContainsKey("_ThemeEditorCustom") || resourceDict.ContainsKey("_ThemeEditorGenerated")))
+                        {
+                            app.Resources.MergedDictionaries.RemoveAt(i);
+                            _logger.LogDebug("Removed marked theme dictionary at index {Index}", i);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to remove custom theme dictionary");
+                }
+            });
+        });
+    }
+    
 
     /// <summary>
     /// Apply theme colors directly to application resources in memory
@@ -440,7 +1255,7 @@ public partial class ThemeEditorViewModel : ViewModelBase
     // }
     
 /// <summary>
-/// Updated theme application with the final fix
+/// ORIGINAL WORKING METHOD: Enhanced memory theme application with proper resource handling
 /// </summary>
 private async Task ApplyThemeInMemory()
 {
@@ -471,30 +1286,31 @@ private async Task ApplyThemeInMemory()
                 // Apply derived colors AFTER base colors are set
                 ApplyDerivedColorsToResources(themeDict);
 
-                // Remove existing theme dictionary
-                ResourceDictionary? existingThemeDict = null;
+                // Remove any existing theme dictionary we might have added
                 for (int i = app.Resources.MergedDictionaries.Count - 1; i >= 0; i--)
                 {
                     if (app.Resources.MergedDictionaries[i] is ResourceDictionary dict && 
                         dict.ContainsKey("_ThemeEditorGenerated"))
                     {
-                        existingThemeDict = dict;
                         app.Resources.MergedDictionaries.RemoveAt(i);
                         _logger.LogDebug("Removed existing theme dictionary at index {Index}", i);
                         break;
                     }
                 }
 
-                // Add marker and add to merged dictionaries  
+                // Add a marker to identify our theme dictionary
                 themeDict["_ThemeEditorGenerated"] = true;
+
+                // Add the new theme dictionary to merged dictionaries
+                // This approach ensures proper DynamicResource change notifications
                 app.Resources.MergedDictionaries.Add(themeDict);
 
                 _logger.LogDebug("Applied theme colors via MergedDictionaries");
+                
+                // Refresh ModernDesignClasses
+                RefreshModernDesignClassesAfterThemeChange();
 
-                // THE FINAL FIX: Force complete style invalidation
-                ForceStyleInvalidationAfterResourceConfirmed();
-
-                // Debug and verify
+                // Debug the current state
                 DebugResourceState();
             }
             catch (Exception ex)
@@ -651,6 +1467,233 @@ private void RefreshModernDesignClassesOnly()
         _logger.LogError(ex, "Failed to refresh ModernDesignClasses");
     }
 }
+
+/// <summary>
+    /// Backup current theme state - comprehensive approach
+    /// </summary>
+    private async Task BackupCurrentThemeState()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Resources == null) return;
+                    
+                    // Store the original theme before preview (but don't use it for restoration)
+                    _originalThemeBeforePreview = _themeService.CurrentTheme;
+                    
+                    // Create comprehensive backup of ALL current resources
+                    _originalResources = new Dictionary<string, object>();
+                    
+                    // First, backup from Application.Resources itself
+                    foreach (var key in app.Resources.Keys.OfType<string>())
+                    {
+                        if (app.Resources.TryGetValue(key, out var value) && value != null)
+                        {
+                            _originalResources[key] = value;
+                        }
+                    }
+                    
+                    // Then backup from each MergedDictionary
+                    foreach (var dict in app.Resources.MergedDictionaries)
+                    {
+                        if (dict is ResourceDictionary resourceDict)
+                        {
+                            foreach (var key in resourceDict.Keys.OfType<string>())
+                            {
+                                if (resourceDict.TryGetValue(key, out var value) && value != null)
+                                {
+                                    // Only backup if we don't already have it (higher priority wins)
+                                    if (!_originalResources.ContainsKey(key))
+                                    {
+                                        _originalResources[key] = value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    _logger.LogDebug("Backed up {Count} original resources", _originalResources.Count);
+                    
+                    // Debug what we backed up
+                    var importantKeys = new[] { "PrimaryBrush", "SecondaryBrush", "SurfaceBrush", "BackgroundBrush" };
+                    foreach (var key in importantKeys)
+                    {
+                        if (_originalResources.TryGetValue(key, out var value) && value is SolidColorBrush brush)
+                        {
+                            _logger.LogDebug("Backed up {Key}: {Color}", key, brush.Color);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to backup current theme state");
+                }
+            });
+        });
+    }
+
+
+/// <summary>
+    /// CORRECTED: Backup resources from StyleInclude themes, not just Application.Resources
+    /// </summary>
+    private async Task BackupCurrentStyleResources()
+    {
+        await Task.Run(() =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    var app = Application.Current;
+                    if (app?.Styles == null) return;
+                    
+                    // Store the original theme before preview
+                    _originalThemeBeforePreview = _themeService.CurrentTheme;
+                    
+                    // Create comprehensive backup of resources from ALL SOURCES
+                    _originalResources = new Dictionary<string, object>();
+                    
+                    _logger.LogDebug("Starting backup from all resource sources...");
+                    
+                    // 1. Backup from Application.Resources itself
+                    foreach (var key in app.Resources.Keys.OfType<string>())
+                    {
+                        if (app.Resources.TryGetValue(key, out var value) && value != null)
+                        {
+                            _originalResources[key] = value;
+                        }
+                    }
+                    _logger.LogDebug("Backed up {Count} from Application.Resources", _originalResources.Count);
+                    
+                    // 2. Backup from each MergedDictionary
+                    foreach (var dict in app.Resources.MergedDictionaries)
+                    {
+                        if (dict is ResourceDictionary resourceDict)
+                        {
+                            foreach (var key in resourceDict.Keys.OfType<string>())
+                            {
+                                if (resourceDict.TryGetValue(key, out var value) && value != null)
+                                {
+                                    if (!_originalResources.ContainsKey(key))
+                                    {
+                                        _originalResources[key] = value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _logger.LogDebug("After MergedDictionaries: {Count} resources", _originalResources.Count);
+                    
+                    // 3. NEW: Backup from StyleInclude resources (like DarkProfessional.axaml)
+                    foreach (var style in app.Styles.OfType<StyleInclude>())
+                    {
+                        try
+                        {
+                            // Try to access the StyleInclude's resources
+                            var styleSource = style.Source?.ToString();
+                            if (styleSource?.Contains("DarkProfessional") == true ||
+                                styleSource?.Contains("Themes/") == true)
+                            {
+                                _logger.LogDebug("Found theme StyleInclude: {Source}", styleSource);
+                                
+                                // The StyleInclude itself might have loaded resources into the resource system
+                                // We need to query what resources are currently resolved
+                                var themeKeys = new[]
+                                {
+                                    "PrimaryBrush", "PrimaryColor", "SecondaryBrush", "SecondaryColor",
+                                    "SurfaceBrush", "SurfaceColor", "BackgroundBrush", "BackgroundColor",
+                                    "BorderBrush", "BorderColor", "TextPrimaryBrush", "TextSecondaryBrush",
+                                    "SuccessBrush", "WarningBrush", "ErrorBrush", "InfoBrush"
+                                };
+                                
+                                foreach (var key in themeKeys)
+                                {
+                                    if (app.Resources.TryGetValue(key, out var themeValue) && themeValue != null)
+                                    {
+                                        if (!_originalResources.ContainsKey(key))
+                                        {
+                                            _originalResources[key] = themeValue;
+                                            _logger.LogDebug("Backed up theme resource: {Key}", key);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to backup from StyleInclude: {Source}", style.Source);
+                        }
+                    }
+                    
+                    _logger.LogDebug("Final backup count: {Count} original resources", _originalResources.Count);
+                    
+                    // Debug what we backed up
+                    var importantKeys = new[] { "PrimaryBrush", "SecondaryBrush", "SurfaceBrush", "BackgroundBrush" };
+                    foreach (var key in importantKeys)
+                    {
+                        if (_originalResources.TryGetValue(key, out var value))
+                        {
+                            if (value is SolidColorBrush brush)
+                            {
+                                _logger.LogDebug("✅ Backed up {Key}: {Color}", key, brush.Color);
+                            }
+                            else
+                            {
+                                _logger.LogDebug("✅ Backed up {Key}: {Type}", key, value.GetType().Name);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("❌ Failed to backup {Key}", key);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to backup current style resources");
+                }
+            });
+        });
+    }
+
+    /// <summary>
+    /// Backup the current theme StyleInclude path
+    /// </summary>
+    private void BackupCurrentThemeStyleInclude()
+    {
+        try
+        {
+            var app = Application.Current;
+            if (app?.Styles == null) return;
+            
+            // Find the current theme StyleInclude
+            var themeStyleInclude = app.Styles
+                .OfType<StyleInclude>()
+                .FirstOrDefault(s => s.Source?.ToString().Contains("Themes/") == true && 
+                                     !s.Source.ToString().Contains("ModernDesign") == true);
+            
+            if (themeStyleInclude != null)
+            {
+                _originalThemeStylePath = themeStyleInclude.Source?.ToString();
+                _logger.LogDebug("Backed up original theme StyleInclude: {Path}", _originalThemeStylePath);
+            }
+            else
+            {
+                _logger.LogWarning("No theme StyleInclude found to backup");
+            }
+            
+            // Store the original theme before preview
+            _originalThemeBeforePreview = _themeService.CurrentTheme;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to backup current theme StyleInclude");
+        }
+    }
 
     /// <summary>
     /// Backup current application resources for restoration
@@ -1182,55 +2225,49 @@ private void RefreshModernDesignClassesAfterThemeChange()
 
         _logger.LogDebug("Refreshing ModernDesignClasses to pick up new hover brushes...");
 
-        // First, debug what styles we have
-        DebugApplicationStyles();
-
-        // Try different ways to find ModernDesignClasses
+        // Find ModernDesignClasses
         var modernDesignClasses = app.Styles
             .OfType<StyleInclude>()
             .FirstOrDefault(s => s.Source?.ToString().Contains("ModernDesignClasses") == true);
-
-        if (modernDesignClasses == null)
-        {
-            // Try without case sensitivity
-            modernDesignClasses = app.Styles
-                .OfType<StyleInclude>()
-                .FirstOrDefault(s => s.Source?.ToString().ToLowerInvariant().Contains("moderndesign") == true);
-        }
-
-        if (modernDesignClasses == null)
-        {
-            // Try looking for any file in Common folder
-            modernDesignClasses = app.Styles
-                .OfType<StyleInclude>()
-                .FirstOrDefault(s => s.Source?.ToString().Contains("Common") == true);
-        }
 
         if (modernDesignClasses != null)
         {
             var sourceUri = modernDesignClasses.Source;
             _logger.LogDebug("Found ModernDesignClasses: {Source}", sourceUri);
-            
+
             // Remove and re-add to force DynamicResource re-evaluation
             app.Styles.Remove(modernDesignClasses);
-            
+
             // Create a new StyleInclude with the same source
             var newStyleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
             {
                 Source = sourceUri
             };
-            
+
             app.Styles.Add(newStyleInclude);
-            
+
             _logger.LogDebug("✅ ModernDesignClasses refreshed - hover styles should now work");
         }
         else
         {
-            _logger.LogWarning("❌ ModernDesignClasses not found in app styles AT ALL");
-            _logger.LogWarning("This means the styles are not being loaded or have a different name");
-            
-            // As a fallback, try to manually add ModernDesignClasses
-            TryAddModernDesignClasses();
+            _logger.LogWarning("❌ ModernDesignClasses not found in app styles");
+
+            // Try to manually add ModernDesignClasses
+            try
+            {
+                var styleInclude = new StyleInclude(new Uri("avares://ProxyStudio/"))
+                {
+                    Source = new Uri("avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml")
+                };
+
+                app.Styles.Add(styleInclude);
+
+                _logger.LogInformation("✅ Manually added ModernDesignClasses to application styles");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to manually add ModernDesignClasses");
+            }
         }
     }
     catch (Exception ex)
