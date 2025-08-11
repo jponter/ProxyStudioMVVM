@@ -28,7 +28,10 @@
         <TabControl>
             
             <!-- Cards Tab -->
-            <TabItem>
+            <TabItem Foreground="{DynamicResource TextPrimaryColor}"
+                     
+                     
+                     >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="🃏" FontSize="16"/>
@@ -55,7 +58,7 @@
                             <StackPanel Spacing="8">
                                 
                                 <!-- Header -->
-                                <StackPanel Spacing="8">
+                                <StackPanel Spacing="8" >
                                     <TextBlock Classes="heading-medium" Text="Card Actions"/>
                                     <TextBlock Classes="body-small" Text="Manage your card collection"/>
                                 </StackPanel>
@@ -359,7 +362,7 @@
             </TabItem>
             
             <!-- Printing Tab -->
-            <TabItem>
+            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="🖨️" FontSize="16"/>
@@ -370,7 +373,7 @@
             </TabItem>
             
             <!-- Settings Tab -->
-            <TabItem>
+            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="⚙️" FontSize="16"/>
@@ -667,7 +670,7 @@
             </TabItem>
             
             <!-- Theme Editor Tab -->
-            <TabItem>
+            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="🎨" FontSize="16"/>
@@ -678,7 +681,7 @@
             </TabItem>
             
             <!-- Logging Tab -->
-            <TabItem>
+            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="📊" FontSize="16"/>

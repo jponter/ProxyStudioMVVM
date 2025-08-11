@@ -215,6 +215,7 @@
     </Style>
     
     <Style Selector="TextBlock.heading-medium">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
         <Setter Property="FontSize" Value="24" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
