@@ -250,7 +250,7 @@
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
                     
-                    <ScrollViewer Classes="sidebar">
+                    <ScrollViewer >
                         <StackPanel Spacing="24">
                     
                             <!-- Header -->

@@ -2,7 +2,8 @@
 <!-- Simplified version for better compatibility -->
 
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonia="clr-namespace:LoadingIndicators.Avalonia;assembly=LoadingIndicators.Avalonia">
 
     <!-- ==============================================
          BUTTON STYLES - Using Auto-Generated Resources
@@ -300,5 +301,262 @@
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
     </Style>
+    
+    <!-- ===== COLORPICKER MODERN STYLING ===== -->
+<Style Selector="ColorPicker">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="6"/>
+</Style>
+
+<!-- ===== SLIDER MODERN STYLING ===== -->
+<Style Selector="Slider">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+</Style>
+
+<Style Selector="Slider.modern">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="Height" Value="32"/>
+</Style>
+
+<!-- ===== CHECKBOX MODERN STYLING ===== -->
+<Style Selector="CheckBox">
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="Padding" Value="8,6"/>
+  <Setter Property="CornerRadius" Value="4"/>
+</Style>
+
+<Style Selector="CheckBox:checked">
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<Style Selector="CheckBox:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
+</Style>
+
+<!-- ===== PROGRESSBAR MODERN STYLING ===== -->
+<Style Selector="ProgressBar">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="6"/>
+  <Setter Property="Height" Value="8"/>
+</Style>
+
+<Style Selector="ProgressBar.modern-thick">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="8"/>
+  <Setter Property="Height" Value="12"/>
+</Style>
+
+<!-- ===== SCROLLVIEWER MODERN STYLING ===== -->
+<Style Selector="ScrollViewer">
+  <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+</Style>
+
+<Style Selector="ScrollBar">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+</Style>
+
+<Style Selector="ScrollBar:vertical">
+  <Setter Property="Width" Value="12"/>
+</Style>
+
+<Style Selector="ScrollBar:horizontal">
+  <Setter Property="Height" Value="12"/>
+</Style>
+
+<!-- ===== TOOLTIP MODERN STYLING ===== -->
+<Style Selector="ToolTip">
+  <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="6"/>
+  <Setter Property="Padding" Value="8,6"/>
+  <Setter Property="FontSize" Value="12"/>
+</Style>
+
+<!-- ===== MENU AND CONTEXT MENU STYLING ===== -->
+<Style Selector="Menu">
+  <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+</Style>
+
+<Style Selector="MenuItem">
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="Padding" Value="12,8"/>
+</Style>
+
+<Style Selector="MenuItem:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+</Style>
+
+<Style Selector="ContextMenu">
+  <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="8"/>
+  <Setter Property="Padding" Value="4"/>
+</Style>
+
+<!-- ===== LISTBOX ITEM STYLING ===== -->
+<Style Selector="ListBoxItem">
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="Padding" Value="8"/>
+  <Setter Property="Margin" Value="2"/>
+  <Setter Property="CornerRadius" Value="4"/>
+</Style>
+
+<Style Selector="ListBoxItem:selected">
+  <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<Style Selector="ListBoxItem:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+</Style>
+
+<Style Selector="ListBoxItem:selected:pointerover">
+  <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+</Style>
+
+<!-- ===== SEPARATOR STYLING ===== -->
+<Style Selector="Separator">
+  <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="Height" Value="1"/>
+  <Setter Property="Margin" Value="0,8"/>
+</Style>
+
+<!-- ===== BORDER ENHANCED STYLING ===== -->
+<!-- Add classes for different card types -->
+<Style Selector="Border.card-hover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="8"/>
+  <Setter Property="Padding" Value="16"/>
+</Style>
+
+<Style Selector="Border.card-hover:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<!-- ===== WINDOW STYLING ===== -->
+<Style Selector="Window">
+  <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+</Style>
+
+<!-- ===== ENHANCED TEXTBLOCK CLASSES ===== -->
+<Style Selector="TextBlock.error-text">
+  <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+  <Setter Property="FontWeight" Value="Medium"/>
+</Style>
+
+<Style Selector="TextBlock.success-text">
+  <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+  <Setter Property="FontWeight" Value="Medium"/>
+</Style>
+
+<Style Selector="TextBlock.warning-text">
+  <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+  <Setter Property="FontWeight" Value="Medium"/>
+</Style>
+
+<Style Selector="TextBlock.info-text">
+  <Setter Property="Foreground" Value="{DynamicResource InfoBrush}"/>
+  <Setter Property="FontWeight" Value="Medium"/>
+</Style>
+
+<!-- ===== TOGGLE BUTTON STYLING ===== -->
+<Style Selector="ToggleButton">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="6"/>
+  <Setter Property="Padding" Value="12,8"/>
+  <Setter Property="FontWeight" Value="Medium"/>
+</Style>
+
+<Style Selector="ToggleButton:checked">
+  <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextOnPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<Style Selector="ToggleButton:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
+</Style>
+
+<Style Selector="ToggleButton:checked:pointerover">
+  <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
+</Style>
+
+<!-- ===== EXPANDER STYLING ===== -->
+<Style Selector="Expander">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="8"/>
+</Style>
+
+<Style Selector="Expander /template/ ToggleButton">
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="FontWeight" Value="SemiBold"/>
+  <Setter Property="Padding" Value="16,12"/>
+</Style>
+
+<Style Selector="Expander /template/ ToggleButton:pointerover">
+  <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
+</Style>
+
+<!-- ===== LOADING INDICATOR STYLING ===== -->
+<Style Selector="avalonia|LoadingIndicator">
+  <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<!-- ===== NUMERIC UPDOWN STYLING ===== -->
+<Style Selector="NumericUpDown">
+  <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+  <Setter Property="BorderThickness" Value="1"/>
+  <Setter Property="CornerRadius" Value="6"/>
+  <Setter Property="Padding" Value="8"/>
+</Style>
+
+<Style Selector="NumericUpDown:pointerover">
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+</Style>
+
+<Style Selector="NumericUpDown:focus">
+  <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+  <Setter Property="BorderThickness" Value="2"/>
+</Style>
 
 </Styles>
