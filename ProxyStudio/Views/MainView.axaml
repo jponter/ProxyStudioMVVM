@@ -49,7 +49,7 @@
                     
                     <!-- Modern Sidebar -->
                     <Border Grid.Column="0" 
-                            Classes="sidebar"
+                            Classes="sidebar card-elevated"
                             Background="{DynamicResource SurfaceElevatedBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="0,0,1,0"
@@ -59,8 +59,12 @@
                                 
                                 <!-- Header -->
                                 <StackPanel Spacing="8" >
-                                    <TextBlock Classes="heading-medium" Text="Card Actions"/>
-                                    <TextBlock Classes="body-small" Text="Manage your card collection"/>
+                                    <TextBlock Classes="heading-medium" 
+                                               Text="Card Actions"
+                                               Foreground="{DynamicResource TextPrimaryColor}"
+                                               />
+                                    <TextBlock Classes="body-medium" Text="Manage your card collection"
+                                               Foreground="{DynamicResource TextSecondaryColor}"/>
                                 </StackPanel>
                                 
                                 <!-- Action Buttons -->
@@ -177,7 +181,8 @@
                                     </Grid.ColumnDefinitions>
                                     
                                     <StackPanel Grid.Column="0" Spacing="4">
-                                        <TextBlock Classes="heading-medium" Text="Card Collection"/>
+                                        <TextBlock Classes="heading-medium" Text="Card Collection"
+                                                   Foreground="{DynamicResource TextPrimaryColor}"/>
                                         <TextBlock Classes="body-small" 
                                                   Text="{Binding Cards.Count, StringFormat='{}Total cards: {0}'}"/>
                                     </StackPanel>

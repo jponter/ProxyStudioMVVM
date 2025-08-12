@@ -12,18 +12,19 @@
 
     <Grid Background="{DynamicResource BackgroundBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         
         <!-- Simplified Color Editor Panel -->
         <Border Grid.Column="0" 
+                Classes="sidebar "
                 Background="{DynamicResource SurfaceElevatedBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,1,0">
-            <ScrollViewer>
-                <StackPanel Spacing="16" Margin="16">
+            <ScrollViewer Classes="sidebar">
+                <StackPanel Spacing="16" Margin="10,0">
                     
                     <!-- Header -->
                     <StackPanel Spacing="8">
@@ -32,6 +33,8 @@
                                  Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <TextBlock Classes="body-medium" 
                                  Text="Create custom themes with just 12 core colors"
+                                 
+                                 
                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                     
@@ -54,18 +57,28 @@
                                        Background="{DynamicResource SurfaceBrush}"
                                        BorderBrush="{DynamicResource BorderBrush}"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Watermark="Enter theme name..."/>
+                                       Watermark="Enter theme name..."
+                                      
+                                       MaxWidth="313"
+                                       />
+                                
                             </StackPanel>
                             
                             <StackPanel Spacing="4">
                                 <TextBlock Classes="caption" 
                                          Text="DESCRIPTION"
-                                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                         Foreground="{DynamicResource TextSecondaryBrush}"
+                                         
+                                         
+                                         />
                                 <TextBox Text="{Binding ThemeDescription}"
                                        Background="{DynamicResource SurfaceBrush}"
                                        BorderBrush="{DynamicResource BorderBrush}"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Watermark="Describe your theme..."/>
+                                       Watermark="Describe your theme..."
+                                       MaxWidth="313"
+                                       />
+                                
                             </StackPanel>
                             
                             <StackPanel Spacing="4">
@@ -76,7 +89,8 @@
                                        Background="{DynamicResource SurfaceBrush}"
                                        BorderBrush="{DynamicResource BorderBrush}"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Watermark="Your name"/>
+                                       Watermark="Your name"
+                                       MaxWidth="313"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
