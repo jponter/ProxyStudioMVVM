@@ -132,13 +132,13 @@
     </Style>
     
     <!-- Warning Button Hover State -->
-    <!-- <Style Selector="Button.warning:pointerover"> -->
-    <!--     <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" /> -->
-    <!--     <Setter Property="BorderBrush" Value="{DynamicResource WarningHoverBrush}" /> -->
-    <!-- </Style> -->
-    <!-- <Style Selector="Button.warning:pointerover /template/ ContentPresenter#PART_ContentPresenter"> -->
-    <!--     <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" /> -->
-    <!-- </Style> -->
+    <Style Selector="Button.warning:pointerover">
+        <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WarningHoverBrush}" />
+    </Style>
+    <Style Selector="Button.warning:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}" />
+    </Style>
     
     <!-- Warning Button Pressed State -->
     <Style Selector="Button.warning:pressed">
