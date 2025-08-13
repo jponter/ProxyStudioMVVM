@@ -10,7 +10,7 @@
              x:DataType="vm:PrintViewModel">
 
 
-    <!-- todo modify the view to use the new theme system -->
+   
 
 
     <Grid>

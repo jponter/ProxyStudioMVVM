@@ -95,6 +95,8 @@
       <None Include="Services\EnhancedThemeService.cs" />
       <AvaloniaXaml Remove="Themes\Common\ResponsiveClasses.axaml" />
       <None Include="Themes\Common\ResponsiveClasses.axaml" />
+      <AvaloniaXaml Remove="Backups\ModernDesignClasses.axaml" />
+      <None Include="Backups\ModernDesignClasses.axaml" />
     </ItemGroup>
 
    

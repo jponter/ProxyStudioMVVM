@@ -213,7 +213,7 @@
                                         
                                         <ListBox.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <UniformGrid Columns="4"/>
+                                                <UniformGrid Columns="0"/>
                                             </ItemsPanelTemplate>
                                         </ListBox.ItemsPanel>
                                         
@@ -410,178 +410,7 @@
                                 </StackPanel>
                             </Border>
                             
-                            <!-- ~1~ Print Quality Settings @1@ -->
-                            <!-- <Border Classes="card-elevated"> -->
-                            <!--     <StackPanel Spacing="16"> -->
-                            <!--         <StackPanel Orientation="Horizontal" Spacing="8"> -->
-                            <!--             <TextBlock Text="🎯" FontSize="16"/> -->
-                            <!--             <TextBlock Classes="heading-small" Text="Print Quality Settings"/> -->
-                            <!--         </StackPanel> -->
-                            <!--          -->
-                            <!--         ~1~ Card Size Info @1@ -->
-                            <!--         <Border Classes="card-compact"> -->
-                            <!--             <StackPanel Spacing="8"> -->
-                            <!--                 <TextBlock Classes="body-medium"  -->
-                            <!--                           Text="📏 Card Dimensions"  -->
-                            <!--                           FontWeight="SemiBold"/> -->
-                            <!--                 <TextBlock Classes="body-small"  -->
-                            <!--                           Text="Fixed at exactly 63mm × 88mm (2.48″ × 3.46″)"/> -->
-                            <!--                 <TextBlock Classes="caption"  -->
-                            <!--                           Text="Professional trading card standard - dimensions never change"/> -->
-                            <!--             </StackPanel> -->
-                            <!--         </Border> -->
-                            <!--          -->
-                            <!--         ~1~ Print DPI Setting @1@ -->
-                            <!--         <StackPanel Spacing="12"> -->
-                            <!--             <StackPanel Spacing="4"> -->
-                            <!--                 <TextBlock Classes="caption" Text="PRINT RESOLUTION"/> -->
-                            <!--                 <Grid> -->
-                            <!--                     <Grid.ColumnDefinitions> -->
-                            <!--                         <ColumnDefinition Width="120"/> -->
-                            <!--                         <ColumnDefinition Width="80"/> -->
-                            <!--                         <ColumnDefinition Width="*"/> -->
-                            <!--                     </Grid.ColumnDefinitions> -->
-                            <!--                      -->
-                            <!--                     <ComboBox Grid.Column="0"  -->
-                            <!--                              Classes="modern" -->
-                            <!--                              Padding="5" -->
-                            <!--                              ItemsSource="{Binding PrintViewModel.CommonPrintDpiOptions}" -->
-                            <!--                              SelectedItem="{Binding PrintViewModel.PrintDpi}"/> -->
-                            <!--                               -->
-                            <!--                     <TextBox Grid.Column="1"  -->
-                            <!--                             Classes="modern" -->
-                            <!--                             Text="{Binding PrintViewModel.PrintDpi, Mode=TwoWay}" -->
-                            <!--                             Margin="8,0,0,0"/> -->
-                            <!--                              -->
-                            <!--                     <TextBlock Grid.Column="2"  -->
-                            <!--                               Classes="body-medium"  -->
-                            <!--                               Text="DPI"  -->
-                            <!--                               VerticalAlignment="Center" -->
-                            <!--                               Margin="8,0,0,0"/> -->
-                            <!--                 </Grid> -->
-                            <!--             </StackPanel> -->
-                            <!--              -->
-                            <!--             <CheckBox Content="🛡️ Enforce minimum 300 DPI for print quality" -->
-                            <!--                      IsChecked="{Binding PrintViewModel.EnsureMinimumPrintDpi}"/> -->
-                            <!--              -->
-                            <!--             ~1~ Quality Guide @1@ -->
-                            <!--             <Border Classes="card-compact"> -->
-                            <!--                 <StackPanel Spacing="6"> -->
-                            <!--                     <TextBlock Classes="body-small"  -->
-                            <!--                               Text="🎯 Print Quality Guide"  -->
-                            <!--                               FontWeight="SemiBold"/> -->
-                            <!--                     <StackPanel Spacing="2"> -->
-                            <!--                         <TextBlock Classes="caption" Text="• 150 DPI: Draft quality - For internal use only"/> -->
-                            <!--                         <TextBlock Classes="caption" Text="• 300 DPI: Professional printing - Recommended standard" Foreground="{StaticResource SuccessBrush}"/> -->
-                            <!--                         <TextBlock Classes="caption" Text="• 600 DPI: Ultra-high quality - Large files, slow generation"/> -->
-                            <!--                         <TextBlock Classes="caption" Text="• 1200 DPI: Maximum quality - Very large files"/> -->
-                            <!--                     </StackPanel> -->
-                            <!--                 </StackPanel> -->
-                            <!--             </Border> -->
-                            <!--         </StackPanel> -->
-                            <!--     </StackPanel> -->
-                            <!-- </Border> -->
                             
-                            <!-- Preview Settings -->
-                            <!-- <Border Classes="card-elevated"> -->
-                            <!--     <StackPanel Spacing="16"> -->
-                            <!--         <TextBlock Classes="heading-small" Text="Preview Settings"/> -->
-                            <!--          -->
-                            <!--         <StackPanel Spacing="12"> -->
-                            <!--             <TextBlock Classes="body-small"  -->
-                            <!--                       Text="ℹ️ Preview settings are separate from print settings to maintain UI performance"/> -->
-                            <!--              -->
-                            <!--             <StackPanel Spacing="4"> -->
-                            <!--                 <TextBlock Classes="caption" Text="PREVIEW DPI"/> -->
-                            <!--                 <Grid> -->
-                            <!--                     <Grid.ColumnDefinitions> -->
-                            <!--                         <ColumnDefinition Width="*"/> -->
-                            <!--                         <ColumnDefinition Width="60"/> -->
-                            <!--                         <ColumnDefinition Width="40"/> -->
-                            <!--                     </Grid.ColumnDefinitions> -->
-                            <!--                     <Slider Grid.Column="0"  -->
-                            <!--                            Classes="modern" -->
-                            <!--                            Value="{Binding PrintViewModel.PreviewDpi, Mode=TwoWay}" -->
-                            <!--                            Minimum="72" Maximum="300"  -->
-                            <!--                            VerticalAlignment="Center"/> -->
-                            <!--                     <TextBox Grid.Column="1"  -->
-                            <!--                             Classes="modern" -->
-                            <!--                             Text="{Binding PrintViewModel.PreviewDpi}" -->
-                            <!--                             Margin="8,0,0,0"/> -->
-                            <!--                     <TextBlock Grid.Column="2"  -->
-                            <!--                               Classes="body-small"  -->
-                            <!--                               Text="DPI"  -->
-                            <!--                               VerticalAlignment="Center" -->
-                            <!--                               Margin="8,0,0,0"/> -->
-                            <!--                 </Grid> -->
-                            <!--             </StackPanel> -->
-                            <!--              -->
-                            <!--             <StackPanel Spacing="4"> -->
-                            <!--                 <TextBlock Classes="caption" Text="PREVIEW QUALITY"/> -->
-                            <!--                 <Grid> -->
-                            <!--                     <Grid.ColumnDefinitions> -->
-                            <!--                         <ColumnDefinition Width="*"/> -->
-                            <!--                         <ColumnDefinition Width="60"/> -->
-                            <!--                         <ColumnDefinition Width="40"/> -->
-                            <!--                     </Grid.ColumnDefinitions> -->
-                            <!--                     <Slider Grid.Column="0"  -->
-                            <!--                            Classes="modern" -->
-                            <!--                            Value="{Binding PrintViewModel.PreviewQuality, Mode=TwoWay}" -->
-                            <!--                            Minimum="1" Maximum="100"  -->
-                            <!--                            VerticalAlignment="Center"/> -->
-                            <!--                     <TextBox Grid.Column="1"  -->
-                            <!--                             Classes="modern" -->
-                            <!--                             Text="{Binding PrintViewModel.PreviewQuality}" -->
-                            <!--                             Margin="8,0,0,0"/> -->
-                            <!--                     <TextBlock Grid.Column="2"  -->
-                            <!--                               Classes="body-small"  -->
-                            <!--                               Text="%"  -->
-                            <!--                               VerticalAlignment="Center" -->
-                            <!--                               Margin="8,0,0,0"/> -->
-                            <!--                 </Grid> -->
-                            <!--             </StackPanel> -->
-                            <!--         </StackPanel> -->
-                            <!--     </StackPanel> -->
-                            <!-- </Border> -->
-                            
-                            <!-- Current Status Display -->
-                            <!-- <Border Classes="card highlight-success"> -->
-                            <!--     <StackPanel Spacing="12"> -->
-                            <!--         <TextBlock Classes="heading-small" Text="Current Configuration"/> -->
-                            <!--          -->
-                            <!--         <Grid> -->
-                            <!--             <Grid.ColumnDefinitions> -->
-                            <!--                 <ColumnDefinition Width="140"/> -->
-                            <!--                 <ColumnDefinition Width="*"/> -->
-                            <!--             </Grid.ColumnDefinitions> -->
-                            <!--             <Grid.RowDefinitions> -->
-                            <!--                 <RowDefinition Height="Auto"/> -->
-                            <!--                 <RowDefinition Height="Auto"/> -->
-                            <!--                 <RowDefinition Height="Auto"/> -->
-                            <!--             </Grid.RowDefinitions> -->
-                            <!--              -->
-                            <!--             <TextBlock Grid.Row="0" Grid.Column="0"  -->
-                            <!--                       Classes="body-small" Text="Card Size:" FontWeight="SemiBold"/> -->
-                            <!--             <TextBlock Grid.Row="0" Grid.Column="1"  -->
-                            <!--                       Classes="body-small" Text="63mm × 88mm (FIXED)"  -->
-                            <!--                       Foreground="{StaticResource SuccessBrush}"/> -->
-                            <!--              -->
-                            <!--             <TextBlock Grid.Row="1" Grid.Column="0"  -->
-                            <!--                       Classes="body-small" Text="Print Resolution:" FontWeight="SemiBold"/> -->
-                            <!--             <TextBlock Grid.Row="1" Grid.Column="1"  -->
-                            <!--                       Classes="body-small" -->
-                            <!--                       Text="{Binding PrintViewModel.PrintDpi, StringFormat='{}{0} DPI'}" -->
-                            <!--                       Foreground="{StaticResource PrimaryBrush}"/> -->
-                            <!--              -->
-                            <!--             <TextBlock Grid.Row="2" Grid.Column="0"  -->
-                            <!--                       Classes="body-small" Text="Preview Resolution:" FontWeight="SemiBold"/> -->
-                            <!--             <TextBlock Grid.Row="2" Grid.Column="1"  -->
-                            <!--                       Classes="body-small" -->
-                            <!--                       Text="{Binding PrintViewModel.PreviewDpi, StringFormat='{}{0} DPI'}" -->
-                            <!--                       Foreground="{StaticResource TextSecondaryBrush}"/> -->
-                            <!--         </Grid> -->
-                            <!--     </StackPanel> -->
-                            <!-- </Border> -->
                             
                             <!-- Theme Settings -->
                             <Border Classes="card-elevated ">
@@ -895,7 +724,7 @@
                                                                     <!-- Error Header -->
                                                                     <StackPanel Orientation="Horizontal" Spacing="12">
                                                                         <!-- Severity Badge -->
-                                                                        <Border Classes="badge-error" 
+                                                                        <Border Classes="highlight-error" 
                                                                                 Padding="6,2">
                                                                             <TextBlock Classes="caption" 
                                                                                       Text="{Binding Severity}"
