@@ -400,3 +400,84 @@ Generated themes now use proper ThemeDictionaries structure with correct resourc
 **Performance**: 4x faster PDF generation, 3x faster MPC Fill loading, 94% simpler theme creation  
 **Architecture**: Modern, maintainable, and future-proof with Avalonia 11.3 best practices  
 **Theme System**: ✅ **COMPLETE** - Preview and export now perfectly aligned
+
+
+# Development Summary Amendment
+## Error Handling System Enhancement
+
+### Issue Resolved
+**Problem**: Fatal errors from background MPC Fill processing were being logged to console and log files but not appearing in the application's "Recent Errors" UI tab, requiring manual refresh to view them.
+
+### Root Cause Analysis
+The application had two separate error tracking systems:
+1. **Serilog Logging**: Direct logger calls (`_logger.LogCritical()`) writing to console/file
+2. **ErrorHandlingService**: UI-visible error management with internal `_errorHistory` for Recent Errors display
+
+The issue was that direct logger calls didn't automatically populate the ErrorHandlingService's error history, and there was no automatic refresh mechanism when switching to the Logging tab.
+
+### Solution Implemented
+
+#### 1. **Thread-Safe Error Reporting**
+- **Problem**: Background threads calling UI dialogs caused critical failures
+- **Solution**: Enhanced ErrorHandlingService with UI thread dispatching
+- **Implementation**:
+  ```csharp
+  // Use Dispatcher.UIThread.InvokeAsync for safe UI operations from background threads
+  await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => {
+      await _errorHandlingService.HandleExceptionAsync(ex, userMessage, context);
+  });
+  ```
+
+#### 2. **Dual Error Tracking Integration**
+- **Problem**: Errors only logged to Serilog, not visible in UI
+- **Solution**: Modified MpcFillService to report errors to both systems
+- **Implementation**: Background errors now:
+   - Log to Serilog for technical debugging ✅
+   - Report to ErrorHandlingService for UI visibility ✅
+   - Show user-friendly dialogs when appropriate ✅
+   - Populate Recent Errors history ✅
+
+#### 3. **Automatic UI Refresh**
+- **Problem**: Recent Errors list not updating when switching tabs
+- **Solution**: Added TabControl SelectionChanged event handler
+- **Implementation**:
+  ```csharp
+  // MainView.axaml.cs
+  private void OnTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
+  {
+      // Check if logging tab selected (index 4: Cards=0, Printing=1, Settings=2, ThemeEditor=3, Logging=4)
+      if (tabControl.SelectedIndex == 4 && mainViewModel.LoggingSettingsViewModel != null)
+      {
+          mainViewModel.LoggingSettingsViewModel.RefreshStatusCommand.Execute(null);
+      }
+  }
+  ```
+
+### Technical Implementation Details
+
+#### Files Modified:
+- `MpcFillService.cs`: Added thread-safe error reporting to ErrorHandlingService
+- `ErrorHandlingService.cs`: Enhanced with UI thread dispatching capabilities
+- `MainView.axaml`: Added Name and SelectionChanged event to TabControl
+- `MainView.axaml.cs`: Added tab selection event handling and auto-refresh logic
+
+#### Key Improvements:
+1. **Thread Safety**: All UI operations properly dispatched to UI thread
+2. **Comprehensive Error Tracking**: Errors visible in both technical logs and user interface
+3. **Real-time UI Updates**: Recent Errors list refreshes automatically on tab switch
+4. **User Experience**: No manual refresh required, immediate error visibility
+5. **Developer Experience**: Detailed logging maintained for debugging
+
+### Validation & Testing
+- ✅ Fatal errors appear in console/log files (Serilog)
+- ✅ User-friendly error dialogs display correctly
+- ✅ Errors added to Recent Errors history automatically
+- ✅ UI refreshes when switching to Logging tab
+- ✅ No threading exceptions or UI freezing
+- ✅ Background operations continue normally after errors
+
+### Result
+Complete error handling workflow now functions seamlessly:
+1. Background error occurs → 2. Technical logging → 3. UI error reporting → 4. User dialog → 5. Error history tracking → 6. Automatic UI refresh → 7. Immediate user visibility
+
+This enhancement significantly improves both developer debugging capabilities and user experience by providing comprehensive, real-time error visibility across all application interfaces.
