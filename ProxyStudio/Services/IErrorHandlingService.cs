@@ -43,4 +43,8 @@ public interface IErrorHandlingService
         
     // Error history for debugging
     System.Collections.Generic.List<UserError> GetRecentErrors(int count = 10);
+    
+    // New methods for background thread error logging
+    Task LogErrorAsync(UserError error);
+    Task LogErrorAsync(string title, string message, ErrorSeverity severity = ErrorSeverity.Error, Exception? exception = null);
 }

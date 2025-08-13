@@ -35,6 +35,7 @@
         <!-- Add any additional resources here -->
         <!-- Fonts -->
         <FontFamily x:Key="PhosphorFill">/Assets/Fonts/Phosphor-Fill.ttf#Phosphor-Fill</FontFamily>
+        <FontFamily x:Key="Phosphor">/Assets/Fonts/Phosphor.ttf#Phosphor</FontFamily>
         
     </Application.Resources>
 </Application>

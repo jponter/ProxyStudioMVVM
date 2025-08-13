@@ -13,6 +13,7 @@ public partial class MainView : Window
 {
     //di configmanager interface
     private IConfigManager _configManager; // Configuration settings
+    private readonly ILogger<MainView> _logger;
     public bool GlobalBleedEnabled { get; set; }
    
     

@@ -33,7 +33,7 @@
             <TabItem Classes="">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                        <Label FontFamily="{DynamicResource Phosphor}" 
                                FontSize="20"
                                VerticalAlignment="Center"
                                Content="&#xE0F8;"/>
@@ -75,11 +75,20 @@
                                     <Button Classes="secondary" 
                                             Background="{DynamicResource SecondaryBrush}"
                                             Foreground="{DynamicResource TextOnSecondaryBrush}"
-                                            Content="➕ Add Local Card Image(s)"
+                                            
                                             Command ="{Binding LoadSingleImageCommand}"
                                             IsEnabled="{Binding !IsLoadingSingleImage}"
                                             HorizontalAlignment="Stretch"
-                                            ToolTip.Tip="Add single or multiple local card images to the collection" />
+                                            ToolTip.Tip="Add single or multiple local card images to the collection">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Label Classes="icon" 
+                                               FontSize="24"
+                                               
+                                               Content="&#xE3D6;"/>
+                                        <TextBlock Text="Add Local Card Image(s)" Classes="" FontSize="16" Padding="0,5,0,0"/>
+                                    </StackPanel>
+                                            
+                                            </Button>
                                             
                                     
                                     <Button Classes="primary"
@@ -89,8 +98,13 @@
                                             Command="{Binding LoadMpcFillXmlCommand}"
                                             IsEnabled="{Binding !IsLoadingMpcFill}"
                                             ToolTip.Tip="Load an MPC Fill XML file to import cards to the collection"> 
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📥 Load MPC Fill XML" VerticalAlignment="Center"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                
+                                                <Label Classes="icon" 
+                                                       FontSize="24"
+                                                       
+                                                       Content="&#xE1AC;"/>
+                                                <TextBlock Text="Load MPC Fill XML" Classes="" FontSize="16" Padding="0,5,0,0"/>
                                             </StackPanel>
                                     </Button>
                                             
@@ -103,17 +117,29 @@
                                     <Button Classes="error"
                                             
                                             
-                                            Content="🗑️ Delete All Cards"
+                                            
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding DeleteAllCardsCommand}"
                                             
-                                            ToolTip.Tip="Remove all cards from the collection and clear preview"/>
+                                            ToolTip.Tip="Remove all cards from the collection and clear preview">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                
+                                            <Label Classes="icon" 
+                                                   FontSize="24"
+                                                   Content="&#xE4A6;"/>
+                                            <TextBlock Text="Delete All Cards" Classes="" FontSize="16" Padding="0,5,0,0"/>
+                                        </StackPanel>
+                                        </Button>
                                     
                                 </StackPanel>
                                 
+                                
+                                <!-- IsVisible="{Binding ShowMpcFillProgress}" -->
                                 <!-- MPC Fill Progress Section -->
                                 <Border Classes="card highlight-primary"
-                                        IsVisible="{Binding ShowMpcFillProgress}">
+                                        Width="275"
+                                        IsVisible="{Binding ShowMpcFillProgress}"
+                                        >
                                     <StackPanel Spacing="12">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="📥" FontSize="16"/>
@@ -121,7 +147,7 @@
                                         </StackPanel>
                                         
                                         <!-- Progress Bar -->
-                                        <ProgressBar Classes="modern-thick"
+                                        <ProgressBar Classes="card highlight-primary"
                                                      Foreground="{DynamicResource PrimaryBrush}"
                                                      Background="{DynamicResource SurfaceBrush}"
                                                      Value="{Binding MpcFillProgress}"
@@ -149,9 +175,12 @@
                                     </StackPanel>
                                 </Border>
                                 
+                                <!-- IsVisible="{Binding IsBusy}" -->
                                 <!-- Loading Indicator -->
                                 <Border Classes="card highlight-primary" 
+                                        Width="275" Height="200"
                                         IsVisible="{Binding IsBusy}">
+                                    
                                     <StackPanel Spacing="12" HorizontalAlignment="Center">
                                         <li:LoadingIndicator Foreground="{DynamicResource PrimaryBrush}" 
                                                            IsActive="{Binding IsBusy}" 
@@ -264,7 +293,7 @@
                                                                     CommandParameter="{Binding}"
                                                                     ToolTip.Tip="Delete this card"
                                                                     Width="40" Height="40">
-                                                                <Label FontFamily="{DynamicResource PhosphorFill}" 
+                                                                <Label FontFamily="{DynamicResource Phosphor}" 
                                                                        FontSize="16"
                                                                        VerticalAlignment="Center"
                                                                        Content="&#xe4a6;"
@@ -287,9 +316,12 @@
                                             VerticalAlignment="Center"
                                             IsVisible="{Binding !Cards.Count}">
                                         <StackPanel Spacing="16" HorizontalAlignment="Center">
-                                            <TextBlock Text="🃏" FontSize="64" 
-                                                      HorizontalAlignment="Center" 
-                                                      Opacity="0.3"/>
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="64"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"
+                                                   Content="&#xEDBC;"
+                                                   Opacity="0.3"/>
                                             <TextBlock Classes="heading-small" 
                                                       Text="No cards in collection" 
                                                       HorizontalAlignment="Center"/>
@@ -386,7 +418,7 @@
             <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                        <Label FontFamily="{DynamicResource Phosphor}" 
                                FontSize="20"
                                VerticalAlignment="Center"
                                Content="&#xE3DC;"/>
@@ -400,7 +432,7 @@
             <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                        <Label FontFamily="{DynamicResource Phosphor}" 
                                FontSize="20"
                                VerticalAlignment="Center"
                                Content="&#xE228;"/>
@@ -529,7 +561,7 @@
             <TabItem Classes="">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                        <Label FontFamily="{DynamicResource Phosphor}" 
                                FontSize="20"
                                VerticalAlignment="Center"
                                Content="&#xE6c8;"/>
@@ -543,7 +575,7 @@
             <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                        <Label FontFamily="{DynamicResource Phosphor}" 
                                FontSize="20"
                                VerticalAlignment="Center"
                                Content="&#xE710;"/>

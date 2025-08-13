@@ -338,6 +338,17 @@ public partial class MainViewModel : ViewModelBase
             // In design time, return empty list
             return new List<UserError>();
         }
+
+        public Task LogErrorAsync(UserError error)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task LogErrorAsync(string title, string message, ErrorSeverity severity = ErrorSeverity.Error,
+            Exception? exception = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     

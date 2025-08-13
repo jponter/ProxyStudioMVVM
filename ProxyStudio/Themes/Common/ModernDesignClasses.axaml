@@ -240,6 +240,16 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderHoverBrush}" />
     </Style>
+    
+    <!-- ===================================================================== -->
+    <!-- ICON LABELS -->
+    <!-- ===================================================================== -->
+    
+    <Style Selector="Label.icon">
+        <Setter Property="FontFamily" Value="{DynamicResource Phosphor}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        
+    </Style>
 
     <!-- ===================================================================== -->
     <!-- FORM CONTROL CLASSES -->
@@ -551,6 +561,8 @@ Accent Style (if uncommented above):
     <Style Selector="TextBlock.text-right">
         <Setter Property="TextAlignment" Value="Right" />
     </Style>
+    
+    
 
     <!-- Margins and Spacing for Controls -->
     <Style Selector="Control.margin-small">

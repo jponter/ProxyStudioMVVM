@@ -397,6 +397,26 @@ public async Task<List<Card>> ProcessXmlContentAsync(string xmlContent, IProgres
         catch (Exception ex)
         {
             _logger.LogCritical($"THREAD {threadId}: Download/cache failed for {cardName}: {ex.Message}");
+            
+            // CRITICAL FIX: Report to ErrorHandlingService using UI thread dispatcher
+            // Use Dispatcher.UIThread.InvokeAsync to ensure UI operations run on UI thread
+            _ = Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () => 
+            {
+                try
+                {
+                    await _errorHandlingService.HandleExceptionAsync(
+                        ex, 
+                        $"Failed to download or process card image: {cardName}. This may be due to invalid image data from the MPC Fill service.",
+                        $"MPC Fill Download - Card: {cardName}"
+                    );
+                }
+                catch (Exception reportEx)
+                {
+                    // If error reporting fails, at least log it
+                    _logger.LogError(reportEx, "Failed to report error to ErrorHandlingService for card: {CardName}", cardName);
+                }
+            });
+            
             return CreatePlaceholderImage();
         }
         finally
