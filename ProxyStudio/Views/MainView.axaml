@@ -6,8 +6,10 @@
         xmlns:views="clr-namespace:ProxyStudio.Views"
         xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
         xmlns:behaviors="clr-namespace:ProxyStudio.Behaviors"
+       
         xmlns:converters="clr-namespace:ProxyStudio.Converters"
-        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        d:DesignWidth="2000" d:DesignHeight="900"
+        
         Width="1400" Height="900"
         MinWidth="1000" MinHeight="600"
         Background="{DynamicResource BackgroundBrush}"
@@ -81,12 +83,16 @@
                                             
                                     
                                     <Button Classes="primary"
-                                            Content="📥 Load MPC Fill XML"
+                                            
                                             HorizontalAlignment="Stretch"
                                             
                                             Command="{Binding LoadMpcFillXmlCommand}"
                                             IsEnabled="{Binding !IsLoadingMpcFill}"
-                                            ToolTip.Tip="Load an MPC Fill XML file to import cards to the collection" />
+                                            ToolTip.Tip="Load an MPC Fill XML file to import cards to the collection"> 
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="📥 Load MPC Fill XML" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                    </Button>
                                             
                                     
                                     <!-- <Button Classes="secondary"  -->

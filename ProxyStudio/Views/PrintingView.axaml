@@ -5,7 +5,7 @@
              xmlns:li="using:LoadingIndicators.Avalonia"
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
              xmlns:converters="clr-namespace:ProxyStudio.Converters"
-             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             d:DesignWidth="2000" d:DesignHeight="800"
              x:Class="ProxyStudio.Views.PrintingView"
              x:DataType="vm:PrintViewModel">
 
@@ -257,8 +257,10 @@
                                    HorizontalAlignment="Center" />
                     </StackPanel>
 
-                    <ScrollViewer>
-                        <StackPanel Spacing="24">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="24"
+                                    Margin="0,0,0,200">
 
                             <!-- Header -->
                             <StackPanel Spacing="8">
