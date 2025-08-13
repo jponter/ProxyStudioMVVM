@@ -3,14 +3,14 @@
              x:Class="ProxyStudio.App"
              
              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Styles>
-         <FluentTheme /> <!-- FluentTheme is the default theme for Avalonia, providing a modern look and feel. -->
+        <FluentTheme /> <!-- FluentTheme is the default theme for Avalonia, providing a modern look and feel. -->
         
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
-         <!-- Colour picker -->
-         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+        <!-- Colour picker -->
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         
         
         <!-- Test styles directly here first -->
@@ -18,18 +18,23 @@
         
         <StyleInclude Source="avares://ProxyStudio/Themes/DarkProfessional.axaml"/>
          
-         <!-- Add your modern design system here -->
-         <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
+        <!-- Add your modern design system here -->
+        <StyleInclude Source="avares://ProxyStudio/Themes/Common/ModernDesignClasses.axaml"/>
     </Application.Styles>
              
-             <Application.Resources>
-                 <ResourceDictionary>
-                     <!-- <SolidColorBrush x:Key="PrimaryHoverBrush" Color="Red" /> -->
-                     <!-- <SolidColorBrush x:Key="SecondaryHoverBrush" Color="Green" /> -->
-                     <ResourceDictionary.MergedDictionaries>
-                         <ResourceInclude Source="avares://LoadingIndicators.Avalonia/LoadingIndicators.axaml" />
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- <SolidColorBrush x:Key="PrimaryHoverBrush" Color="Red" /> -->
+            <!-- <SolidColorBrush x:Key="SecondaryHoverBrush" Color="Green" /> -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://LoadingIndicators.Avalonia/LoadingIndicators.axaml" />
                         
-                     </ResourceDictionary.MergedDictionaries>
-                 </ResourceDictionary>
-             </Application.Resources>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        
+        <!-- Add any additional resources here -->
+        <!-- Fonts -->
+        <FontFamily x:Key="PhosphorFill">/Assets/Fonts/Phosphor-Fill.ttf#Phosphor-Fill</FontFamily>
+        
+    </Application.Resources>
 </Application>

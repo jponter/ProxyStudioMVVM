@@ -30,14 +30,14 @@
         <TabControl>
             
             <!-- Cards Tab -->
-            <TabItem Foreground="{DynamicResource TextPrimaryColor}"
-                     
-                     
-                     >
+            <TabItem Classes="">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="🃏" FontSize="16"/>
-                        <TextBlock Text="Cards" Classes="body-medium"/>
+                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xE0F8;"/>
+                        <TextBlock Text="Cards" Classes="" FontSize="20"/>
                     </StackPanel>
                 </TabItem.Header>
                 
@@ -255,15 +255,24 @@
                                                         <!-- Card Actions -->
                                                         <StackPanel Orientation="Horizontal" 
                                                                    HorizontalAlignment="Center" 
-                                                                   Spacing="8">
-                                                            <Button Classes="icon"
-                                                                    Content="🗑️" 
+                                                                   Spacing="1">
+                                                            <Button Classes="iconfont"
+                                                                     
                                                                     Background="{DynamicResource ErrorBrush}"
-                                                                    Foreground="White"
+                                                                    
                                                                     Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).DeleteCardCommand}"
                                                                     CommandParameter="{Binding}"
                                                                     ToolTip.Tip="Delete this card"
-                                                                    Width="32" Height="32"/>
+                                                                    Width="40" Height="40">
+                                                                <Label FontFamily="{DynamicResource PhosphorFill}" 
+                                                                       FontSize="16"
+                                                                       VerticalAlignment="Center"
+                                                                       Content="&#xe4a6;"
+                                                                       
+                                                                       />
+                                                                    
+                                                                    
+                                                            </Button>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Border>
@@ -374,22 +383,28 @@
             </TabItem>
             
             <!-- Printing Tab -->
-            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
+            <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="🖨️" FontSize="16"/>
-                        <TextBlock Text="Printing" Classes="body-medium"/>
+                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xE3DC;"/>
+                        <TextBlock Text="Printing" Classes="" FontSize="20"/>
                     </StackPanel>
                 </TabItem.Header>
                 <views:PrintingView DataContext="{Binding PrintViewModel}" />
             </TabItem>
             
             <!-- Settings Tab -->
-            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
+            <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="⚙️" FontSize="16"/>
-                        <TextBlock Text="Settings" Classes="body-medium"/>
+                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xE228;"/>
+                        <TextBlock Text="Settings" Classes="" FontSize="20"/>
                     </StackPanel>
                 </TabItem.Header>
                 
@@ -511,22 +526,28 @@
             </TabItem>
             
             <!-- Theme Editor Tab -->
-            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
+            <TabItem Classes="">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="🎨" FontSize="16"/>
-                        <TextBlock Text="Theme Editor" Classes="body-medium"/>
+                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xE6c8;"/>
+                        <TextBlock Text="Theme Editor" Classes="" FontSize="20"/>
                     </StackPanel>
                 </TabItem.Header>
                 <views:ThemeEditorView DataContext="{Binding ThemeEditorViewModel}" />
             </TabItem>
             
             <!-- Logging Tab -->
-            <TabItem Foreground="{DynamicResource TextPrimaryColor}">
+            <TabItem Classes="" >
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="📊" FontSize="16"/>
-                        <TextBlock Text="Logging" Classes="body-medium"/>
+                        <Label FontFamily="{DynamicResource PhosphorFill}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xE710;"/>
+                        <TextBlock Text="Logging" Classes="" FontSize="20"/>
                     </StackPanel>
                 </TabItem.Header>
                 
