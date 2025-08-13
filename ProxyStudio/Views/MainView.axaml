@@ -209,11 +209,12 @@
                                              behaviors:ReorderableListBoxBehavior.AcceptXmlFiles="True"
                                              DragDrop.AllowDrop="True"
                                              Background="Transparent"
-                                             BorderThickness="0">
+                                             BorderThickness="0"
+                                             Padding="0,0,0,200">
                                         
                                         <ListBox.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <UniformGrid Columns="0"/>
+                                                <UniformGrid Columns="3"/>
                                             </ItemsPanelTemplate>
                                         </ListBox.ItemsPanel>
                                         
