@@ -27,7 +27,7 @@
     <Grid Background="{DynamicResource BackgroundBrush}" >
         
         <!-- Modern Tab Control -->
-        <TabControl>
+        <TabControl Name="MainTabControl"  >
             
             <!-- Cards Tab -->
             <TabItem Classes="">

@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,7 +14,7 @@ public partial class MainView : Window
 {
     //di configmanager interface
     private IConfigManager _configManager; // Configuration settings
-    private readonly ILogger<MainView> _logger;
+    private  ILogger<MainView> _logger;
     public bool GlobalBleedEnabled { get; set; }
    
     
@@ -117,6 +118,7 @@ public partial class MainView : Window
         logger.LogInformation("Initializing MainView with configuration manager.");
         
         _configManager = configManager;
+        _logger = logger;
         
         var config = _configManager.Config;
         
@@ -134,6 +136,9 @@ public partial class MainView : Window
         PositionChanged += CacheGeometry;
         this.GetObservable<Rect>(BoundsProperty)
             .Subscribe(rect => CacheGeometry(null, null));
+        
+        //set up the tab refresh handler
+        this.Loaded += OnMainViewLoaded;
     }
     
     
@@ -150,6 +155,55 @@ public partial class MainView : Window
             config.WindowHeight = (int)Height;
         }
         config.WindowState = WindowState;     // normal / maximised / minimised
+    }
+    
+    private void OnMainViewLoaded(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Find the TabControl and subscribe to SelectionChanged event
+            var tabControl = this.FindControl<TabControl>("MainTabControl");
+            if (tabControl != null)
+            {
+                tabControl.SelectionChanged += OnTabSelectionChanged;
+                _logger?.LogDebug("Successfully subscribed to TabControl SelectionChanged event");
+            }
+            else
+            {
+                _logger?.LogWarning("Could not find TabControl with name 'MainTabControl'");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error setting up tab selection handler");
+        }
+    }
+
+    private void OnTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        try
+        {
+            if (sender is TabControl tabControl && DataContext is MainViewModel mainViewModel)
+            {
+                _logger?.LogDebug("Tab selection changed to index: {TabIndex}", tabControl.SelectedIndex);
+                
+                // Check if the logging tab is selected (index 3: Cards=0, Printing=1, Settings=2, ThemeEditor=3, Logging=4)
+                if (tabControl.SelectedIndex == 4 && mainViewModel.LoggingSettingsViewModel != null)
+                {
+                    _logger?.LogDebug("Logging tab selected - refreshing recent errors");
+                    
+                    // Refresh the recent errors when switching to logging tab
+                    mainViewModel.LoggingSettingsViewModel.RefreshStatusCommand.Execute(null);
+                    
+                    _logger?.LogDebug("Recent errors refreshed successfully");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error handling tab selection change");
+            // Don't throw - this is UI event handling
+        }
     }
 
     
