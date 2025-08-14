@@ -86,7 +86,7 @@ ProxyStudio enables users to create, organise, and print collections of proxy ca
 
 Settings are automatically saved to:
 - **Windows**: `%AppData%/ProxyStudio/AppConfig.xml`
-- **macOS/Linux**: `~/.config/ProxyStudio/AppConfig.xml`
+- **macOS/Linux**: `~/.config/ProxyStudio/AppConfig.xml` -or they will be when I can test a mac version ;) 
 
 ## 📖 Card Formats
 
