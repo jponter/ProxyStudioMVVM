@@ -1,27 +1,27 @@
 Todo: 
 
-implement API for google drive requests
+Some UI fixing
 
-change all logging to use serilog sinks
+A3 layout support
 
 
-# ProxyStudio Alpha
+# ProxyStudio Beta
 
-A powerful desktop application for creating and managing proxy cards for tabletop games, built with Avalonia UI and C#.
+A desktop application for creating and managing proxy cards for Magic the Gathering built with Avalonia UI and C#.
 
 ## 🥰 ##
 Big thanks to malacath-92 for the advice and support! Check out his proxy app https://github.com/Malacath-92/Proxy-PDF-Maker
 
-and the original og Alex Taxiera whos proxy print setup was my original goto for proxy pdf generation and inspired me to write my own!
+And the original o.g. Alex Taxiera who's proxy print setup was my original go-to for proxy PDF generation and inspired me to write my own!
 
 ## 🎯 Overview
 
-ProxyStudio allows users to create, organize, and print collections of proxy cards with customizable layouts and professional PDF output. Perfect for Magic: The Gathering players, board game enthusiasts, or anyone needing to create custom card collections.
+ProxyStudio enables users to create, organise, and print collections of proxy cards with customizable layouts and professional-quality PDF output.
 
 ## ✨ Features
 
 ### Card Management
-- **Visual Card Grid** - Browse cards in a responsive 3-column layout
+- **Visual Card Grid** - Browse cards in a responsive layout
 - **MPC XML Loading** - Drag an exported XML from MPC Fill
 - **Single Card Loading** - Drag a JPG/PNG onto the card management screen
 - 
@@ -35,8 +35,8 @@ ProxyStudio allows users to create, organize, and print collections of proxy car
 - **Professional Output** - High-quality PDF generation using PDFsharp
 
 ### Preview System
-- **Real-Time Preview** - See exactly how your PDF will look
-- **Zoom Controls** - Zoom in/out (25%-200%) for detailed inspection
+- **Fast Real-Time Low-Res Preview** - See exactly how your PDF will look
+- **Zoom Controls** - Zoom in/out (25%-300%) for detailed inspection
 - **Page Navigation** - Browse through multiple pages with Previous/Next buttons
 - **Live Updates** - Preview automatically updates when settings change
 
@@ -47,6 +47,7 @@ ProxyStudio allows users to create, organize, and print collections of proxy car
 - **Error Handling** - Robust error handling with helpful debug information - ehhhh kinda
 - **Cached Image Downloading from MPCFill** currently cached in the user data folder
 - **Bleed Edges** supported and can be removed from any card (enabled by default for MPCFill import)
+- **Full Theme Support** change the colours if you dont like mine ;) 
 
 ## 🛠 Technical Stack
 
@@ -89,8 +90,8 @@ Settings are automatically saved to:
 
 ## 📖 Card Formats
 
-ProxyStudio uses standard trading card dimensions:
-- **Size**: 2.5" × 3.5" (63mm × 88mm)
+ProxyStudio uses standard MTG dimensions:
+- **Size**: 63mm × 88mm
 - **Resolution**: 300 DPI (750×1050 pixels), 600 and 1200 DPI pdf generation also supported, but this is SLOWWWWWWWW!
 - **Format**: Supports common image formats via ImageSharp
 
@@ -108,9 +109,7 @@ not decided yet
 
 ## 🔮 Future Features
 
-- Custom card templates - maybe, probably not though as this is heavily MTG focussed
-- Import from various card databases - DONE
-- Advanced cutting line options - DONE
+
 
 
 
