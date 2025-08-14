@@ -1,3 +1,14 @@
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+### Commercial Use
+Commercial use is allowed under GPL v3, but you must:
+- Provide full source code of your application
+- License your application under GPL v3
+- Include proper attribution
+
+
 Todo: 
 
 Some UI fixing
