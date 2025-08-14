@@ -1,4 +1,27 @@
-﻿<!-- Create this file in your project root directory -->
+﻿<!--
+ProxyStudio - A cross-platform proxy management application.
+Copyright (C) 2025 James Ponter
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<!-- This file is used to configure the linker for Avalonia applications -->
+<!-- It specifies which assemblies and types should be preserved during trimming -->
+<!-- This is important for ensuring that your application works correctly after trimming -->
+<!-- The linker will remove unused code to reduce the size of the application -->
+<!-- Make sure to adjust the assembly names and namespaces according to your project structure -->
+<!-- This file should be placed in the root of your Avalonia project -->
 <linker>
     <!-- Preserve your entire application assembly -->
     <assembly fullname="ProxyStudio" preserve="all" />
