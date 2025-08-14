@@ -1,0 +1,31 @@
+﻿<!-- Create this file in your project root directory -->
+<linker>
+    <!-- Preserve your entire application assembly -->
+    <assembly fullname="ProxyStudio" preserve="all" />
+
+    <!-- Preserve ViewModels and Views from trimming -->
+    <assembly fullname="ProxyStudio">
+        <namespace fullname="ProxyStudio.ViewModels" preserve="all" />
+        <namespace fullname="ProxyStudio.Views" preserve="all" />
+        <namespace fullname="ProxyStudio.Services" preserve="all" />
+
+        <!-- Preserve theme-related types -->
+        <type fullname="ProxyStudio.Services.UpdatedEnhancedThemeService" preserve="all" />
+        <type fullname="ProxyStudio.ViewModels.ThemeEditorViewModel" preserve="all" />
+    </assembly>
+
+    <!-- Preserve Avalonia theme assemblies -->
+    <assembly fullname="Avalonia.Themes.Fluent" preserve="all" />
+    <assembly fullname="Avalonia.Themes.Default" preserve="all" />
+    <assembly fullname="Avalonia.Controls" preserve="all" />
+    <assembly fullname="Avalonia.Controls.DataGrid" preserve="all" />
+    <assembly fullname="Avalonia.Controls.ColorPicker" preserve="all" />
+
+    <!-- Preserve LoadingIndicators if used -->
+    <assembly fullname="LoadingIndicators.Avalonia" preserve="all" />
+
+    <!-- Preserve CommunityToolkit.Mvvm attributes and source generators -->
+    <assembly fullname="CommunityToolkit.Mvvm">
+        <type fullname="*" preserve="all" />
+    </assembly>
+</linker>

@@ -97,6 +97,9 @@
       <None Include="Themes\Common\ResponsiveClasses.axaml" />
       <AvaloniaXaml Remove="Backups\ModernDesignClasses.axaml" />
       <None Include="Backups\ModernDesignClasses.axaml" />
+      <AvaloniaXaml Update="Themes\DarkProfessional.axaml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </AvaloniaXaml>
     </ItemGroup>
 
    
@@ -152,6 +155,46 @@
         <FileVersion>0.0.2.$(BuildNumber)</FileVersion>
         <InformationalVersion>0.0.2.$(BuildNumber)</InformationalVersion>
     </PropertyGroup>
+
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <!-- Add trimming configuration -->
+        <TrimMode>link</TrimMode>
+        <PublishTrimmed>true</PublishTrimmed>
+    </PropertyGroup>
+
+    <!-- Prevent trimming of Avalonia theme assemblies -->
+    <ItemGroup>
+        <!-- Core Avalonia theme assemblies that must not be trimmed -->
+        <TrimmerRootAssembly Include="Avalonia.Themes.Fluent" />
+        <TrimmerRootAssembly Include="Avalonia.Themes.Default" />
+        <TrimmerRootAssembly Include="Avalonia.Controls" />
+        <TrimmerRootAssembly Include="Avalonia.Controls.DataGrid" />
+        <TrimmerRootAssembly Include="Avalonia.Controls.ColorPicker" />
+
+        <!-- Your application assembly to preserve theme files -->
+        <TrimmerRootAssembly Include="ProxyStudio" />
+    </ItemGroup>
+
+    <!-- Alternative approach: Mark specific assemblies as non-trimmable -->
+    <ItemGroup>
+        <!-- This helps with theme dll trimming specifically -->
+        <TrimmableAssembly Include="Avalonia.Themes.Fluent" />
+        <TrimmableAssembly Include="Avalonia.Themes.Default" />
+    </ItemGroup>
+
+    <!-- Preserve all embedded resources including theme XAML files -->
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="Roots.xml" Condition="Exists('Roots.xml')" />
+    </ItemGroup>
     
     
 </Project>
