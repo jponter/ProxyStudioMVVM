@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,12 @@ public partial class MainView : Window
     private IConfigManager _configManager; // Configuration settings
     private  ILogger<MainView> _logger;
     public bool GlobalBleedEnabled { get; set; }
+    
+    // ScrollViewer for the card grid
+    private ScrollViewer? _cardScrollViewer;
+    private UniformGrid? _cardUniformGrid;
+    private const double MinCardWidth = 421.0; // Minimum width for cards
+    private const double ScrollViewerPadding = 80.0; // Padding for the ScrollViewer
    
     
     // Safe parameterless constructor for design-time
@@ -177,6 +184,27 @@ public partial class MainView : Window
         {
             _logger?.LogError(ex, "Error setting up tab selection handler");
         }
+
+        try
+        {
+            // Find the ScrollViewer containing the card grid
+            _cardScrollViewer = this.FindControl<ScrollViewer>("CardScrollViewer");
+
+            if (_cardScrollViewer != null)
+            {
+                _cardScrollViewer.SizeChanged += CardScrollViewer_SizeChanged;
+                _logger?.LogDebug("Successfully subscribed to CardScrollViewer SizeChanged event");
+            }
+            else
+            {
+                _logger?.LogWarning("Could not find CardScrollViewer with name 'CardScrollViewer'");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error setting up CardScrollViewer event");
+        }
+        
     }
 
     private void OnTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -205,6 +233,50 @@ public partial class MainView : Window
             // Don't throw - this is UI event handling
         }
     }
+    
+    private void CardScrollViewer_SizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (_cardUniformGrid == null)
+        {
+            // Find the UniformGrid within the ListBox ItemsPanel
+            var cardGrid = this.FindControl<ListBox>("CardGrid");
+            if (cardGrid?.Presenter?.Panel is UniformGrid uniformGrid)
+            {
+                _cardUniformGrid = uniformGrid;
+            }
+        }
+
+        if (_cardUniformGrid != null && e.NewSize.Width > 0)
+        {
+            UpdateGridColumns(e.NewSize.Width);
+        }
+    }
+    
+    private void UpdateGridColumns(double containerWidth)
+    {
+        if (_cardUniformGrid == null) return;
+
+        // Calculate available width
+        var availableWidth = containerWidth - ScrollViewerPadding;
+            
+        if (availableWidth <= 0)
+        {
+            _cardUniformGrid.Columns = 2;
+            _logger?.LogWarning("Available width is too small, setting columns to minimum of 2.");
+            return;
+        }
+
+        // Calculate optimal number of columns
+        var possibleColumns = Math.Floor(availableWidth / MinCardWidth);
+        var columns = Math.Max(2, Math.Min(6, (int)possibleColumns));
+            
+        // Only update if changed to avoid unnecessary layout passes
+        if (_cardUniformGrid.Columns != columns)
+        {
+            _cardUniformGrid.Columns = columns;
+            _logger?.LogDebug("Updated card grid columns to {Columns} based on available width {AvailableWidth}", columns, availableWidth);
+        }
+    } 
 
     
     // protected override void OnClosed(EventArgs e)

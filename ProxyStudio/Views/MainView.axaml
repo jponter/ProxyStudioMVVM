@@ -11,7 +11,7 @@
         d:DesignWidth="2000" d:DesignHeight="900"
         
         Width="1400" Height="900"
-        MinWidth="1000" MinHeight="600"
+        MinWidth="1850" MinHeight="800"
         Background="{DynamicResource BackgroundBrush}"
         x:Class="ProxyStudio.Views.MainView"
         x:DataType="vm:MainViewModel"
@@ -231,6 +231,7 @@
                             
                             <!-- Card Grid -->
                             <ScrollViewer Classes="preview" 
+                                          x:Name="CardScrollViewer"
                                           VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Auto"
                                           Background="{DynamicResource PreviewBackgroundBrush}"
@@ -249,7 +250,11 @@
                                         
                                         <ListBox.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <UniformGrid Columns="3"/>
+                                                <UniformGrid x:Name="ResponsiveUniformGrid"
+                                                             Columns="3"
+                                                             />
+                                                             
+                                                             
                                             </ItemsPanelTemplate>
                                         </ListBox.ItemsPanel>
                                         
@@ -261,7 +266,10 @@
                                                         CornerRadius="8"
                                                         Margin="4"
                                                         Padding="8"
-                                                        Classes="card-compact"> 
+                                                        Classes="card-compact"
+                                                        MinWidth="421"
+                                                        MaxWidth="421"
+                                                        > 
                                                     
                                                     <StackPanel Spacing="8">
                                                         <!-- Card Name -->
