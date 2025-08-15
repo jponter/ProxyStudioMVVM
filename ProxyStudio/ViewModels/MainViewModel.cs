@@ -84,6 +84,7 @@ public partial class MainViewModel : ViewModelBase
 
     // configuration properties
     [ObservableProperty] private bool _globalBleedEnabled;
+    [ObservableProperty] private string _pdfOutputFolder = ""; // Default empty, will be set later
     
     // MPC Fill Progress Properties
     [ObservableProperty] private string _mpcFillStatus = "";
@@ -166,6 +167,11 @@ public partial class MainViewModel : ViewModelBase
         {
             GlobalBleedEnabled = _configManager.Config.GlobalBleedEnabled;
             _logger.LogInformation("GlobalBleedEnabled set");
+            
+            // Set PDF output folder from config
+            PdfOutputFolder = _configManager.Config.PdfSettings.DefaultOutputPath;
+            _logger.LogInformation("PDF output folder set to {PdfOutputFolder}", PdfOutputFolder);
+            
             var printViewModelLogger = loggerFactory.CreateLogger<PrintViewModel>();
             
             PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, printViewModelLogger, _errorHandler);
@@ -920,6 +926,82 @@ public partial class MainViewModel : ViewModelBase
         {
             _logger.LogCritical($"Error in LoadMpcFillXmlAsync: {ex.Message}");
             await _errorHandler.HandleExceptionAsync(ex, "Error loading MPC Fill XML file", "LoadMpcFillXmlAsync");
+        }
+    }
+
+
+    [RelayCommand]
+    private async Task OpenOutputFolder()
+    {
+        var oldFolder = PdfOutputFolder;
+        var newFolder = "";
+        try
+        {
+            // Get the top-level window for the file dialog
+            var topLevel = App.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop 
+                ? desktop.MainWindow 
+                : null;
+
+            if (topLevel == null) return;
+
+            // Show folder picker
+            var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions()
+            {
+                Title = "Select Output Folder",
+                AllowMultiple = false,
+               
+                
+            });
+
+            if (folders.Count > 0)
+            {
+                var folder = folders[0];
+                var filePath = folder.TryGetLocalPath();
+            
+                // // Check if the folder path is valid
+                // if (!string.IsNullOrEmpty(filePath) && Directory.Exists(filePath))
+                // {
+                //     newFolder = filePath;
+                // }
+                
+                //check we can write to the folder
+                try
+                {
+                    var testFilePath = Path.Combine(filePath, "test.txt");
+                    await File.WriteAllTextAsync(testFilePath, "Test file for output folder validation");
+                    File.Delete(testFilePath); // Clean up test file
+                    _logger.LogInformation($"Output folder is writable: {filePath}");
+                    // //save the folder to config
+                    // _configManager.Config.PdfSettings.DefaultOutputPath = filePath;
+                    // _configManager.SaveConfig();
+                    // _logger.LogInformation($"PDF output folder set to: {filePath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Cannot write to selected folder: {ex.Message}");
+                    await _errorHandler.ShowErrorAsync("Output Folder Error", 
+                        "The selected folder is not writable. Please choose a different folder.", 
+                        ErrorSeverity.Error, ex);
+                    //revert to old folder
+                    _logger.LogDebug($"Not changing the output folder");
+                    
+                    return; 
+                }
+                
+                //we are all good update the output folder
+                //save the folder to config
+                
+                _configManager.Config.PdfSettings.DefaultOutputPath = filePath;
+                PdfOutputFolder = filePath;
+                _configManager.SaveConfig();
+                _logger.LogInformation($"PDF output folder set to: {filePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            
+            _logger.LogCritical($"Error in setting output folder: {ex.Message}");
+            await _errorHandler.HandleExceptionAsync(ex,"Error setting output folder", "OpenOutputFolder");
         }
     }
     

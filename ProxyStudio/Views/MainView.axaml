@@ -494,6 +494,40 @@ Copyright (C) 2025 James Ponter
                                 </StackPanel>
                             </Border>
                             
+                            <!-- PDF Output Settings -->
+                            <Border Classes="card-elevated">
+                                <StackPanel Spacing="16" HorizontalAlignment="Left">
+                                    <TextBlock Classes="heading-small" Text="Output Settings"/>
+                                    
+                                    <StackPanel Spacing="12" Orientation="Horizontal">
+                                        
+                                        <TextBlock Classes="body-small" 
+                                                   Text="PDF Output Folder: "
+                                                   Padding="0,3,0,0"
+                                                   />
+                                        <Label Content="{Binding PdfOutputFolder}"></Label>
+                                    </StackPanel>
+                                    <Button Classes="secondary" Width="250" 
+                                            Background="{DynamicResource SecondaryBrush}"
+                                            Foreground="{DynamicResource TextOnSecondaryBrush}"
+                                            Command="{Binding OpenOutputFolderCommand}"
+                                           
+                                            HorizontalAlignment="Left" 
+                                            ToolTip.Tip="Change Output Folder for PDF files"
+                                            FontSize="16">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Label Classes="icon" 
+                                                   FontSize="24"
+                                               
+                                                   Content="&#xE256;"/>
+                                            <TextBlock Text="Change Output Folder" Classes="" FontSize="16" Padding="0,5,0,0"/>
+                                        </StackPanel>
+
+                            
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                            
                             
                             
                             <!-- Theme Settings -->

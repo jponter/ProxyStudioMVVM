@@ -35,6 +35,9 @@ namespace ProxyStudio.Helpers
         // Existing card settings
         public bool GlobalBleedEnabled { get; set; } = false;
         
+        
+        
+        
         // PDF Generation Settings
         public PdfSettings PdfSettings { get; set; } = new PdfSettings();
         

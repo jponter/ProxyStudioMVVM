@@ -49,6 +49,9 @@ namespace ProxyStudio.ViewModels
 
         // NEW: Flag to prevent saving during initialization
         private bool _isInitializing = true;
+        
+        // Settings for PDF output
+        [ObservableProperty] private string _currentOutputFolder = ""; // Default to empty, will be set later
 
         // Preview
         [ObservableProperty] private Bitmap? _previewImage;
@@ -231,6 +234,9 @@ namespace ProxyStudio.ViewModels
             _logger.LogDebug($"  Preview: {PreviewDpi} DPI, Quality: {PreviewQuality}");
             _logger.LogDebug($"  Cards: {CardCount}, EstimatedSize: {EstimatedFileSize:F2} MB");
             _logger.LogDebug($"  PrintDpi: {PrintDpi}, EnsureMinPrintDpi: {EnsureMinimumPrintDpi}");
+            
+            // get the output folder from config
+            CurrentOutputFolder = _configManager.Config.PdfSettings.DefaultOutputPath; 
             
             // Auto-generate preview on startup
            // _ = GeneratePreviewAsync();
@@ -596,6 +602,39 @@ namespace ProxyStudio.ViewModels
                 await GeneratePreviewAsync();
             }
         }
+
+        [RelayCommand]
+        private async Task OpenPdfOutputFolder()
+        {
+            //refresh the current output folder from config
+            CurrentOutputFolder = _configManager.Config.PdfSettings.DefaultOutputPath;
+            
+            try
+            {
+                if (Directory.Exists(CurrentOutputFolder))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = CurrentOutputFolder,
+                        UseShellExecute = true
+                    });
+
+                    _logger.LogDebug($"Opened output folder: {CurrentOutputFolder}");
+                }
+                else
+                {
+                    await _errorHandler.ShowErrorAsync("Output folder does not exist",
+                        "The configured output folder does not exist. Please check your settings.",
+                    ErrorSeverity.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open output directory");
+                await _errorHandler.HandleExceptionAsync(ex, "Failed to open output directory", "OpenLogDirectory");
+            }
+        }
+        
 
         private void UpdatePageInfo()
         {
