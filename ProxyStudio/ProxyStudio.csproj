@@ -195,6 +195,13 @@
     <ItemGroup>
         <TrimmerRootDescriptor Include="Roots.xml" Condition="Exists('Roots.xml')" />
     </ItemGroup>
+
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+            <_Parameter1>ProxyStudioTests</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
     
     
 </Project>
