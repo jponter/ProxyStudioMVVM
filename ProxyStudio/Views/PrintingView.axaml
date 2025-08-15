@@ -43,9 +43,12 @@ Copyright (C) 2025 James Ponter
                 Background="{DynamicResource SurfaceElevatedBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,1,0">
+           
             <ScrollViewer Classes="sidebar">
+                
+                <!-- Header -->
                 <StackPanel Spacing="8">
-                    <!-- Header -->
+                   
                     <StackPanel Spacing="8">
                         <TextBlock Classes="heading-medium" Text="Print Actions"
                                    Foreground="{DynamicResource TextPrimaryColor}"/>
@@ -56,23 +59,40 @@ Copyright (C) 2025 James Ponter
                     <!-- Action Buttons -->
                     <StackPanel Spacing="12">
                         <Button Classes="secondary"
-                                Content="🔍 Generate Preview"
+                                Background="{DynamicResource SecondaryBrush}"
+                                Foreground="{DynamicResource TextOnSecondaryBrush}"
+                                
                                 Command="{Binding GeneratePreviewCommand}"
                                 IsEnabled="{Binding !IsGeneratingPreview}"
-                                HorizontalAlignment="Stretch" />
+                                HorizontalAlignment="Stretch" 
+                                ToolTip.Tip="Generate a live preview of your print layout" >
+                            
+                                 <StackPanel Orientation="Horizontal" Spacing="6">
+                                     <Label Classes="icon" 
+                                            FontSize="24"
+                                            Content="&#xE30C;"/>
+                                    <TextBlock Text="Generate Preview" Classes="" FontSize="16" Padding="0,5,0,0"/>
+                            </StackPanel>
+                            
+                        </Button>
+                                
 
                         <!-- PDF Generation Button -->
                         <Button Command="{Binding GeneratePdfCommand}"
                                 IsEnabled="{Binding !IsGeneratingPdf}"
-                                Classes="success"
+                                Classes="primary"
                                 HorizontalAlignment="Stretch"
-                                Height="48"
+                                ToolTip.Tip="Generate PDF with current settings"
+                                
                                 FontSize="16">
 
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <TextBlock Text="🖨️" FontSize="20" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Label Classes="icon" 
+                                       FontSize="24"
+                                                       
+                                       Content="&#xE702;"/>
                                 <StackPanel>
-                                    <TextBlock Text="Generate PDF" FontWeight="SemiBold" />
+                                    <TextBlock Text="Generate PDF" FontSize="16"  Padding="0,5,0,0"/>
                                     <TextBlock FontSize="12" Opacity="0.8"
                                                Text="{Binding PrintDpi, StringFormat='{}{0} DPI Quality'}" />
                                 </StackPanel>
@@ -80,16 +100,22 @@ Copyright (C) 2025 James Ponter
                         </Button>
 
                         <!-- Progress Section -->
-                        <Border Classes="card highlight-success"
+                        <Border Classes="card highlight-primary"
+                                Width="275"
                                 IsVisible="{Binding ShowProgressDetails}">
                             <StackPanel Spacing="16">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="📊" FontSize="16" />
-                                    <TextBlock Classes="heading-small" Text="Generation Progress" />
+                                    <Label Classes="icon" 
+                                           FontSize="24"
+                                                       
+                                           Content="&#xE610;"/>
+                                            <!-- cpu icon -->   
+                                    
+                                    <TextBlock Classes="heading-small" Text="Generation Progress" Padding="0,5,0,0"/>
                                 </StackPanel>
 
                                 <!-- Modern Progress Bar -->
-                                <ProgressBar Classes="modern-thick"
+                                <ProgressBar Classes="card highlight-primary"
                                              Value="{Binding PdfGenerationProgress}"
                                              Minimum="0" Maximum="100" />
 
@@ -111,24 +137,38 @@ Copyright (C) 2025 James Ponter
                         </Border>
 
                         <Button Classes="secondary"
-                                Content="💾 Save PDF As..."
+                                Background="{DynamicResource SecondaryBrush}"
+                                Foreground="{DynamicResource TextOnSecondaryBrush}"
+                                
                                 Command="{Binding SavePdfAsCommand}"
                                 IsEnabled="{Binding !IsGeneratingPdf}"
-                                HorizontalAlignment="Stretch" />
+                                HorizontalAlignment="Stretch" 
+                                ToolTip.Tip="Save the generated PDF to a custom location" 
+                                FontSize="16">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Label Classes="icon" 
+                                       FontSize="24"
+                                               
+                                       Content="&#xE248;"/>
+                                <TextBlock Text="Save PDF as..." Classes="" FontSize="16" Padding="0,5,0,0"/>
+                            </StackPanel>
+
+                            
+                            </Button>
 
                         <!-- Loading Indicator -->
-                        <Border Classes="card highlight-primary"
-                                IsVisible="{Binding IsGeneratingPreview}">
-                            <StackPanel Spacing="12" HorizontalAlignment="Center">
-                                <li:LoadingIndicator Foreground="{DynamicResource PrimaryBrush}"
-                                                     IsActive="{Binding IsGeneratingPreview}"
-                                                     Mode="ThreeDots"
-                                                     SpeedRatio="1.2" />
-                                <TextBlock Classes="body-small"
-                                           Text="Generating preview..."
-                                           HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
+                        <!-- <Border Classes="card highlight-primary" -->
+                        <!--         IsVisible="{Binding IsGeneratingPreview}"> -->
+                        <!--     <StackPanel Spacing="12" HorizontalAlignment="Center"> -->
+                        <!--         <li:LoadingIndicator Foreground="{DynamicResource PrimaryBrush}" -->
+                        <!--                              IsActive="{Binding IsGeneratingPreview}" -->
+                        <!--                              Mode="ThreeDots" -->
+                        <!--                              SpeedRatio="1.2" /> -->
+                        <!--         <TextBlock Classes="body-small" -->
+                        <!--                    Text="Generating preview..." -->
+                        <!--                    HorizontalAlignment="Center" /> -->
+                        <!--     </StackPanel> -->
+                        <!-- </Border> -->
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
