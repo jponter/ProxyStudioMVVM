@@ -321,8 +321,8 @@ Copyright (C) 2025 James Ponter
         </Border>
 
 
-        <Border Grid.Column="2" Classes="sidebar" BorderThickness="1,0,0,0"
-                Background="{DynamicResource PanelBackgroundBrush}">
+        <Border Grid.Column="2" Classes="sidebar card-elevated" BorderThickness="1,0,0,0">
+                
             <ScrollViewer Classes="sidebar">
                 <StackPanel Spacing="20">
 
