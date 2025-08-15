@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxyStudio", "ProxyStudio\ProxyStudio.csproj", "{FC799E46-E9A8-4BE8-BD3B-6D44C0789F68}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxyStudioTests", "ProxyStudioTests\ProxyStudioTests.csproj", "{F271CCE9-829C-420F-AC9F-38283452C0CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{FC799E46-E9A8-4BE8-BD3B-6D44C0789F68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC799E46-E9A8-4BE8-BD3B-6D44C0789F68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC799E46-E9A8-4BE8-BD3B-6D44C0789F68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F271CCE9-829C-420F-AC9F-38283452C0CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F271CCE9-829C-420F-AC9F-38283452C0CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F271CCE9-829C-420F-AC9F-38283452C0CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F271CCE9-829C-420F-AC9F-38283452C0CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
