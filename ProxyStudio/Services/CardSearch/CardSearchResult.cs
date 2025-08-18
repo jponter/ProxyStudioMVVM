@@ -18,10 +18,12 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ProxyStudio.Models;
 
-public class CardSearchResult : ObservableCollection<CardSearchResult>
+public class CardSearchResult : INotifyPropertyChanged
 {
     public string Id { get; set; }
     public string Name { get; set; }
@@ -31,7 +33,19 @@ public class CardSearchResult : ObservableCollection<CardSearchResult>
     public string TypeLine { get; set; }
     public string ManaCost { get; set; }
     public string Rarity { get; set; }
-    public bool IsSelected { get; set; }
-    // Source-specific data can be stored in a Dictionary<string, object>
+    
+    private bool _isSelected;
+    public bool IsSelected 
+    { 
+        get => _isSelected;
+        set { _isSelected = value; OnPropertyChanged(); }
+    }
+    
     public Dictionary<string, object> SourceData { get; set; } = new();
+    
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }

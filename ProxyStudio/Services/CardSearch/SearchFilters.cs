@@ -20,5 +20,8 @@ namespace ProxyStudio.Models;
 
 public class SearchFilters
 {
-    
+    public string SetCode { get; set; } = "";
+    public string Colors { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string Rarity { get; set; } = "";
 }

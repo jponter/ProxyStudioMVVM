@@ -56,9 +56,20 @@ public class ScryfallSearchService : ICardSearchService
     }
 
     
-    public Task<List<CardSearchResult>> SearchAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null)
+    public async Task<List<CardSearchResult>> SearchAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null)
     {
-        throw new NotImplementedException();
+        progress?.Report(new SearchProgress { Status = "Searching...", CurrentStep = 1, TotalSteps = 2 });
+        await Task.Delay(1000); // Simulate API call
+    
+        var results = new List<CardSearchResult>
+        {
+            new() { Id = "1", Name = $"Lightning Bolt (search: {query})", Rarity = "Common", SetName = "Test Set" },
+            new() { Id = "2", Name = $"Black Lotus (search: {query})", Rarity = "Rare", SetName = "Test Set" },
+            new() { Id = "3", Name = $"Ancestral Recall (search: {query})", Rarity = "Rare", SetName = "Test Set" }
+        };
+    
+        progress?.Report(new SearchProgress { Status = "Complete", CurrentStep = 2, TotalSteps = 2 });
+        return results;
     }
 
     public Task<Card> ConvertToCardAsync(CardSearchResult result)

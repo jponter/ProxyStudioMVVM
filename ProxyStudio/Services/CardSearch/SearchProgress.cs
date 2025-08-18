@@ -20,5 +20,8 @@ namespace ProxyStudio.Models;
 
 public class SearchProgress
 {
-    
+    public string Status { get; set; } = "";
+    public int CurrentStep { get; set; }
+    public int TotalSteps { get; set; }
+    public double PercentageComplete => TotalSteps > 0 ? (double)CurrentStep / TotalSteps * 100 : 0;
 }
