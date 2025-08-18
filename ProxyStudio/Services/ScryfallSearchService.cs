@@ -18,9 +18,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using ProxyStudio.Helpers;
 using ProxyStudio.Models;
+using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+
+
 
 namespace ProxyStudio.Services;
 
@@ -50,11 +60,117 @@ public class ScryfallSearchService : ICardSearchService
     public string SourceName { get; } = "Scryfall";
     public bool IsAvailable { get; } = true;
     
-    public Task<Card> ConvertToCard(CardSearchResult result)
+    private readonly HttpClient _httpClient;
+    private readonly IConfigManager _configManager;
+    private readonly ILogger<ScryfallSearchService> _logger;
+    private readonly IErrorHandlingService _errorHandler;
+    private readonly string _cacheFolder;
+    
+    
+    public ScryfallSearchService(
+        HttpClient httpClient, 
+        IConfigManager configManager, 
+        ILogger<ScryfallSearchService> logger, 
+        IErrorHandlingService errorHandler)
     {
-        throw new NotImplementedException();
+        _httpClient = httpClient;
+        _configManager = configManager;
+        _logger = logger;
+        _errorHandler = errorHandler;
+        
+        // Set up cache folder (similar to MpcFillService)
+        _cacheFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "ProxyStudio",
+            "ScryfallCache");
+        
+        Directory.CreateDirectory(_cacheFolder);
+    }
+    
+    
+    public async Task<Card> ConvertToCardAsync(CardSearchResult result)
+    {
+        try
+        {
+            _logger.LogDebug("Converting search result to card: {CardName}", result.Name);
+            
+            // For now, use test image data (we'll add real image downloading later)
+            var imageData = await GetCardImageDataAsync(result);
+            
+            // Create Card using your existing constructor pattern
+            var card = new Card(result.Name, result.Id, imageData, _configManager)
+            {
+                Query = $"{result.SetName} - {result.TypeLine}",
+                EnableBleed = true, // Default to enabled like MPC Fill
+                ImageDownloaded = true
+            };
+            
+            _logger.LogDebug("Successfully converted {CardName} to Card object", result.Name);
+            return card;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to convert search result to card: {CardName}", result.Name);
+            
+            // Create placeholder card with error image if conversion fails
+            var placeholderImage = CreatePlaceholderImage();
+            return new Card($"{result.Name} (Error)", result.Id, placeholderImage, _configManager)
+            {
+                Query = "Failed to load card data",
+                EnableBleed = true
+            };
+        }
     }
 
+    
+    private async Task<byte[]> GetCardImageDataAsync(CardSearchResult result)
+    {
+        // For now, return test image data
+        // Later we'll implement real Scryfall image downloading
+        
+        if (!string.IsNullOrEmpty(result.ImageUrl))
+        {
+            // TODO: Download actual image from result.ImageUrl
+            return CreateTestCardImage(result.Name);
+        }
+        
+        return CreatePlaceholderImage();
+    }
+
+    private byte[] CreateTestCardImage(string cardName)
+    {
+        // Create a simple test image without text for now
+        const int width = 1500;   // 600 DPI base resolution
+        const int height = 2100;
+    
+        using var image = new SixLabors.ImageSharp.Image<Rgba32>(width, height);
+    
+        // Set background color based on card name hash (different colors for different cards)
+        var hash = cardName.GetHashCode();
+        var r = (byte)(Math.Abs(hash) % 100 + 155);  // Light colors
+        var g = (byte)(Math.Abs(hash >> 8) % 100 + 155);
+        var b = (byte)(Math.Abs(hash >> 16) % 100 + 155);
+    
+        image.Mutate(x => x.BackgroundColor(SixLabors.ImageSharp.Color.FromRgb(r, g, b)));
+    
+        using var ms = new MemoryStream();
+        image.SaveAsPng(ms);
+        return ms.ToArray();
+    }
+
+    private byte[] CreatePlaceholderImage()
+    {
+        // Create a simple placeholder image (similar to your MpcFillService pattern)
+        const int width = 1500;
+        const int height = 2100;
+        
+        using var image = new SixLabors.ImageSharp.Image<Rgba32>(width, height);
+        image.Mutate(x => x.BackgroundColor(SixLabors.ImageSharp.Color.LightGray));
+        
+        using var ms = new MemoryStream();
+        image.SaveAsPng(ms);
+        return ms.ToArray();
+    }
     
     public async Task<List<CardSearchResult>> SearchAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null)
     {
@@ -72,10 +188,7 @@ public class ScryfallSearchService : ICardSearchService
         return results;
     }
 
-    public Task<Card> ConvertToCardAsync(CardSearchResult result)
-    {
-        throw new NotImplementedException();
-    }
+   
 
     
 }

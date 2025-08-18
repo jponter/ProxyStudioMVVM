@@ -311,6 +311,7 @@
                                         <!-- Selection Checkbox -->
                                         <CheckBox Content="Select for collection"
                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                 Command="{Binding $parent[UserControl].((vm:CardSearchViewModel)DataContext).UpdateSelectionCommand}"
                                                  HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>

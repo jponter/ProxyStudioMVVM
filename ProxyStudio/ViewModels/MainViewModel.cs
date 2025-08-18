@@ -183,7 +183,7 @@ public partial class MainViewModel : ViewModelBase
             var cardsSearchService = serviceProvider.GetRequiredService<ICardSearchService>();
 
             var cardSearchViewModelLogger = loggerFactory.CreateLogger<CardSearchViewModel>();
-            CardSearchViewModel = new CardSearchViewModel(_configManager, Cards, cardsSearchService , cardSearchViewModelLogger, _errorHandler);
+            CardSearchViewModel = new CardSearchViewModel(_configManager, Cards, cardsSearchService , cardSearchViewModelLogger, _errorHandler, EditCardCommand);
             
             var loggingSettingsLogger = loggerFactory.CreateLogger<LoggingSettingsViewModel>();
             LoggingSettingsViewModel = new LoggingSettingsViewModel(_configManager, loggingSettingsLogger, _errorHandler);
