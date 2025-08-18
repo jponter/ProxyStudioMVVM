@@ -69,10 +69,13 @@ public partial class MainViewModel : ViewModelBase
     private readonly IThemeService _themeService;
     private readonly IServiceProvider _serviceProvider;
     
+    
+    //Theme Settings and Editor ViewModels
     public ThemeSettingsViewModel? ThemeSettingsViewModel { get; private set; }
     public ThemeEditorViewModel? ThemeEditorViewModel { get; private set; }
     
-    
+    //Card search view model
+    [ObservableProperty] private CardSearchViewModel? _cardSearchViewModel;
     
     //public ObservableCollection<Card> Cards { get; } = new();
     public CardCollection Cards { get; private set; } = new();
@@ -176,6 +179,12 @@ public partial class MainViewModel : ViewModelBase
             
             PrintViewModel = new PrintViewModel(_pdfService, _configManager, Cards, printViewModelLogger, _errorHandler);
             _logger.LogInformation("PrintViewModel created");
+
+            var cardsSearchService = serviceProvider.GetRequiredService<ICardSearchService>();
+
+            var cardSearchViewModelLogger = loggerFactory.CreateLogger<CardSearchViewModel>();
+            CardSearchViewModel = new CardSearchViewModel(_configManager, Cards, cardsSearchService , cardSearchViewModelLogger, _errorHandler);
+            
             var loggingSettingsLogger = loggerFactory.CreateLogger<LoggingSettingsViewModel>();
             LoggingSettingsViewModel = new LoggingSettingsViewModel(_configManager, loggingSettingsLogger, _errorHandler);
 

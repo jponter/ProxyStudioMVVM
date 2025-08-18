@@ -444,6 +444,8 @@ Copyright (C) 2025 James Ponter
                 </Grid>
             </TabItem>
             
+          
+            
             <!-- Printing Tab -->
             <TabItem Classes="" >
                 <TabItem.Header>
@@ -456,6 +458,20 @@ Copyright (C) 2025 James Ponter
                     </StackPanel>
                 </TabItem.Header>
                 <views:PrintingView DataContext="{Binding PrintViewModel}" />
+            </TabItem>
+            
+            <!-- Card Search Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Label FontFamily="{DynamicResource Phosphor}" 
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Content="&#xEBE0;"/>
+                        <TextBlock Text="Card Search" Classes="" FontSize="20"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <views:CardSearchView DataContext="{Binding CardSearchViewModel}" />
             </TabItem>
             
             <!-- Settings Tab -->

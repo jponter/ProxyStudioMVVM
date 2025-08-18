@@ -234,8 +234,8 @@ public partial class MainView : Window
             {
                 _logger?.LogDebug("Tab selection changed to index: {TabIndex}", tabControl.SelectedIndex);
                 
-                // Check if the logging tab is selected (index 3: Cards=0, Printing=1, Settings=2, ThemeEditor=3, Logging=4)
-                if (tabControl.SelectedIndex == 4 && mainViewModel.LoggingSettingsViewModel != null)
+                // Check if the logging tab is selected (index 3: Cards=0, Printing=1, Search=2,  Settings=3, ThemeEditor=4, Logging=5)
+                if (tabControl.SelectedIndex == 5 && mainViewModel.LoggingSettingsViewModel != null)
                 {
                     _logger?.LogDebug("Logging tab selected - refreshing recent errors");
                     

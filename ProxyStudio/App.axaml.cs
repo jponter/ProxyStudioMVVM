@@ -215,7 +215,9 @@ public partial class App : Application
         // Register ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<PrintViewModel>();
+        services.AddTransient<CardSearchViewModel>();
         services.AddSingleton<DesignTimeConfigManager>();
+        services.AddSingleton<ICardSearchService, ScryfallSearchService>();
         
         Services = services.BuildServiceProvider();
         

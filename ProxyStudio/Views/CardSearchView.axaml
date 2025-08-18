@@ -1,0 +1,501 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ProxyStudio.Views.CardSearchView"
+             x:DataType="vm:CardSearchViewModel">
+    
+
+
+
+
+    
+    <!-- Card Search Page -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="380"/>   <!-- Search Panel -->
+            <ColumnDefinition Width="*"/>     <!-- Results Grid -->
+            <ColumnDefinition Width="320"/>   <!-- Selection Panel -->
+        </Grid.ColumnDefinitions>
+        
+        <!-- Search Controls Sidebar -->
+        <Border Grid.Column="0" 
+                Classes="sidebar card-elevated"
+                Background="{DynamicResource SurfaceElevatedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+            <ScrollViewer Classes="preview" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="24" Margin="24">
+                    
+                    <!-- Search Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading-medium" Text="Card Search"
+                                   Foreground="{DynamicResource TextPrimaryColor}"/>
+                        <TextBlock Classes="body-small" 
+                                  Text="Search for Magic: The Gathering cards using Scryfall"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Search Input -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Search Query"/>
+                            
+                            <StackPanel Spacing="12">
+                                <!-- Main search text -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="CARD NAME"/>
+                                    <TextBox Classes="modern"
+                                            Watermark="Enter card name..."
+                                            Text="{Binding SearchQuery, Mode=TwoWay}"/>
+                                </StackPanel>
+                                
+                                <!-- Search button -->
+                                <Button Classes="primary" 
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding SearchCommand}"
+                                        IsEnabled="{Binding !IsSearching}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Label FontFamily="{DynamicResource Phosphor}" 
+                                               FontSize="16"
+                                               Content="&#xE142;"/>
+                                        <TextBlock Text="Search Cards"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Advanced Filters -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Classes="heading-small" Text="Filters" VerticalAlignment="Center"/>
+                                <Button Classes="icon" Content="&#xE34C;" FontFamily="{DynamicResource Phosphor}"
+                                        ToolTip.Tip="Clear all filters"/>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="12">
+                                <!-- Set filter -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="SET CODE"/>
+                                    <TextBox Classes="modern"
+                                            Watermark="e.g. BLB, MH3..."
+                                            Text="{Binding SetFilter, Mode=TwoWay}"/>
+                                </StackPanel>
+                                
+                                <!-- Colors filter -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="COLORS"/>
+                                    <ComboBox Classes="modern" 
+                                             HorizontalAlignment="Stretch"
+                                             SelectedItem="{Binding ColorFilter, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any Color"/>
+                                        <ComboBoxItem Content="White"/>
+                                        <ComboBoxItem Content="Blue"/>
+                                        <ComboBoxItem Content="Black"/>
+                                        <ComboBoxItem Content="Red"/>
+                                        <ComboBoxItem Content="Green"/>
+                                        <ComboBoxItem Content="Multicolor"/>
+                                        <ComboBoxItem Content="Colorless"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                
+                                <!-- Type filter -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="CARD TYPE"/>
+                                    <ComboBox Classes="modern" 
+                                             HorizontalAlignment="Stretch"
+                                             SelectedItem="{Binding TypeFilter, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any Type"/>
+                                        <ComboBoxItem Content="Creature"/>
+                                        <ComboBoxItem Content="Instant"/>
+                                        <ComboBoxItem Content="Sorcery"/>
+                                        <ComboBoxItem Content="Enchantment"/>
+                                        <ComboBoxItem Content="Artifact"/>
+                                        <ComboBoxItem Content="Planeswalker"/>
+                                        <ComboBoxItem Content="Land"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                
+                                <!-- Rarity filter -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="RARITY"/>
+                                    <ComboBox Classes="modern" 
+                                             HorizontalAlignment="Stretch"
+                                             SelectedItem="{Binding RarityFilter, Mode=TwoWay}">
+                                        <ComboBoxItem Content="Any Rarity"/>
+                                        <ComboBoxItem Content="Common"/>
+                                        <ComboBoxItem Content="Uncommon"/>
+                                        <ComboBoxItem Content="Rare"/>
+                                        <ComboBoxItem Content="Mythic"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Quick Searches -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Quick Searches"/>
+                            
+                            <StackPanel Spacing="8">
+                                <Button Classes="secondary" 
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding QuickSearchCommand}"
+                                        CommandParameter="random">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Label FontFamily="{DynamicResource Phosphor}" 
+                                               FontSize="16"
+                                               Content="&#xE206;"/>
+                                        <TextBlock Text="Random Card"/>
+                                    </StackPanel>
+                                </Button>
+                                
+                                <Button Classes="secondary" 
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding QuickSearchCommand}"
+                                        CommandParameter="commanders">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Label FontFamily="{DynamicResource Phosphor}" 
+                                               FontSize="16"
+                                               Content="&#xE1B7;"/>
+                                        <TextBlock Text="Popular Commanders"/>
+                                    </StackPanel>
+                                </Button>
+                                
+                                <Button Classes="secondary" 
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding QuickSearchCommand}"
+                                        CommandParameter="latest">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Label FontFamily="{DynamicResource Phosphor}" 
+                                               FontSize="16"
+                                               Content="&#xE0C9;"/>
+                                        <TextBlock Text="Latest Set"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Search Progress -->
+                    <Border Classes="card" 
+                            IsVisible="{Binding IsSearching}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="heading-small" Text="Searching..."/>
+                            <ProgressBar Classes="modern"
+                                        IsIndeterminate="True"
+                                        Height="4"/>
+                            <TextBlock Classes="body-small" 
+                                      Text="{Binding SearchStatus}"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+        <!-- Search Results Grid -->
+        <Border Grid.Column="1"
+                Classes="card"
+                Margin="24,20,24,20">
+            <DockPanel>
+                
+                <!-- Results Header -->
+                <Border DockPanel.Dock="Top" 
+                        Padding="0,0,0,16" 
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,0,0,1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Classes="heading-medium" Text="Search Results"
+                                       Foreground="{DynamicResource TextPrimaryColor}"/>
+                            <TextBlock Classes="body-small" 
+                                      Text="{Binding SearchResults.Count, StringFormat='{}Found {0} cards'}"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <!-- Sort options -->
+                            <ComboBox Classes="modern" Width="140"
+                                     SelectedItem="{Binding SortOption, Mode=TwoWay}">
+                                <ComboBoxItem Content="Name"/>
+                                <ComboBoxItem Content="Set"/>
+                                <ComboBoxItem Content="Rarity"/>
+                                <ComboBoxItem Content="CMC"/>
+                            </ComboBox>
+                            
+                            <!-- View options -->
+                            <Button Classes="icon" Content="⊞" ToolTip.Tip="Grid view"/>
+                            <Button Classes="icon" Content="☰" ToolTip.Tip="List view"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                
+                <!-- Results Grid -->
+                <ScrollViewer Classes="preview" 
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="16,16,16,0">
+                    <Panel>
+                    <ListBox Classes="grid-list"
+                             ItemsSource="{Binding SearchResults}"
+                             SelectedItem="{Binding SelectedSearchResult, Mode=TwoWay}"
+                             SelectionMode="Multiple">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card-elevated"
+                                        Padding="12"
+                                        Margin="8"
+                                        MinWidth="280"
+                                        MaxWidth="280">
+                                    
+                                    <StackPanel Spacing="8">
+                                        <!-- Card Name & Set -->
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Classes="body-small" 
+                                                      Text="{Binding Name}" 
+                                                      FontWeight="SemiBold"
+                                                      TextTrimming="CharacterEllipsis"
+                                                      ToolTip.Tip="{Binding Name}"/>
+                                            <TextBlock Classes="caption" 
+                                                      Text="{Binding SetName}"
+                                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Card Image -->
+                                        <Border CornerRadius="8" 
+                                                ClipToBounds="True"
+                                                Height="320">
+                                            <Image Source="{Binding ImageUrl}" 
+                                                   Stretch="Uniform"/>
+                                        </Border>
+                                        
+                                        <!-- Card Details -->
+                                        <StackPanel Spacing="4">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Classes="caption" 
+                                                          Text="{Binding TypeLine}"
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <Border Background="{DynamicResource InfoBrush}"
+                                                        CornerRadius="3"
+                                                        Padding="4,2">
+                                                    <TextBlock Classes="caption" 
+                                                              Text="{Binding Rarity}"
+                                                              Foreground="White"
+                                                              FontSize="10"/>
+                                                </Border>
+                                            </StackPanel>
+                                            
+                                            <!-- Mana Cost -->
+                                            <TextBlock Classes="caption" 
+                                                      Text="{Binding ManaCost}"
+                                                      IsVisible="{Binding ManaCost, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Selection Checkbox -->
+                                        <CheckBox Content="Select for collection"
+                                                 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                 HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    
+                    <!-- Empty State -->
+                    <Border Classes="card-elevated"
+                            Padding="48"
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding !SearchResults.Count}">
+                        <StackPanel Spacing="16" HorizontalAlignment="Center">
+                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                   FontSize="64"
+                                   HorizontalAlignment="Center"
+                                   Content="&#xE142;"
+                                   Opacity="0.3"/>
+                            <TextBlock Classes="body-large" 
+                                      Text="No search results"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Classes="body-small" 
+                                      Text="Try adjusting your search terms or filters"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Loading State -->
+                    <Border Classes="card-elevated"
+                            Padding="48"
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding IsSearching}">
+                        <StackPanel Spacing="16" HorizontalAlignment="Center">
+                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                   FontSize="64"
+                                   HorizontalAlignment="Center"
+                                   Content="&#xE039;"
+                                   Opacity="0.6"/>
+                            <TextBlock Classes="body-large" 
+                                      Text="Searching Scryfall..."
+                                      HorizontalAlignment="Center"/>
+                            <ProgressBar Classes="modern"
+                                        IsIndeterminate="True"
+                                        Height="4"
+                                        Width="200"/>
+                        </StackPanel>
+                    </Border>
+                    </Panel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+        
+        <!-- Selection & Actions Sidebar -->
+        <Border Grid.Column="2" 
+                Classes="sidebar card-elevated"
+                Background="{DynamicResource SurfaceElevatedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1,0,0,0">
+            <ScrollViewer Classes="preview" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="24" Margin="24">
+                    
+                    <!-- Selection Summary -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Selection"/>
+                            
+                            <StackPanel Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Classes="body-small" Text="Selected:"/>
+                                    <TextBlock Classes="body-small" 
+                                              Text="{Binding SelectedCount}"
+                                              FontWeight="SemiBold"
+                                              Foreground="{DynamicResource PrimaryBrush}"/>
+                                    <TextBlock Classes="body-small" Text="cards"/>
+                                </StackPanel>
+                                
+                                <!-- Selection Actions -->
+                                <StackPanel Spacing="8">
+                                    <Button Classes="primary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding AddSelectedToCollectionCommand}"
+                                            IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE0FC;"/>
+                                            <TextBlock Text="Add Selected"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <Button Classes="secondary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding SelectAllResultsCommand}"
+                                            IsEnabled="{Binding HasResults}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE155;"/>
+                                            <TextBlock Text="Select All"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <Button Classes="secondary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding ClearSelectionCommand}"
+                                            IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE34C;"/>
+                                            <TextBlock Text="Clear Selection"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Preview Selected Card -->
+                    <Border Classes="card"
+                            IsVisible="{Binding SelectedSearchResult, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Preview"/>
+                            
+                            <!-- Card Preview -->
+                            <Border CornerRadius="12" 
+                                    ClipToBounds="True"
+                                    MaxHeight="300">
+                                <Image Source="{Binding SelectedSearchResult.ImageUrl}"
+                                       Stretch="Uniform"/>
+                            </Border>
+                            
+                            <!-- Card Details -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-small" 
+                                          Text="{Binding SelectedSearchResult.Name}"
+                                          FontWeight="SemiBold"/>
+                                <TextBlock Classes="caption" 
+                                          Text="{Binding SelectedSearchResult.TypeLine}"
+                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                <TextBlock Classes="caption" 
+                                          Text="{Binding SelectedSearchResult.SetName}"
+                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                
+                                <!-- Quick Actions -->
+                                <StackPanel Spacing="4" Margin="0,8,0,0">
+                                    <Button Classes="secondary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding AddSingleCardCommand}"
+                                            CommandParameter="{Binding SelectedSearchResult}">
+                                        <TextBlock Text="Add This Card"/>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Search Tips -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Search Tips"/>
+                            
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body-small" Text="• Use exact card names for best results"/>
+                                <TextBlock Classes="body-small" Text="• Combine filters to narrow results"/>
+                                <TextBlock Classes="body-small" Text="• Set codes: BLB, MH3, OTJ, etc."/>
+                                <TextBlock Classes="body-small" Text="• Search supports partial names"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        
+    </Grid>
+
+    
+    
+    
+</UserControl>
+
+
+
