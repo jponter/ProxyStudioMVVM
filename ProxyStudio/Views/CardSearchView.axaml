@@ -113,6 +113,20 @@
                                               ItemsSource="{Binding RarityOptions}"
                                               SelectedItem="{Binding SelectedRarity, Mode=TwoWay}"/>
                                 </StackPanel>
+                                
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="OPTIONS"/>
+                                    <CheckBox Content="Include Extras" 
+                                              IsChecked="{Binding IncludeExtras, Mode=TwoWay}"
+                                              ToolTip.Tip="Include tokens, art cards, and other special printings"/>
+                                </StackPanel>
+                                
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="caption" Text="OPTIONS"/>
+                                    <CheckBox Content="Unique Printings" 
+                                              IsChecked="{Binding UniquePrintings, Mode=TwoWay}"
+                                              ToolTip.Tip="Include unique printings"/>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Border>

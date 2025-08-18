@@ -24,4 +24,7 @@ public class SearchFilters
     public string Colors { get; set; } = "";
     public string Type { get; set; } = "";
     public string Rarity { get; set; } = "";
+    
+    public bool IncludeExtras { get; set; } = false;
+    public bool UniquePrintings { get; set; } = false;
 }

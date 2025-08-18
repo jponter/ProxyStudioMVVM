@@ -54,6 +54,8 @@ public partial class CardSearchViewModel: ViewModelBase
     [ObservableProperty] private bool _isSelected = false;
     [ObservableProperty] private bool _hasSelection = false;
     [ObservableProperty] private bool _hasResults = false;
+    [ObservableProperty] private bool _includeExtras = false; // For including extras like tokens
+    [ObservableProperty] private bool _uniquePrintings = false;
 
     [ObservableProperty] private int _multipleCount = 4;
 
@@ -137,7 +139,9 @@ public partial class CardSearchViewModel: ViewModelBase
             SetCode = SetFilter?.Trim() ?? "",
             Colors = ConvertColorToSearchTerm(SelectedColor),
             Type = ConvertTypeToSearchTerm(SelectedType),
-            Rarity = ConvertRarityToSearchTerm(SelectedRarity)
+            Rarity = ConvertRarityToSearchTerm(SelectedRarity),
+            IncludeExtras = IncludeExtras,
+            UniquePrintings = UniquePrintings
         };
 
         _logger.LogDebug("Search filters: Set={SetCode}, Color={Colors}, Type={Type}, Rarity={Rarity}", 

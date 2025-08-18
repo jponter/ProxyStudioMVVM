@@ -271,6 +271,16 @@ public class ScryfallSearchService : ICardSearchService
         {
             queryParts.Add($"rarity:{filters.Rarity.ToLower()}");
         }
+
+        if (filters.IncludeExtras)
+        {
+            queryParts.Add("include:extras");
+        }
+
+        if (filters.UniquePrintings)
+        {
+            queryParts.Add("unique:printings");
+        }
         
         return string.Join(" ", queryParts);
     }
