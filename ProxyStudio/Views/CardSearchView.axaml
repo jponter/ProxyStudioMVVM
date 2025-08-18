@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:ProxyStudio.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="2000" d:DesignHeight="800"
              x:Class="ProxyStudio.Views.CardSearchView"
              x:DataType="vm:CardSearchViewModel">
     
@@ -35,6 +35,7 @@
                                    Foreground="{DynamicResource TextPrimaryColor}"/>
                         <TextBlock Classes="body-small" 
                                   Text="Search for Magic: The Gathering cards using Scryfall"
+                                  TextWrapping="Wrap"
                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                     
@@ -90,48 +91,27 @@
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="caption" Text="COLORS"/>
                                     <ComboBox Classes="modern" 
-                                             HorizontalAlignment="Stretch"
-                                             SelectedItem="{Binding ColorFilter, Mode=TwoWay}">
-                                        <ComboBoxItem Content="Any Color"/>
-                                        <ComboBoxItem Content="White"/>
-                                        <ComboBoxItem Content="Blue"/>
-                                        <ComboBoxItem Content="Black"/>
-                                        <ComboBoxItem Content="Red"/>
-                                        <ComboBoxItem Content="Green"/>
-                                        <ComboBoxItem Content="Multicolor"/>
-                                        <ComboBoxItem Content="Colorless"/>
-                                    </ComboBox>
+                                              HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding ColorOptions}"
+                                              SelectedItem="{Binding SelectedColor, Mode=TwoWay}"/>
                                 </StackPanel>
                                 
                                 <!-- Type filter -->
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="caption" Text="CARD TYPE"/>
                                     <ComboBox Classes="modern" 
-                                             HorizontalAlignment="Stretch"
-                                             SelectedItem="{Binding TypeFilter, Mode=TwoWay}">
-                                        <ComboBoxItem Content="Any Type"/>
-                                        <ComboBoxItem Content="Creature"/>
-                                        <ComboBoxItem Content="Instant"/>
-                                        <ComboBoxItem Content="Sorcery"/>
-                                        <ComboBoxItem Content="Enchantment"/>
-                                        <ComboBoxItem Content="Artifact"/>
-                                        <ComboBoxItem Content="Planeswalker"/>
-                                        <ComboBoxItem Content="Land"/>
-                                    </ComboBox>
+                                              HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding TypeOptions}"
+                                              SelectedItem="{Binding SelectedType, Mode=TwoWay}"/>
                                 </StackPanel>
                                 
                                 <!-- Rarity filter -->
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="caption" Text="RARITY"/>
                                     <ComboBox Classes="modern" 
-                                             HorizontalAlignment="Stretch"
-                                             SelectedItem="{Binding RarityFilter, Mode=TwoWay}">
-                                        <ComboBoxItem Content="Any Rarity"/>
-                                        <ComboBoxItem Content="Common"/>
-                                        <ComboBoxItem Content="Uncommon"/>
-                                        <ComboBoxItem Content="Rare"/>
-                                        <ComboBoxItem Content="Mythic"/>
-                                    </ComboBox>
+                                              HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding RarityOptions}"
+                                              SelectedItem="{Binding SelectedRarity, Mode=TwoWay}"/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -262,8 +242,8 @@
                                 <Border Classes="card-elevated"
                                         Padding="12"
                                         Margin="8"
-                                        MinWidth="280"
-                                        MaxWidth="280">
+                                        MinWidth="320"
+                                        MaxWidth="320">
                                     
                                     <StackPanel Spacing="8">
                                         <!-- Card Name & Set -->
@@ -278,12 +258,60 @@
                                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </StackPanel>
                                         
+                                        
+
                                         <!-- Card Image -->
                                         <Border CornerRadius="8" 
                                                 ClipToBounds="True"
-                                                Height="320">
-                                            <Image Source="{Binding ImageUrl}" 
-                                                   Stretch="Uniform"/>
+                                                
+                                                
+                                                HorizontalAlignment="Center"
+                                                Background="{DynamicResource SurfaceElevatedBrush}">
+                                            
+                                            <Grid>
+                                                <!-- Actual Image -->
+                                                <Image Source="{Binding ImageSource}"
+                                                       Stretch="UniformToFill"
+                                                       IsVisible="{Binding ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                                
+                                                <!-- Loading State -->
+                                                <StackPanel Spacing="8" 
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center"
+                                                           IsVisible="{Binding IsImageLoading}">
+                                                    <ProgressBar Classes="modern"
+                                                               IsIndeterminate="True"
+                                                               Height="4"
+                                                               Width="60"/>
+                                                    <TextBlock Classes="caption" 
+                                                              Text="Loading..."
+                                                              HorizontalAlignment="Center"
+                                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </StackPanel>
+                                                
+                                                <!-- Placeholder State (when not loading and no image) -->
+                                                <StackPanel Spacing="4" 
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center">
+                                                    <StackPanel.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="IsImageLoading" Converter="{x:Static BoolConverters.Not}"/>
+                                                            <Binding Path="ImageSource" Converter="{x:Static ObjectConverters.IsNull}"/>
+                                                        </MultiBinding>
+                                                    </StackPanel.IsVisible>
+                                                    
+                                                    <Label FontFamily="{DynamicResource Phosphor}" 
+                                                           FontSize="32"
+                                                           Content="&#xE142;"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Opacity="0.5"/>
+                                                    <TextBlock Classes="caption" 
+                                                              Text="Card"
+                                                              HorizontalAlignment="Center"
+                                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
                                         </Border>
                                         
                                         <!-- Card Details -->
@@ -406,6 +434,20 @@
                                         </StackPanel>
                                     </Button>
                                     
+                                    <Button Classes="primary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding AddSelectedToCollectionMultipleCommand}"
+                                            IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE0FC;"/>
+                                            <TextBlock Text="Add Multiple of Selected"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <NumericUpDown Value="{Binding MultipleCount}" FormatString="0"/>
+                                    
                                     <Button Classes="secondary" 
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding SelectAllResultsCommand}"
@@ -443,9 +485,53 @@
                             <!-- Card Preview -->
                             <Border CornerRadius="12" 
                                     ClipToBounds="True"
-                                    MaxHeight="300">
-                                <Image Source="{Binding SelectedSearchResult.ImageUrl}"
-                                       Stretch="Uniform"/>
+                                    MaxHeight="300"
+                                    Background="{DynamicResource SurfaceElevatedBrush}">
+                                
+                                <Grid>
+                                    <!-- Actual Image -->
+                                    <Image Source="{Binding SelectedSearchResult.ImageSource}"
+                                           Stretch="Uniform"
+                                           IsVisible="{Binding SelectedSearchResult.ImageSource, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                    
+                                    <!-- Loading state for preview -->
+                                    <StackPanel Spacing="8" 
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding SelectedSearchResult.IsImageLoading}">
+                                        <ProgressBar Classes="modern"
+                                                   IsIndeterminate="True"
+                                                   Height="4"
+                                                   Width="100"/>
+                                        <TextBlock Classes="body-small" 
+                                                  Text="Loading preview..."
+                                                  HorizontalAlignment="Center"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                    
+                                    <!-- Placeholder for preview (when not loading and no image) -->
+                                    <StackPanel Spacing="8" 
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center">
+                                        <StackPanel.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="SelectedSearchResult.IsImageLoading" Converter="{x:Static BoolConverters.Not}"/>
+                                                <Binding Path="SelectedSearchResult.ImageSource" Converter="{x:Static ObjectConverters.IsNull}"/>
+                                            </MultiBinding>
+                                        </StackPanel.IsVisible>
+                                        
+                                        <Label FontFamily="{DynamicResource Phosphor}" 
+                                               FontSize="48"
+                                               Content="&#xE142;"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               Opacity="0.3"/>
+                                        <TextBlock Classes="body-small" 
+                                                  Text="No preview available"
+                                                  HorizontalAlignment="Center"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
                             
                             <!-- Card Details -->

@@ -45,19 +45,36 @@ public partial class CardSearchViewModel: ViewModelBase
     [ObservableProperty] private ObservableCollection<CardSearchResult> _searchResults = new();
     [ObservableProperty] private bool _isSearching;
     [ObservableProperty] private string _searchStatus = "";
-    [ObservableProperty] private string _rarityFilter = "";
-    [ObservableProperty] private string _typeFilter = "";
-    [ObservableProperty] private string _colorFilter = "";
+    // FIXED: Use string properties with proper conversion
+    [ObservableProperty] private string _selectedRarity = "Any Rarity";
+    [ObservableProperty] private string _selectedType = "Any Type"; 
+    [ObservableProperty] private string _selectedColor = "Any Color";
     [ObservableProperty] private string _setFilter = "";
     [ObservableProperty] private int _selectedCount = 0;
     [ObservableProperty] private bool _isSelected = false;
     [ObservableProperty] private bool _hasSelection = false;
     [ObservableProperty] private bool _hasResults = false;
 
+    [ObservableProperty] private int _multipleCount = 4;
+
     [ObservableProperty] private ObservableCollection<List<string>> _sortOption = new();
     [ObservableProperty] private CardSearchResult? _selectedSearchResult = null;
     
-
+    public ObservableCollection<string> RarityOptions { get; } = new()
+    {
+        "Any Rarity", "Common", "Uncommon", "Rare", "Mythic"
+    };
+    
+    public ObservableCollection<string> TypeOptions { get; } = new()
+    {
+        "Any Type", "Creature", "Instant", "Sorcery", "Enchantment", 
+        "Artifact", "Planeswalker", "Land"
+    };
+    
+    public ObservableCollection<string> ColorOptions { get; } = new()
+    {
+        "Any Color", "White", "Blue", "Black", "Red", "Green", "Multicolor", "Colorless"
+    };
     
     
     public CardSearchViewModel( IConfigManager config, 
@@ -114,14 +131,17 @@ public partial class CardSearchViewModel: ViewModelBase
                 progressInfo.Status, progressInfo.PercentageComplete);
         });
 
-        // Build search filters from UI
+        // FIXED: Build search filters with proper string conversion
         var filters = new SearchFilters
         {
             SetCode = SetFilter?.Trim() ?? "",
-            Colors = ColorFilter?.Trim() ?? "",
-            Type = TypeFilter?.Trim() ?? "",
-            Rarity = RarityFilter?.Trim() ?? ""
+            Colors = ConvertColorToSearchTerm(SelectedColor),
+            Type = ConvertTypeToSearchTerm(SelectedType),
+            Rarity = ConvertRarityToSearchTerm(SelectedRarity)
         };
+
+        _logger.LogDebug("Search filters: Set={SetCode}, Color={Colors}, Type={Type}, Rarity={Rarity}", 
+            filters.SetCode, filters.Colors, filters.Type, filters.Rarity);
 
         // Perform the search
         var results = await _searchService.SearchAsync(SearchQuery.Trim(), filters, progress);
@@ -241,6 +261,87 @@ public partial class CardSearchViewModel: ViewModelBase
         IsSearching = false;
     }
     }
+    
+    [RelayCommand] private async Task AddSelectedToCollectionMultipleAsync()
+    {
+        try
+    {
+        var selectedResults = SearchResults.Where(r => r.IsSelected).ToList();
+        
+        if (!selectedResults.Any())
+        {
+            SearchStatus = "No cards selected";
+            return;
+        }
+
+        IsSearching = true; // Reuse loading state
+        SearchStatus = $"Adding {selectedResults.Count} cards to collection MULTIPLE...";
+        
+        _logger.LogInformation("Adding {Count} selected cards to collection", selectedResults.Count);
+
+        var addedCards = new List<Card>();
+        
+        foreach (var result in selectedResults)
+        {
+            try
+            {
+                // Convert search result to full Card object
+                var card = await _searchService.ConvertToCardAsync(result);
+                
+                // Add EditMeCommand (like in your MPC Fill service)
+                card.EditMeCommand = _editCardCommand; // You'll need to pass this from MainViewModel
+                
+                // Add to collection
+                for (int i = 0; i < MultipleCount; i++)
+                {
+                    _cardCollection.AddCard(card);
+                }
+                
+                addedCards.Add(card);
+                
+                _logger.LogDebug("Added card to collection: {CardName} x {Count}", card.Name, MultipleCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to add card {CardName} to collection", result.Name);
+                // Continue with other cards, don't fail entire operation
+            }
+        }
+
+        // Clear selection of successfully added cards
+        foreach (var result in selectedResults.Where(r => addedCards.Any(c => c.Id == r.Id)))
+        {
+            result.IsSelected = false;
+        }
+        
+        UpdateSelectionCount();
+        SearchStatus = $"Successfully added {addedCards.Count} x {MultipleCount} cards to collection";
+        
+        _logger.LogInformation("Successfully added {Count} x {MultipleCount} cards to collection", addedCards.Count, MultipleCount);
+        
+        // Optional: Show success message
+        if (addedCards.Count > 0)
+        {
+            await _errorHandler.ShowErrorAsync(
+                "Cards Added", 
+                $"Successfully added {addedCards.Count} x {MultipleCount} card(s) to your collection.", 
+                ErrorSeverity.Information);
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error adding selected cards to collection");
+        SearchStatus = "Failed to add cards to collection";
+        await _errorHandler.HandleExceptionAsync(ex, 
+            "An error occurred while adding cards to your collection.", 
+            "CardSearch.AddSelectedToCollection");
+    }
+    finally
+    {
+        IsSearching = false;
+    }
+    }
+    
 
     [RelayCommand]
     private async Task QuickSearch()
@@ -291,4 +392,51 @@ public partial class CardSearchViewModel: ViewModelBase
     {
         UpdateSelectionCount();
     }
+    
+    private static string ConvertColorToSearchTerm(string uiSelection)
+    {
+        return uiSelection switch
+        {
+            "Any Color" => "",
+            "White" => "w",
+            "Blue" => "u", 
+            "Black" => "b",
+            "Red" => "r",
+            "Green" => "g",
+            "Multicolor" => "m",
+            "Colorless" => "c",
+            _ => ""
+        };
+    }
+    
+    private static string ConvertTypeToSearchTerm(string uiSelection)
+    {
+        return uiSelection switch
+        {
+            "Any Type" => "",
+            "Creature" => "creature",
+            "Instant" => "instant",
+            "Sorcery" => "sorcery", 
+            "Enchantment" => "enchantment",
+            "Artifact" => "artifact",
+            "Planeswalker" => "planeswalker",
+            "Land" => "land",
+            _ => ""
+        };
+    }
+    
+    private static string ConvertRarityToSearchTerm(string uiSelection)
+    {
+        return uiSelection switch
+        {
+            "Any Rarity" => "",
+            "Common" => "common",
+            "Uncommon" => "uncommon",
+            "Rare" => "rare", 
+            "Mythic" => "mythic",
+            _ => ""
+        };
+    }
+    
+    
 }

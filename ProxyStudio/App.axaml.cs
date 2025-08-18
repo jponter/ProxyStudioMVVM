@@ -164,7 +164,7 @@ public partial class App : Application
             var handler = new HttpClientHandler()
             {
                 // Increase max connections per server for better parallel performance
-                MaxConnectionsPerServer = 20, // Up from default 2 - great for parallel MPC Fill downloads
+                MaxConnectionsPerServer = 10, // Up from default 2 - great for parallel MPC Fill downloads
             
                 // Disable cookies to reduce overhead (most API calls don't need them)
                 UseCookies = false,
@@ -179,14 +179,15 @@ public partial class App : Application
 
             var client = new HttpClient(handler, disposeHandler: true)
             {
-                // Set reasonable timeout (45 seconds for slower connections/large files)
-                Timeout = TimeSpan.FromSeconds(45)
+                // Set reasonable timeout (30 seconds for slower connections/large files)
+                Timeout = TimeSpan.FromSeconds(30)
             };
 
             // Add standard headers for better compatibility
             client.DefaultRequestHeaders.Add("User-Agent", 
                 $"ProxyStudio/1.0 (.NET {Environment.Version}; {Environment.OSVersion})");
             client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
             client.DefaultRequestHeaders.ConnectionClose = false; // Keep connections alive for reuse
 
             logger?.LogInformation("Global HTTP client configured: MaxConnections=20, Timeout=45s, Compression=Enabled");
@@ -218,6 +219,8 @@ public partial class App : Application
         services.AddTransient<CardSearchViewModel>();
         services.AddSingleton<DesignTimeConfigManager>();
         services.AddSingleton<ICardSearchService, ScryfallSearchService>();
+        
+        
         
         Services = services.BuildServiceProvider();
         
