@@ -102,7 +102,8 @@ public class ScryfallSearchService : ICardSearchService
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        TypeInfoResolver = ScryfallJsonContext.Default
     };
     
     public ScryfallSearchService(
