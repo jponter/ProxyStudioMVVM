@@ -26,7 +26,9 @@ namespace ProxyStudio.Services;
 public interface ICardSearchService
 {
     string SourceName { get; }
+    
     Task<List<CardSearchResult>> SearchAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null);
+    Task<List<CardSearchResult>> SearchRandomAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null);
     Task<Card> ConvertToCardAsync(CardSearchResult result);
     bool IsAvailable { get; } // For service health checks
 }

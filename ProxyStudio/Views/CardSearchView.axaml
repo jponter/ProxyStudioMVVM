@@ -145,7 +145,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Label FontFamily="{DynamicResource Phosphor}" 
                                                FontSize="16"
-                                               Content="&#xE206;"/>
+                                               Content="&#xE422;"/>
                                         <TextBlock Text="Random Card"/>
                                     </StackPanel>
                                 </Button>
@@ -157,7 +157,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Label FontFamily="{DynamicResource Phosphor}" 
                                                FontSize="16"
-                                               Content="&#xE1B7;"/>
+                                               Content="&#xEBDE;"/>
                                         <TextBlock Text="Popular Commanders"/>
                                     </StackPanel>
                                 </Button>
@@ -169,7 +169,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Label FontFamily="{DynamicResource Phosphor}" 
                                                FontSize="16"
-                                               Content="&#xE0C9;"/>
+                                               Content="&#xEBDC;"/>
                                         <TextBlock Text="Latest Set"/>
                                     </StackPanel>
                                 </Button>
@@ -443,79 +443,7 @@
                         <TextBlock Classes="body-medium" Text="Add cards to the Card Collection" />
                     </StackPanel>
                     
-                    
-                    <!-- Selection Summary -->
-                    <Border Classes="card-elevated">
-                        <StackPanel Spacing="16">
-                            <TextBlock Classes="heading-small" Text="Selection"/>
-                            
-                            <StackPanel Spacing="12">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Classes="body-small" Text="Selected:"/>
-                                    <TextBlock Classes="body-small" 
-                                              Text="{Binding SelectedCount}"
-                                              FontWeight="SemiBold"
-                                              Foreground="{DynamicResource PrimaryBrush}"/>
-                                    <TextBlock Classes="body-small" Text="cards"/>
-                                </StackPanel>
-                                
-                                <!-- Selection Actions -->
-                                <StackPanel Spacing="8">
-                                    <Button Classes="primary" 
-                                            HorizontalAlignment="Stretch"
-                                            Command="{Binding AddSelectedToCollectionCommand}"
-                                            IsEnabled="{Binding HasSelection}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Label FontFamily="{DynamicResource Phosphor}" 
-                                                   FontSize="16"
-                                                   Content="&#xE0FC;"/>
-                                            <TextBlock Text="Add Selected"/>
-                                        </StackPanel>
-                                    </Button>
-                                    
-                                    <Button Classes="primary" 
-                                            HorizontalAlignment="Stretch"
-                                            Command="{Binding AddSelectedToCollectionMultipleCommand}"
-                                            IsEnabled="{Binding HasSelection}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Label FontFamily="{DynamicResource Phosphor}" 
-                                                   FontSize="16"
-                                                   Content="&#xE0FC;"/>
-                                            <TextBlock Text="Add Multiple of Selected"/>
-                                        </StackPanel>
-                                    </Button>
-                                    
-                                    <NumericUpDown Value="{Binding MultipleCount}" FormatString="0"/>
-                                    
-                                    <Button Classes="secondary" 
-                                            HorizontalAlignment="Stretch"
-                                            Command="{Binding SelectAllResultsCommand}"
-                                            IsEnabled="{Binding HasResults}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Label FontFamily="{DynamicResource Phosphor}" 
-                                                   FontSize="16"
-                                                   Content="&#xE155;"/>
-                                            <TextBlock Text="Select All"/>
-                                        </StackPanel>
-                                    </Button>
-                                    
-                                    <Button Classes="secondary" 
-                                            HorizontalAlignment="Stretch"
-                                            Command="{Binding ClearSelectionCommand}"
-                                            IsEnabled="{Binding HasSelection}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Label FontFamily="{DynamicResource Phosphor}" 
-                                                   FontSize="16"
-                                                   Content="&#xE34C;"/>
-                                            <TextBlock Text="Clear Selection"/>
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Preview Selected Card -->
+                     <!-- Preview Selected Card -->
                     <Border Classes="card"
                             IsVisible="{Binding SelectedSearchResult, Converter={x:Static ObjectConverters.IsNotNull}}">
                         <StackPanel Spacing="16">
@@ -587,7 +515,7 @@
                                 
                                 <!-- Quick Actions -->
                                 <StackPanel Spacing="4" Margin="0,8,0,0">
-                                    <Button Classes="secondary" 
+                                    <Button Classes="primary" 
                                             HorizontalAlignment="Stretch"
                                             Command="{Binding AddSingleCardCommand}"
                                             CommandParameter="{Binding SelectedSearchResult}">
@@ -597,6 +525,83 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                    
+                    <!-- Selection Summary -->
+                    <Border Classes="card-elevated">
+                        <StackPanel Spacing="16">
+                            <TextBlock Classes="heading-small" Text="Selection"/>
+                            
+                            <StackPanel Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Classes="body-small" Text="Selected:"/>
+                                    <TextBlock Classes="body-small" 
+                                              Text="{Binding SelectedCount}"
+                                              FontWeight="SemiBold"
+                                              Foreground="{DynamicResource PrimaryBrush}"/>
+                                    <TextBlock Classes="body-small" Text="cards"/>
+                                </StackPanel>
+                                
+                                <!-- Selection Actions -->
+                                <StackPanel Spacing="8">
+                                    <Button Classes="primary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding AddSelectedToCollectionCommand}"
+                                            IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE3D4;"/>
+                                            <TextBlock Text="Add Selected"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <Border Classes="card-elevated">
+                                        <StackPanel>
+                                        <Button Classes="primary" 
+                                                HorizontalAlignment="Stretch"
+                                                Command="{Binding AddSelectedToCollectionMultipleCommand}"
+                                                IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xEDF6;"/>
+                                            <TextBlock Text="Add Multiple of Selected"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Label Classes="caption" 
+                                           Content="Number of copies to add:"/>
+                                    <NumericUpDown Value="{Binding MultipleCount}" FormatString="0"/>
+                                    </StackPanel>
+                                    </Border>
+                                    <Button Classes="secondary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding SelectAllResultsCommand}"
+                                            IsEnabled="{Binding HasResults}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE155;"/>
+                                            <TextBlock Text="Select All"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <Button Classes="secondary" 
+                                            HorizontalAlignment="Stretch"
+                                            Command="{Binding ClearSelectionCommand}"
+                                            IsEnabled="{Binding HasSelection}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Label FontFamily="{DynamicResource Phosphor}" 
+                                                   FontSize="16"
+                                                   Content="&#xE34C;"/>
+                                            <TextBlock Text="Clear Selection"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                   
                     
                     <!-- Search Tips -->
                     <Border Classes="card">

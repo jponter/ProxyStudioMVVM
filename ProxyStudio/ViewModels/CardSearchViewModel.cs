@@ -105,6 +105,8 @@ public partial class CardSearchViewModel: ViewModelBase
     // Commands following your RelayCommand pattern
     [RelayCommand] private async Task SearchAsync()
     {
+        bool randomSearch = false;
+        
        try
     {
         // Validate input
@@ -112,6 +114,13 @@ public partial class CardSearchViewModel: ViewModelBase
         {
             SearchStatus = "Please enter a search query";
             return;
+        }
+        
+        if (string.Compare(SearchQuery, "ProxyStudio:random", StringComparison.OrdinalIgnoreCase) == 0)
+        {
+            _logger.LogInformation("Random search requested, performing random search");
+            randomSearch = true;
+            
         }
 
         // Set loading state
@@ -144,11 +153,24 @@ public partial class CardSearchViewModel: ViewModelBase
             UniquePrintings = UniquePrintings
         };
 
-        _logger.LogDebug("Search filters: Set={SetCode}, Color={Colors}, Type={Type}, Rarity={Rarity}", 
-            filters.SetCode, filters.Colors, filters.Type, filters.Rarity);
+        
+        var results = new List<CardSearchResult>();
+        if (randomSearch)
+        {
+            //do a random search
+            results = await _searchService.SearchRandomAsync(SearchQuery.Trim(), filters, progress);
+            _logger.LogInformation("Performing random card search");
+        }
+        else
+        {
+            _logger.LogDebug("Search filters: Set={SetCode}, Color={Colors}, Type={Type}, Rarity={Rarity}",
+                filters.SetCode, filters.Colors, filters.Type, filters.Rarity);
 
-        // Perform the search
-        var results = await _searchService.SearchAsync(SearchQuery.Trim(), filters, progress);
+
+
+            _logger.LogInformation("Performing regular card search with query: {Query}", SearchQuery);
+             results = await _searchService.SearchAsync(SearchQuery.Trim(), filters, progress);
+        }
 
         // Update UI with results
         SearchResults.Clear();
@@ -348,9 +370,34 @@ public partial class CardSearchViewModel: ViewModelBase
     
 
     [RelayCommand]
-    private async Task QuickSearch()
+    private async Task QuickSearch(string? searchType)
     {
-        throw new System.NotImplementedException();
+        if (string.IsNullOrEmpty(searchType))
+            return;
+        
+        // Clear existing results and filters
+        SearchResults.Clear();
+    
+        // Set query based on search type
+        SearchQuery = searchType switch
+        {
+            "random" => "ProxyStudio:random",
+            "commanders" => "is:commander legal:commander",
+            "latest" => "set:eoe", // Update with current latest set
+            _ => SearchQuery
+        };
+    
+        // Reset filters for quick searches
+        SelectedColor = "Any Color";
+        SelectedType = "Any Type";
+        SelectedRarity = "Any Rarity";
+        SetFilter = "";
+        IncludeExtras = false;
+    
+        // Perform the search
+      
+            await SearchAsync();
+      
     }
     
     [RelayCommand]
@@ -367,8 +414,52 @@ public partial class CardSearchViewModel: ViewModelBase
     [RelayCommand]
     private async Task AddSingleCard()
     {
-        throw new System.NotImplementedException();
+        // This command can be used to add a single card from the search results
+        if (SelectedSearchResult == null)
+        {
+            SearchStatus = "No card selected";
+            _logger.LogWarning("AddSingleCard called with no selected search result");
+            return;
+        }
+        
+        try
+        {
+            IsSearching = true;
+            SearchStatus = "Adding card to collection...";
+            
+            _logger.LogInformation("Adding single card: {CardName}", SelectedSearchResult.Name);
+            
+            // Convert search result to full Card object
+            var card = await _searchService.ConvertToCardAsync(SelectedSearchResult);
+            
+            // Add EditMeCommand (like in your MPC Fill service)
+            card.EditMeCommand = _editCardCommand; // You'll need to pass this from MainViewModel
+            
+            // Add to collection
+            _cardCollection.AddCard(card);
+            
+            // Clear selection
+            SelectedSearchResult.IsSelected = false;
+            UpdateSelectionCount();
+            
+            SearchStatus = "Card added successfully";
+            
+            _logger.LogInformation("Successfully added single card: {CardName}", SelectedSearchResult.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding single card {CardName} to collection", SelectedSearchResult.Name);
+            SearchStatus = "Failed to add card to collection";
+            await _errorHandler.HandleExceptionAsync(ex, 
+                "An error occurred while adding the card to your collection.", 
+                "CardSearch.AddSingleCard");
+        }
+        finally
+        {
+            IsSearching = false;
+        }
     }
+  
     
     [RelayCommand]
     private async Task ClearSelection()

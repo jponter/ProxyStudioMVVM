@@ -248,6 +248,106 @@ public class ScryfallSearchService : ICardSearchService
         }
     }
     
+    public async Task<List<CardSearchResult>> SearchRandomAsync(string query, SearchFilters filters, IProgress<SearchProgress>? progress = null)
+    {
+        try
+        {
+            progress?.Report(new SearchProgress { Status = "Connecting to Scryfall...", CurrentStep = 1, TotalSteps = 4 });
+            
+            _logger.LogInformation("Starting Scryfall Random search for query: {Query}", query);
+            
+            // Build search query with filters
+            //var searchQuery = BuildSearchQuery(query, filters);
+            var results = new List<CardSearchResult>();
+            var currentPage = 1;
+            var maxPages = 3; // Limit to first 3 pages to avoid overwhelming results
+            
+            progress?.Report(new SearchProgress { Status = "Searching cards...", CurrentStep = 2, TotalSteps = 4 });
+            
+            
+                var searchUrl = $"https://api.scryfall.com/cards/random";
+                
+                _logger.LogDebug("Requesting Scryfall API: {Url}", searchUrl);
+                
+                // Apply rate limiting
+                await ApplyRateLimitAsync();
+                
+                var response = await _httpClient.GetAsync(searchUrl);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        _logger.LogInformation("No cards found for query: {URL}",searchUrl);
+                        return results; // No results found
+                    }
+                    
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Scryfall API error {StatusCode}: {Content}", response.StatusCode, errorContent);
+                    throw new HttpRequestException($"Scryfall API returned {response.StatusCode}: {errorContent}");
+                }
+                
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                var randomCard = JsonSerializer.Deserialize(jsonContent, ScryfallJsonContext.Default.ScryfallCardResponse);
+                
+                
+                   if(randomCard.Name is not null)results.Add(ConvertToSearchResult(randomCard));
+                
+                    
+                    _logger.LogDebug("Retrieved Random card");
+                    
+                   
+                
+                
+                
+                
+            
+            
+            progress?.Report(new SearchProgress { Status = "Processing results...", CurrentStep = 3, TotalSteps = 4 });
+            
+            // Start loading images for all results in parallel
+            var imageTasks = results.Select(async result =>
+            {
+                try
+                {
+                    await result.LoadImageAsync(_httpClient);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load image for card: {CardName}", result.Name);
+                }
+            });
+            
+            // Don't wait for all images to load - let them load in background
+            _ = Task.Run(async () =>
+            {
+                await Task.WhenAll(imageTasks);
+                _logger.LogDebug("Completed loading preview images for search results");
+            });
+            
+            _logger.LogInformation("Scryfall search completed: {ResultCount} cards found", results.Count);
+            
+            progress?.Report(new SearchProgress { Status = "Complete", CurrentStep = 4, TotalSteps = 4 });
+            
+            return results;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error during Scryfall search");
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "JSON parsing error during Scryfall search");
+            throw new InvalidOperationException("Failed to parse Scryfall API response", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during Scryfall search");
+            throw;
+        }
+    }
+    
     private static string BuildSearchQuery(string query, SearchFilters filters)
     {
         var queryParts = new List<string> { query };
