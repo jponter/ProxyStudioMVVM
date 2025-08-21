@@ -282,13 +282,14 @@ Copyright (C) 2025 James Ponter
                                         
                                         <ListBox.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                <Border 
+                                                        
+
                                                         BorderThickness="1"
                                                         CornerRadius="8"
-                                                        Margin="4"
-                                                        Padding="8"
-                                                        Classes="card-compact"
+                                                        Margin="8"
+                                                        Padding="12"
+                                                        Classes=" card-elevated"
                                                         MinWidth="421"
                                                         MaxWidth="421"
                                                         > 
@@ -302,11 +303,12 @@ Copyright (C) 2025 James Ponter
                                                                   ToolTip.Tip="{Binding Name}"/>
                                                         
                                                         <!-- Card Image -->
-                                                        <Border CornerRadius="12" 
+                                                        <Border CornerRadius="8" 
                                                                 ClipToBounds="True"
-                                                                Height="450">
+                                                                
+                                                                >
                                                             <Image Source="{Binding ImageSource}" 
-                                                                   Stretch="Uniform"
+                                                                   Stretch="UniformToFill"
                                                                    
                                                                    />
                                                         </Border>

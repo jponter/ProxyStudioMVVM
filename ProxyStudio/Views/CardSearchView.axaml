@@ -15,9 +15,9 @@
     <!-- Card Search Page -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="380"/>   <!-- Search Panel -->
+            <ColumnDefinition Width="340"/>   <!-- Search Panel -->
             <ColumnDefinition Width="*"/>     <!-- Results Grid -->
-            <ColumnDefinition Width="320"/>   <!-- Selection Panel -->
+            <ColumnDefinition Width="450"/>   <!-- Selection Panel -->
         </Grid.ColumnDefinitions>
         
         <!-- Search Controls Sidebar -->
@@ -26,8 +26,9 @@
                 Background="{DynamicResource SurfaceElevatedBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,1,0">
-            <ScrollViewer Classes="preview" VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="24" Margin="24">
+            
+            <ScrollViewer Classes="sidebar" >
+               <StackPanel Spacing="8" > 
                     
                     <!-- Search Header -->
                     <StackPanel Spacing="8">
@@ -239,12 +240,17 @@
                 <ScrollViewer Classes="preview" 
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
-                              Padding="16,16,16,0">
+                              Background="{DynamicResource PreviewBackgroundBrush}"
+                              Padding="40">
                     <Panel>
-                    <ListBox Classes="grid-list"
+                    <ListBox Classes="preview"
                              ItemsSource="{Binding SearchResults}"
                              SelectedItem="{Binding SelectedSearchResult, Mode=TwoWay}"
-                             SelectionMode="Multiple">
+                             Background="Transparent"
+                             SelectionMode="Multiple"
+                             BorderThickness="0"
+                             Padding="0,0,0,200"
+                             >
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="3" />
@@ -256,8 +262,8 @@
                                 <Border Classes="card-elevated"
                                         Padding="12"
                                         Margin="8"
-                                        MinWidth="320"
-                                        MaxWidth="320">
+                                        MinWidth="350"
+                                        MaxWidth="350">
                                     
                                     <StackPanel Spacing="8">
                                         <!-- Card Name & Set -->
@@ -416,11 +422,30 @@
                 Background="{DynamicResource SurfaceElevatedBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1,0,0,0">
-            <ScrollViewer Classes="preview" VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="24" Margin="24">
+            
+            <ScrollViewer Classes="sidebar" VerticalScrollBarVisibility="Auto"
+                          Padding="0,0,0,0">
+                <StackPanel Spacing="20" Margin="0,0,0,200">
+                    
+                    <!-- ProxyStudio Branding -->
+                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        <Image Source="/Resources/Proxy Studio Logo.png"
+                               Width="120"
+                               Stretch="UniformToFill" />
+                        <TextBlock Classes="caption"
+                                   Text="©PappaPonton 2025"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                    
+                    <!-- Header -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading-medium" Text="Selection Actions" />
+                        <TextBlock Classes="body-medium" Text="Add cards to the Card Collection" />
+                    </StackPanel>
+                    
                     
                     <!-- Selection Summary -->
-                    <Border Classes="card">
+                    <Border Classes="card-elevated">
                         <StackPanel Spacing="16">
                             <TextBlock Classes="heading-small" Text="Selection"/>
                             
