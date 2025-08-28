@@ -23,9 +23,11 @@ using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -263,6 +265,96 @@ namespace ProxyStudio.Behaviors
         }
 
         private static void HandleCardReorder(ListBox listBox, DragEventArgs e)
+{
+    var draggedCard = e.Data.Get(CardDataFormat) as Card;
+    if (draggedCard == null) 
+    {
+        Log.Debug("HandleCardReorder: No dragged card found in data object");
+        return;
+    }
+
+    var position = e.GetPosition(listBox);
+    var hit = listBox.InputHitTest(position);
+    var targetContainer = FindAncestorOfType<ListBoxItem>(hit as Visual);
+
+    if (targetContainer?.DataContext is not Card targetCard)
+    {
+        Log.Debug("HandleCardReorder: No target card found at drop position");
+        return;
+    }
+
+    // ✅ SIMPLE APPROACH: Use visual container indices directly
+    var sourceIndex = GetContainerIndex(listBox, _draggedItemContainer);
+    var targetIndex = GetContainerIndex(listBox, targetContainer);
+
+    if (sourceIndex < 0 || targetIndex < 0)
+    {
+        Log.Warning("HandleCardReorder: Could not determine container indices (source: {SourceIndex}, target: {TargetIndex})", 
+            sourceIndex, targetIndex);
+        return;
+    }
+
+    if (sourceIndex == targetIndex)
+    {
+        Log.Debug("HandleCardReorder: Source and target indices are the same ({Index})", sourceIndex);
+        return;
+    }
+
+    // Get collection
+    IList? items = null;
+    if (listBox.ItemsSource is CardCollection cardCollection)
+    {
+        items = cardCollection;
+    }
+    else if (listBox.ItemsSource is IList list)
+    {
+        items = list;
+    }
+    else if (listBox.ItemsSource is IList<Card> cardList)
+    {
+        items = new ListWrapper<Card>(cardList);
+    }
+
+    if (items == null)
+    {
+        Log.Warning("HandleCardReorder: Could not get items collection from ListBox");
+        return;
+    }
+
+    try
+    {
+        Log.Debug("HandleCardReorder: Moving card from visual index {SourceIndex} to {TargetIndex}", 
+            sourceIndex, targetIndex);
+
+        // ✅ DIRECT INDEX MANIPULATION: No object searching required
+        if (items is CardCollection cardColl)
+        {
+            // Use CardCollection's Move method if available
+            cardColl.Move(sourceIndex, targetIndex);
+        }
+        else
+        {
+            // Manual move using indices
+            var item = items[sourceIndex];
+            items.RemoveAt(sourceIndex);
+            items.Insert(targetIndex, item);
+        }
+
+        listBox.SelectedItem = draggedCard;
+        e.Handled = true;
+
+        Log.Information("HandleCardReorder: Successfully moved card from index {SourceIndex} to {TargetIndex}", 
+            sourceIndex, targetIndex);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "HandleCardReorder: Error during reorder from index {SourceIndex} to {TargetIndex}", 
+            sourceIndex, targetIndex);
+    }
+}
+        
+        
+        private static void HandleCardReorderOld(ListBox listBox, DragEventArgs e)
         {
             var draggedCard = e.Data.Get(CardDataFormat) as Card;
             if (draggedCard == null) return;
@@ -309,6 +401,58 @@ namespace ProxyStudio.Behaviors
                 //Helpers.DebugHelper.WriteDebug($"Error during reorder: {ex.Message}");
                 Log.Warning(ex, "Error during reorder in ReorderableListBoxBehavior.");
             }
+        }
+        
+        
+        /// <summary>
+        /// Get the visual index of a ListBoxItem container within its parent ListBox
+        /// </summary>
+        private static int GetContainerIndex(ListBox listBox, ListBoxItem? container)
+        {
+            if (container == null) return -1;
+
+            // Method 1: Use ItemContainerGenerator if available
+            if (listBox.ItemContainerGenerator != null)
+            {
+                var index = listBox.ItemContainerGenerator.IndexFromContainer(container);
+                if (index >= 0) return index;
+            }
+
+            // Method 2: Search through generated containers
+            var presenter = FindDescendant<ItemsPresenter>(listBox);
+            if (presenter?.Panel != null)
+            {
+                var containers = presenter.Panel.Children.OfType<ListBoxItem>().ToList();
+                return containers.IndexOf(container);
+            }
+
+            // Method 3: Fallback - search logical children
+            var logicalContainers = listBox.GetLogicalChildren().OfType<ListBoxItem>().ToList();
+            return logicalContainers.IndexOf(container);
+        }
+
+        /// <summary>
+        /// Find a descendant control of the specified type
+        /// </summary>
+        private static T? FindDescendant<T>(Control parent) where T : Control
+        {
+            var queue = new Queue<Control>();
+            queue.Enqueue(parent);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+        
+                if (current is T target)
+                    return target;
+
+                foreach (var child in current.GetLogicalChildren().OfType<Control>())
+                {
+                    queue.Enqueue(child);
+                }
+            }
+
+            return null;
         }
 
         private static async void HandleXmlFileDrop(ListBox listBox, DragEventArgs e)
