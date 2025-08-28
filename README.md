@@ -25,6 +25,10 @@ Big thanks to malacath-92 for the advice and support! Check out his proxy app ht
 
 And the original o.g. Alex Taxiera who's proxy print setup was my original go-to for proxy PDF generation and inspired me to write my own!
 
+Although I had fun making this app, just go to proxxied.com , it's an amazing site developed by a professional dev. Not a pointy haired manager who codes as a hobby 😜 it does everything I was trying to do, but better! 
+
+Nevertheless, I plan to finish this app, with deck import next to do, as its a good example of an Avalonia application. Ironically the theme support is probably the most useful aspect and i'll try to pull that out to a nuget package soon!
+
 ## 🎯 Overview
 
 ProxyStudio enables users to create, organise, and print collections of proxy cards with customizable layouts and professional-quality PDF output.
@@ -35,7 +39,7 @@ ProxyStudio enables users to create, organise, and print collections of proxy ca
 - **Visual Card Grid** - Browse cards in a responsive layout
 - **MPC XML Loading** - Drag an exported XML from MPC Fill
 - **Single Card Loading** - Drag a JPG/PNG onto the card management screen
-- 
+  **Scryfall Imoort**
 
 
 ### PDF Generation & Printing
@@ -125,6 +129,8 @@ Commercial use is allowed under GPL v3, but you must:
 - Include proper attribution
 
 ## 🔮 Future Features
+
+full deck import from pasted text (Moxified/Arena etc)
 
 
 
